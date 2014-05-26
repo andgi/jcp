@@ -1,0 +1,22 @@
+Install instruction
+
+1. Install colt and libsvm next to the jcp directory.
+
+2. Build libsvm. Copy libsvm.so into jcp/lib
+
+3. Set up LD_LIBRARY_PATH to include jcp/lib.
+   E.g.
+   % export LD_LIBRARY_PATH=$HOME/Work/projects/BOEL-KK-2013-2015/src/jcp/lib/
+
+4. Set up JDKDIR to point to the JDK installation.
+   E.g.
+   % export JDKDIR=/opt/jdk1.7.0_09
+
+5. Build jcp.
+   % ant all
+
+6. Include colt.jar and jcp/build/jar/jcp.jar in the Java class path.
+   E.g.
+   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.test.TestTCC
+   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.test.TestICC
+

@@ -1,0 +1,44 @@
+<project name="jcp" basedir="." default="all">
+
+  <property name="src.dir"     value="src"/>
+  <property name="jni.dir"     value="jni"/>
+  <property name="lib.dir"     value="lib"/>
+
+  <path id="classpath">
+    <fileset dir="../colt/lib" includes="*.jar" />
+  </path>
+
+  <property name="build.dir"   value="build"/>
+  <property name="classes.dir" value="${build.dir}/classes"/>
+  <property name="jar.dir"     value="${build.dir}/jar"/>
+
+  <target name="clean">
+    <delete dir="${build.dir}"/>
+    <delete file="${lib.dir}/libsvm-jni.so"/>
+  </target>
+
+  <target name="compile">
+    <mkdir dir="${classes.dir}"/>
+    <javac includeantruntime="false"
+           srcdir="${src.dir}" destdir="${classes.dir}"
+           classpathref="classpath"
+           debug="true"/>
+  </target>
+  <target name="compile-jni">
+    <exec executable="bash" failonerror="true">
+      <arg line="COMPILE-JNI.sh"/>
+    </exec>
+  </target>
+
+  <target name="jar" depends="compile">
+    <mkdir dir="${jar.dir}"/>
+    <jar destfile="${jar.dir}/${ant.project.name}.jar" basedir="${classes.dir}">
+      <manifest>
+        <attribute name="Main-Class" value="${main-class}"/>
+      </manifest>
+    </jar>
+  </target>
+
+ <target name="all" depends="clean,jar,compile-jni"/>
+
+</project>
