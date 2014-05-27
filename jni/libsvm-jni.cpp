@@ -117,8 +117,29 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train(JNIEnv* env,
 
     struct svm_model* model = svm_train(problem, param);
 
+    // The new svm_model reuses the support vector instance attributes
+    // from the svm_problem struct.  Hence, these need to be compied
+    // to a new memory area and the model set to free them,
+    // eventually, if the svm_problem struct is to be freed now and
+    // not leaked.
+    // Copy the SV instances from the svm problem.
+    for (int i = 0; i < model->l; i++) {
+        struct svm_node* oldSV = model->SV[i];
+        // Measure the length of the oldSV array.
+        int len = 0;
+        while (oldSV[len].index != -1) {
+            len++;
+        }
+        len++;
+        model->SV[i] =
+            (struct svm_node*)malloc(len * sizeof(struct svm_node));
+        memcpy(model->SV[i], oldSV, len * sizeof(struct svm_node));
+    }
+    model->free_sv = 1;
+
     free_svm_parameter(param);
     free_svm_problem(problem);
+
     return (long)model;
 }
 
@@ -509,7 +530,6 @@ static void free_svm_node_array(struct svm_node* nodes)
 static struct svm_problem* svm_problem_from_java(JNIEnv* env,
                                                  jobject jproblem)
 {
-    int i;
     struct svm_problem* problem =
         (struct svm_problem*)malloc(sizeof(struct svm_problem));
 
@@ -529,7 +549,7 @@ static struct svm_problem* svm_problem_from_java(JNIEnv* env,
 
         problem->y = (double*)malloc(problem->l * sizeof(double));
 
-        for (i = 0; i < problem->l; i++) {
+        for (int i = 0; i < problem->l; i++) {
             problem->y[i] = jy_elems[i];
         }
 
@@ -549,7 +569,7 @@ static struct svm_problem* svm_problem_from_java(JNIEnv* env,
         problem->x =
             (struct svm_node**)malloc(problem->l * sizeof(struct svm_node*));
 
-        for (i = 0; i < problem->l; i++) {
+        for (int i = 0; i < problem->l; i++) {
             jobjectArray jinstance =
                 (jobjectArray)env->GetObjectArrayElement(jx, i);
             if (env->ExceptionOccurred()) {
@@ -574,9 +594,8 @@ static struct svm_problem* svm_problem_from_java(JNIEnv* env,
 
 static void free_svm_problem(struct svm_problem* problem)
 {
-    int i;
     free(problem->y);
-    for (i = 0; i < problem->l; i++) {
+    for (int i = 0; i < problem->l; i++) {
         free_svm_node_array(problem->x[i]);
     }
     free(problem->x);
