@@ -7,6 +7,7 @@ import java.util.Date;
 import java.util.Random;
 import jcp.cp.InductiveConformalClassifier;
 import jcp.nc.*;
+import jcp.bindings.libsvm.SparseDoubleMatrix2D;
 
 public class TestICC {
     public TestICC() {
@@ -22,9 +23,15 @@ public class TestICC {
         double[] ycal = new double[299];
         double[] ytest = new double[100];
         
-        DoubleMatrix2D xtr = new DenseDoubleMatrix2D(ytr.length, 1);
-        DoubleMatrix2D xcal = new DenseDoubleMatrix2D(ycal.length, 1);
-        DoubleMatrix2D xtest = new DenseDoubleMatrix2D(ytest.length, 1);
+        DoubleMatrix2D xtr =
+            //new DenseDoubleMatrix2D(ytr.length, 1);
+            new jcp.bindings.libsvm.SparseDoubleMatrix2D(ytr.length, 1);
+        DoubleMatrix2D xcal =
+            //new DenseDoubleMatrix2D(ycal.length, 1);
+            new jcp.bindings.libsvm.SparseDoubleMatrix2D(ycal.length, 1);
+        DoubleMatrix2D xtest =
+            //new DenseDoubleMatrix2D(ytest.length, 1);
+            new jcp.bindings.libsvm.SparseDoubleMatrix2D(ytest.length, 1);
            
         for (int k = 0; k < 1000; k++) {
     
@@ -60,9 +67,8 @@ public class TestICC {
             
             InductiveConformalClassifier icc = new InductiveConformalClassifier(new double[]{0, 1, 2});
             icc._nc =
-              //new AverageClassificationNonconformityFunction(new double[]{0, 1, 2});
-              new SVMClassificationNonconformityFunction(new double[]{0.0, 1.0, 2.0},
-                                                         null);
+                //new AverageClassificationNonconformityFunction(new double[]{0, 1, 2});
+                new SVMClassificationNonconformityFunction(new double[]{0.0, 1.0, 2.0});
             icc.fit(xtr, ytr, xcal, ycal);
 
 

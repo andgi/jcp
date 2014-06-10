@@ -14,10 +14,13 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
 
     svm_parameter _parameter;
     svm_model _model;
-    svm_problem _problem;
     int _n_classes;
     double[] _classes;
     Map<Double, Integer> _class_index = new TreeMap<Double, Integer>();
+
+    public SVMClassificationNonconformityFunction(double[] classes) {
+        this(classes, null);
+    }
 
     public SVMClassificationNonconformityFunction(double[] classes,
                                                   svm_parameter parameter) {
@@ -52,17 +55,11 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
 
     public void fit(DoubleMatrix2D x,
                     double[] y) {
-        _problem = new svm_problem();
-        _problem.l = y.length;
-        // FIXME: This generates a dense instance matrix!
-        _problem.x = new svm_node[_problem.l][];
-        _problem.y = y;
-
-        for (int i = 0; i < _problem.l; i++) {
-            // FIXME: This generates a dense instance!
-            _problem.x[i] = convertInstance(x, i);
-        }
-        _model = svm.svm_train(_problem, _parameter);
+      if (x instanceof jcp.bindings.libsvm.SparseDoubleMatrix2D) {
+          fastFit((jcp.bindings.libsvm.SparseDoubleMatrix2D)x, y);
+      } else {
+          slowFit(x, y);
+      }
     }
 
     
@@ -95,6 +92,26 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    private void fastFit(jcp.bindings.libsvm.SparseDoubleMatrix2D x,
+                         double[] y) {
+        _model = svm.svm_train(_parameter, x, y);
+    }
+
+    private void slowFit(DoubleMatrix2D x,
+                         double[] y) {
+        svm_problem problem = new svm_problem();
+        problem.l = y.length;
+        // FIXME: This generates a dense instance matrix!
+        problem.x = new svm_node[problem.l][];
+        problem.y = y;
+
+        for (int i = 0; i < problem.l; i++) {
+            // FIXME: This generates a dense instance!
+            problem.x[i] = convertInstance(x, i);
+        }
+        _model = svm.svm_train(problem, _parameter);
+    }
+
     private svm_node[] convertInstance(DoubleMatrix2D instances,
                                        int instance) {
         // FIXME: This generates a dense instance!
@@ -106,4 +123,5 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
         }
         return attributes;
     }
+
 }

@@ -17,6 +17,14 @@ JNIEXPORT jlong JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1train
 
 /*
  * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_train_fast
+ * Signature: (Ljcp/bindings/libsvm/svm_parameter;J[D)J
+ */
+JNIEXPORT jlong JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast
+  (JNIEnv *, jclass, jobject, jlong, jdoubleArray);
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
  * Method:    native_svm_cross_validation
  * Signature: (Ljcp/bindings/libsvm/svm_problem;Ljcp/bindings/libsvm/svm_parameter;I[D)V
  */

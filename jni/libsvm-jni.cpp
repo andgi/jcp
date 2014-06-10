@@ -5,14 +5,15 @@
 #include "jcp_bindings_libsvm_svm_node.h"
 #include "jcp_bindings_libsvm_svm_problem.h"
 #include "jcp_bindings_libsvm_svm_parameter.h"
-
+#include "jcp_bindings_libsvm_SparseDoubleMatrix1D.h"
+#include "jcp_bindings_libsvm_SparseDoubleMatrix2D.h"
 #include <iostream>
 
 #include <cstdlib>
 #include <cstring>
 #include <svm.h>
 
-/* Internal functions. */ 
+/* Internal functions. */
 static struct svm_node* svm_node_array_from_java(JNIEnv* env,
                                                  jobjectArray jnodes);
 static void free_svm_node_array(struct svm_node* nodes);
@@ -24,6 +25,7 @@ static void free_svm_problem(struct svm_problem* problem);
 static struct svm_parameter* svm_parameter_from_java(JNIEnv* env,
                                                      jobject jparam);
 static void free_svm_parameter(struct svm_parameter* param);
+static void print_func(const char* str);
 
 /* Internal shared data. */
 /*   svm_node field IDs. */
@@ -53,6 +55,10 @@ jfieldID svm_parameter__probability_FID;
 #ifdef __cplusplus
 extern "C" {
 #endif
+
+/******************************************************************************/
+/* libsvm functions. */
+
 /*
  * Class:     jcp_bindings_libsvm_svm
  * Method:    native_svm_load_model
@@ -118,7 +124,7 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train(JNIEnv* env,
     struct svm_model* model = svm_train(problem, param);
 
     // The new svm_model reuses the support vector instance attributes
-    // from the svm_problem struct.  Hence, these need to be compied
+    // from the svm_problem struct.  Hence, these need to be copied
     // to a new memory area and the model set to free them,
     // eventually, if the svm_problem struct is to be freed now and
     // not leaked.
@@ -139,6 +145,50 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train(JNIEnv* env,
 
     free_svm_parameter(param);
     free_svm_problem(problem);
+
+    return (long)model;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_train_fast
+ * Signature: (Ljcp/bindings/libsvm/svm_parameter;J[D)J
+ */
+JNIEXPORT jlong JNICALL
+Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(JNIEnv*      env,
+                                                      jclass       jsvm,
+                                                      jobject      jparam,
+                                                      jlong        jx_ptr,
+                                                      jdoubleArray jy)
+{
+    struct svm_parameter* param = svm_parameter_from_java(env, jparam);
+    struct svm_problem problem;
+    /* Set up the svm_problem struct. */
+    // NOTE:
+    //   The new svm_model reuses the support vector instance attributes
+    //   from x in the svm_problem struct.  Hence, the storage for
+    //   problem->x (jx_ptr) must not be freed while the model remains.
+    problem.l = env->GetArrayLength(jy);
+    problem.x = (struct svm_node **)jx_ptr;
+    problem.y = env->GetDoubleArrayElements(jy, NULL);
+
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(): "
+                  << "Java exception at argument conversion."
+                  << std::endl;
+        return 0;
+    }
+
+    struct svm_model* model = svm_train(&problem, param);
+
+    env->ReleaseDoubleArrayElements(jy, problem.y, JNI_ABORT);
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(): "
+                  << "Java exception." << std::endl;
+        return 0;
+    }
+    problem.y = NULL;
+    free_svm_parameter(param);
 
     return (long)model;
 }
@@ -402,6 +452,9 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1probability_1model
     return svm_check_probability_model((const struct svm_model*)jmodel_ptr);
 }
 
+/******************************************************************************/
+/* libsvm Java interface class initialization functions. */
+
 /*
  * Class:     jcp_bindings_libsvm_svm_node
  * Method:    native_init
@@ -475,6 +528,9 @@ Java_jcp_bindings_libsvm_svm_1parameter_native_1init
                                                    "shrinking", "I");
     svm_parameter__probability_FID = env->GetFieldID(jsvm_parameter,
                                                      "probability", "I");
+
+    svm_set_print_string_function(print_func);
+
     if (env->ExceptionOccurred()) {
         std::cerr << "Java_jcp_bindings_libsvm_svm_1parameter_native_1init(): "
                   << "Java exception when caching field IDs."
@@ -482,12 +538,269 @@ Java_jcp_bindings_libsvm_svm_1parameter_native_1init
     }
 }
 
+/******************************************************************************/
+/* libsvm storage functions. */
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_create
+ * Signature: (I)J
+ */
+JNIEXPORT jlong JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
+    (JNIEnv* env,
+     jclass  jSDM1D,
+     jint    size)
+{
+    // Allocate one svm_node and mark it as EOL.
+    struct svm_node* v = (struct svm_node*)malloc(1 * sizeof(struct svm_node));
+    v[0].index = -1;
+    return (jlong)v;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_free
+ * Signature: (J)V
+ */
+JNIEXPORT void JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
+    (JNIEnv* env,
+     jclass  jSDM1D,
+     jlong   jptr)
+{
+    struct svm_node* v = (struct svm_node*)jptr;
+    free(v);
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_create_from
+ * Signature: (I[I[D)J
+ */
+JNIEXPORT jlong JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
+    (JNIEnv*      env,
+     jclass       jSDM1D,
+     jintArray    jindices,
+     jdoubleArray jvalues)
+{
+    int i;
+    jint*    indices = env->GetIntArrayElements(jindices, NULL);
+    jdouble* values = env->GetDoubleArrayElements(jvalues, NULL);
+    int length = env->GetArrayLength(jvalues);
+    struct svm_node* v =
+        (struct svm_node*)malloc((length + 1) * sizeof(struct svm_node));
+
+    for (i = 0; i < length; i++) {
+        v[i].index = indices[i];
+        v[i].value = values[i];
+        //printf(" %d: (%d, %e)\n", i, v[i].index, v[i].value);
+    }
+    v[i].index = -1;
+    v[i].value = 0.0;
+
+    env->ReleaseDoubleArrayElements(jvalues, values, JNI_ABORT);
+    env->ReleaseIntArrayElements(jindices, indices, JNI_ABORT);
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from(): "
+                  << "Java exception."
+                  << std::endl;
+        return 0;
+    }
+    return (jlong)v;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_get
+ * Signature: (JI)D
+ */
+JNIEXPORT jdouble JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1get
+    (JNIEnv* env,
+     jclass  jSDM1D,
+     jlong   jptr,
+     jint    index)
+{
+    struct svm_node* v = (struct svm_node*)jptr;
+    int i = 0;
+    while (v[i].index != -1 && v[i].index < index) {
+        i++;
+    }
+    return (v[i].index == index) ? v[i].value : 0.0;
+
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_set
+ * Signature: (JID)V
+ */
+JNIEXPORT void JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
+    (JNIEnv* env,
+     jclass  jSDM1D,
+     jlong   jptr,
+     jint    index,
+     jdouble value)
+{
+    struct svm_node* v = (struct svm_node*)jptr;
+    int i = 0;
+    while (v[i].index != -1 && v[i].index < index) {
+        i++;
+    }
+    if (v[i].index == index) {
+        v[i].value = value;
+    } else {
+        std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set(): "
+                  << "The element at (" << index << ") "
+                  << "is zero and cannot be set." << std::endl;
+
+    }
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Method:    native_matrix_create
+ * Signature: (II)J
+ */
+JNIEXPORT jlong JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create
+    (JNIEnv* env,
+     jclass  jSDM2D,
+     jint    rows,
+     jint    columns)
+{
+    struct svm_node** m =
+        (struct svm_node**)malloc(rows * sizeof(struct svm_node*));
+    for (int i = 0; i < rows; i++) {
+        // Allocate one svm_node for each row.
+        m[i] = (struct svm_node*)malloc(1 * sizeof(struct svm_node));
+        // Mark it as EOL.
+        m[i][0].index = -1;
+    }
+    std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create(): "
+              << "Created " << rows << " x " << columns << " matrix at "
+              << (jlong)m << "." << std::endl;
+    return (jlong)m;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Method:    native_matrix_free
+ * Signature: (JI)V
+ */
+JNIEXPORT void JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free
+    (JNIEnv* env,
+     jclass  jSDM2D,
+     jlong   jptr,
+     jint    rows)
+{
+    struct svm_node** m = (struct svm_node**)jptr;
+
+    for (int i = 0; i < rows; i++) {
+        free(m[i]);
+    }
+    free(m);
+    std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free(): "
+              << "Freed matrix at " << (jlong)m << "." << std::endl;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Method:    native_matrix_get
+ * Signature: (JII)D
+ */
+JNIEXPORT jdouble JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get
+    (JNIEnv* env,
+     jclass  jSDM2D,
+     jlong   jptr,
+     jint    row,
+     jint    column)
+{
+    struct svm_node** m = (struct svm_node**)jptr;
+    int i = 0;
+    while (m[row][i].index != -1 && m[row][i].index < column) {
+        i++;
+    }
+    return (m[row][i].index == column) ? m[row][i].value : 0.0;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Method:    native_matrix_set
+ * Signature: (JIID)V
+ */
+JNIEXPORT void JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
+    (JNIEnv* env,
+     jclass  jSDM2D,
+     jlong   jptr,
+     jint    row,
+     jint    column,
+     jdouble value)
+{
+    struct svm_node** m = (struct svm_node**)jptr;
+    int i = 0;
+    while (m[row][i].index != -1 && m[row][i].index < column) {
+        i++;
+    }
+    if (m[row][i].index == column) {
+        m[row][i].value = value;
+    } else {
+        std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set(): "
+                  << "The element at (" << row << ", " << column << ") "
+                  << "is zero and cannot be set." << std::endl;
+
+    }
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Method:    native_matrix_get_row
+ * Signature: (JI)J
+ */
+JNIEXPORT jlong JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get_1row
+    (JNIEnv* env,
+     jclass  jSDM2D,
+     jlong   jptr,
+     jint    row)
+{
+    return (jlong)((struct svm_node**)jptr)[row];
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Method:    native_matrix_set_row
+ * Signature: (JI[I[D)J
+ */
+JNIEXPORT jlong JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set_1row
+    (JNIEnv*      env,
+     jclass       jSDM2D,
+     jlong        jptr,
+     jint         row,
+     jintArray    jcolumns,
+     jdoubleArray jvalues)
+{
+    struct svm_node** m = (struct svm_node**)jptr;
+    free(m[row]);
+    m[row] =
+        (struct svm_node*)Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
+            (env, jSDM2D, jcolumns, jvalues);
+    return (jlong)m[row];
+}
+
 #ifdef __cplusplus
 }
 #endif
 
 /******************************************************************************/
-/* Internal functions. */ 
+/* Internal functions. */
 
 static struct svm_node* svm_node_array_from_java(JNIEnv* env,
                                                  jobjectArray jnodes)
@@ -497,8 +810,8 @@ static struct svm_node* svm_node_array_from_java(JNIEnv* env,
     struct svm_node* result = NULL;
 
     if (length > 0) {
-        result = (struct svm_node*)calloc(length + 1,
-                                          sizeof(struct svm_node));
+        result =
+            (struct svm_node*)malloc((length + 1) * sizeof(struct svm_node));
 
         for (i = 0; i < length; i++) {
             jobject elem = env->GetObjectArrayElement(jnodes, i);
@@ -651,4 +964,8 @@ static struct svm_parameter* svm_parameter_from_java(JNIEnv* env,
 static void free_svm_parameter(struct svm_parameter* param)
 {
     free(param);
+}
+
+static void print_func(const char* str)
+{
 }

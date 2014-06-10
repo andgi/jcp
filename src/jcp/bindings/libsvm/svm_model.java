@@ -9,6 +9,13 @@ public class svm_model //implements java.io.Serializable
         this.Cptr = Cptr;
     }
 
+    protected void finalize() throws Throwable {
+        if (Cptr != 0) {
+            // FIXME: The C-side svm_model struct should be freed here.
+            Cptr = 0;
+        }
+    }
+
     // C-side pointer to a svm_model.
     long Cptr;
 }

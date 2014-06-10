@@ -13,6 +13,13 @@ public class svm
         return new svm_model(native_svm_train(prob, param));
     }
 
+    public static svm_model svm_train(svm_parameter param,
+                                      SparseDoubleMatrix2D x,
+                                      double[] y)
+    {
+        return new svm_model(native_svm_train_fast(param, x.Cptr, y));
+    }
+
     public static void svm_cross_validation(svm_problem prob,
                                             svm_parameter param,
                                             int nr_fold,
@@ -107,6 +114,13 @@ public class svm
         return native_svm_check_parameter(prob, param);
     }
 
+    public static String svm_check_parameter(svm_parameter param,
+                                             SparseDoubleMatrix2D x,
+                                             double[] y)
+    {
+        return native_svm_check_parameter_fast(param, x.Cptr, y);
+    }
+
     public static int svm_check_probability_model(svm_model model)
     {
         return native_svm_check_probability_model(model.Cptr);
@@ -123,6 +137,9 @@ public class svm
     // Internal native functions.
     private static native long native_svm_train(svm_problem prob,
                                                 svm_parameter param);
+    private static native long native_svm_train_fast(svm_parameter param,
+                                                     long x_ptr,
+                                                     double[] y);
     private static native void native_svm_cross_validation(svm_problem prob,
                                                            svm_parameter param,
                                                            int nr_fold,
@@ -150,6 +167,10 @@ public class svm
     private static native String native_svm_check_parameter
         (svm_problem prob,
          svm_parameter param);
+    private static native String native_svm_check_parameter_fast
+        (svm_parameter param,
+         long x_ptr,
+         double[] y);
     private static native int native_svm_check_probability_model
         (long model_ptr);
 
