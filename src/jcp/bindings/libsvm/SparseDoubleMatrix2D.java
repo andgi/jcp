@@ -134,13 +134,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param value   the value to be filled into the specified cell.
      */
     public void setQuick(int row, int column, double value) {
-        if (getQuick(row, column) == 0.0) {
-            // FIXME: If needed.
-            throw new UnsupportedOperationException("Not implemented");
-        } else {
-            // The entry exists already.
-            native_matrix_set(Cptr, row, column, value);
-        }
+        native_matrix_set(Cptr, row, column, value);
     }
 
     /**

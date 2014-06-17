@@ -10,7 +10,9 @@ import cern.colt.matrix.DoubleMatrix2D;
 
 import jcp.bindings.libsvm.*;
 
-public class SVMClassificationNonconformityFunction implements IClassificationNonconformityFunction {
+public class SVMClassificationNonconformityFunction
+    implements IClassificationNonconformityFunction
+{
 
     svm_parameter _parameter;
     svm_model _model;
@@ -18,12 +20,14 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
     double[] _classes;
     Map<Double, Integer> _class_index = new TreeMap<Double, Integer>();
 
-    public SVMClassificationNonconformityFunction(double[] classes) {
+    public SVMClassificationNonconformityFunction(double[] classes)
+    {
         this(classes, null);
     }
 
     public SVMClassificationNonconformityFunction(double[] classes,
-                                                  svm_parameter parameter) {
+                                                  svm_parameter parameter)
+    {
         _parameter = parameter;
         _n_classes = classes.length;
         _classes = classes;
@@ -54,51 +58,52 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
     }
 
     public void fit(DoubleMatrix2D x,
-                    double[] y) {
-      if (x instanceof jcp.bindings.libsvm.SparseDoubleMatrix2D) {
-          fastFit((jcp.bindings.libsvm.SparseDoubleMatrix2D)x, y);
-      } else {
-          slowFit(x, y);
-      }
+                    double[] y)
+    {
+        if (x instanceof jcp.bindings.libsvm.SparseDoubleMatrix2D) {
+            fastFit((jcp.bindings.libsvm.SparseDoubleMatrix2D)x, y);
+        } else {
+            slowFit(x, y);
+        }
     }
 
     
     public void fit(DoubleMatrix2D xtr,
                     double[] ytr,
                     DoubleMatrix1D xtest,
-                    double ytest) {
+                    double ytest)
+    {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     
-    public double[] calc_nc(DoubleMatrix2D x, double[] y) {
-        double[] nc = new double[y.length];
-        double[] probability = new double[_n_classes];
-        
-        for (int i = 0; i < nc.length; i++) {
-            svm_node[] instance = convertInstance(x, i);
-            svm.svm_predict_probability(_model, instance, probability);
-            
-            nc[i] = 1 - probability[_class_index.get(y[i])];
+    public double[] calc_nc(DoubleMatrix2D x, double[] y)
+    {
+        if (x instanceof jcp.bindings.libsvm.SparseDoubleMatrix2D) {
+            return fastCalc_nc((jcp.bindings.libsvm.SparseDoubleMatrix2D)x, y);
+        } else {
+            return slowCalc_nc(x, y);
         }
-        return nc;
     }
 
     
     public double[] calc_nc(DoubleMatrix2D xtr,
                             double[] ytr,
                             DoubleMatrix1D xtest,
-                            double ytest) {
+                            double ytest)
+    {
         throw new UnsupportedOperationException("Not implemented");
     }
 
     private void fastFit(jcp.bindings.libsvm.SparseDoubleMatrix2D x,
-                         double[] y) {
+                         double[] y)
+    {
         _model = svm.svm_train(_parameter, x, y);
     }
 
     private void slowFit(DoubleMatrix2D x,
-                         double[] y) {
+                         double[] y)
+    {
         svm_problem problem = new svm_problem();
         problem.l = y.length;
         // FIXME: This generates a dense instance matrix!
@@ -112,8 +117,38 @@ public class SVMClassificationNonconformityFunction implements IClassificationNo
         _model = svm.svm_train(problem, _parameter);
     }
 
+    private double[] fastCalc_nc(jcp.bindings.libsvm.SparseDoubleMatrix2D x,
+                                 double[] y)
+    {
+        double[] nc = new double[y.length];
+        double[] probability = new double[_n_classes];
+
+        for (int i = 0; i < nc.length; i++) {
+            SparseDoubleMatrix1D instance = x.getRow(i);
+            svm.svm_predict_probability(_model, instance, probability);
+
+            nc[i] = 1 - probability[_class_index.get(y[i])];
+        }
+        return nc;
+    }
+
+    private double[] slowCalc_nc(DoubleMatrix2D x, double[] y)
+    {
+        double[] nc = new double[y.length];
+        double[] probability = new double[_n_classes];
+
+        for (int i = 0; i < nc.length; i++) {
+            svm_node[] instance = convertInstance(x, i);
+            svm.svm_predict_probability(_model, instance, probability);
+
+            nc[i] = 1 - probability[_class_index.get(y[i])];
+        }
+        return nc;
+    }
+
     private svm_node[] convertInstance(DoubleMatrix2D instances,
-                                       int instance) {
+                                       int instance)
+    {
         // FIXME: This generates a dense instance!
         svm_node[] attributes = new svm_node[instances.columns()]; 
         for (int i = 0; i < instances.columns(); i++) {

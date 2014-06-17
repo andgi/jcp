@@ -77,6 +77,15 @@ public class svm
         return native_svm_predict_probability(model.Cptr, x, prob_estimates);
     }
 
+    public static double svm_predict_probability(svm_model model,
+                                                 SparseDoubleMatrix1D x,
+                                                 double[] prob_estimates)
+    {
+        return native_svm_predict_probability_fast(model.Cptr,
+                                                   x.Cptr,
+                                                   prob_estimates);
+    }
+
     public static void svm_save_model(String model_file_name,
                                       svm_model model) throws IOException
     {
@@ -160,6 +169,10 @@ public class svm
     private static native double native_svm_predict_probability
         (long model_ptr,
          svm_node[] x,
+         double[] prob_estimates);
+    private static native double native_svm_predict_probability_fast
+        (long model_ptr,
+         long x_ptr,
          double[] prob_estimates);
     private static native int native_svm_save_model(String file_name,
                                                     long   model_ptr);

@@ -105,6 +105,14 @@ JNIEXPORT jdouble JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1pro
 
 /*
  * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_predict_probability_fast
+ * Signature: (JJ[D)D
+ */
+JNIEXPORT jdouble JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
+  (JNIEnv *, jclass, jlong, jlong, jdoubleArray);
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
  * Method:    native_svm_save_model
  * Signature: (Ljava/lang/String;J)I
  */
@@ -126,6 +134,14 @@ JNIEXPORT jlong JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1load_1model
  */
 JNIEXPORT jstring JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter
   (JNIEnv *, jclass, jobject, jobject);
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_check_parameter_fast
+ * Signature: (Ljcp/bindings/libsvm/svm_parameter;J[D)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
+  (JNIEnv *, jclass, jobject, jlong, jdoubleArray);
 
 /*
  * Class:     jcp_bindings_libsvm_svm

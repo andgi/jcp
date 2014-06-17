@@ -75,7 +75,10 @@ public class libsvmReader
         if (template != null) {
             p.x = template.like(rows, columns);
         } else {
-            p.x = DoubleFactory2D.sparse.make(rows, columns);
+            // Default to libsvm data storage.
+            p.x = new jcp.bindings.libsvm.SparseDoubleMatrix2D(rows, columns);
+            // Default to colt data storage.
+            //p.x = DoubleFactory2D.sparse.make(rows, columns);
         }
         for (int r = 0; r < p.x.rows(); r++) {
             int[]    xi = vxi.get(r);

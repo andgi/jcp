@@ -402,13 +402,45 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability
                                             instance,
                                             jprob_estimates_elems);
 
-    // FIXME: Verify that jprob_estimates really is updated!
     env->ReleaseDoubleArrayElements(jprob_estimates,
                                     jprob_estimates_elems,
                                     JNI_COMMIT);
     free_svm_node_array(instance);
 
     return result; 
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_predict_probability_fast
+ * Signature: (JJ[D)D
+ */
+JNIEXPORT jdouble JNICALL
+Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
+    (JNIEnv*      env,
+     jclass       jsvm,
+     jlong        jmodel_ptr,
+     jlong        jinstance_ptr,
+     jdoubleArray jprob_estimates)
+{
+    struct svm_model* model = (struct svm_model*)jmodel_ptr;
+    struct svm_node * instance = (struct svm_node *)jinstance_ptr;
+    jdouble* jprob_estimates_elems =
+        env->GetDoubleArrayElements(jprob_estimates, NULL);
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast():"
+                  << " Java exception at argument conversion."
+                  << std::endl;
+        return 0.0;
+    }
+    double result = svm_predict_probability(model,
+                                            instance,
+                                            jprob_estimates_elems);
+
+    env->ReleaseDoubleArrayElements(jprob_estimates,
+                                    jprob_estimates_elems,
+                                    JNI_COMMIT);
+    return result;
 }
 
 /*
@@ -435,6 +467,44 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter
 
     free_svm_parameter(param);
     free_svm_problem(problem);
+    return env->NewStringUTF(result);
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_check_parameter_fast
+ * Signature: (Ljcp/bindings/libsvm/svm_parameter;J[D)Ljava/lang/String;
+ */
+JNIEXPORT jstring JNICALL
+Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
+    (JNIEnv*      env,
+     jclass       jsvm,
+     jobject      jparam,
+     jlong        jx_ptr,
+     jdoubleArray jy)
+{
+    struct svm_parameter* param = svm_parameter_from_java(env, jparam);
+    struct svm_problem problem;
+    /* Set up the svm_problem struct. */
+    problem.l = env->GetArrayLength(jy);
+    problem.x = (struct svm_node **)jx_ptr;
+    problem.y = env->GetDoubleArrayElements(jy, NULL);
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_fast(): Java exception."
+                  << std::endl;
+        return NULL;
+    }
+
+    const char* result = svm_check_parameter(&problem, param);
+
+    env->ReleaseDoubleArrayElements(jy, problem.y, JNI_ABORT);
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast(): "
+                  << "Java exception." << std::endl;
+        return 0;
+    }
+    problem.y = NULL;
+    free_svm_parameter(param);
     return env->NewStringUTF(result);
 }
 
@@ -745,17 +815,35 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
 {
     struct svm_node** m = (struct svm_node**)jptr;
     int i = 0;
-    while (m[row][i].index != -1 && m[row][i].index < column) {
+    while (m[row][i].index != -1) {
+        if (m[row][i].index == column) {
+            m[row][i].value = value;
+            return;
+        }
         i++;
     }
-    if (m[row][i].index == column) {
-        m[row][i].value = value;
-    } else {
-        std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set(): "
-                  << "The element at (" << row << ", " << column << ") "
-                  << "is zero and cannot be set." << std::endl;
-
+    // The requested element was not found.
+    // Allocate a new larger array and copy the contents and the new element.
+    // FIXME: Beware: any old views of this row will now reference freed memory.
+    // FIXME: Using set() to initialize a matrix row element by element
+    //        will be slow.
+    struct svm_node* old = m[row];
+    m[row] = (struct svm_node*)malloc((i+2) * sizeof(struct svm_node));
+    i = 0;
+    while (old[i].index != -1 && old[i].index < column) {
+        m[row][i].index = old[i].index;
+        m[row][i].value = old[i].value;
+        i++;
     }
+    m[row][i].index = column;
+    m[row][i].value = value;
+    while (old[i].index != -1) {
+        m[row][i+1].index = old[i].index;
+        m[row][i+1].value = old[i].value;
+        i++;
+    }
+    m[row][i+1].index = -1;
+    free(old);
 }
 
 /*

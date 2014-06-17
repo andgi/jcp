@@ -48,16 +48,19 @@ public class jcp_train
             System.exit(-1);
         }
 
+        long t1 = System.currentTimeMillis();
         // FIXME: Only initial use case yet. Train & test.
         FileInputStream file;
         file = new FileInputStream(args[0]);
 
         full = new libsvmReader().read(file);
         file.close();
+        long t2 = System.currentTimeMillis();
 
         System.out.println("Loaded the dataset " + args[0] + " containing " +
                            full.x.rows() + " instances with " +
                            full.x.columns() + " attributes.");
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
         SortedSet<Double> classSet = new TreeSet<Double>();
         for (int r = 0; r < full.x.rows(); r++) {
@@ -75,10 +78,17 @@ public class jcp_train
         }
 
         full.random3Partition(training, calibration, test, 0.4, 0.1);
+        long t3 = System.currentTimeMillis();
+        System.out.println("Split the data set into training set, " +
+                           training.x.rows() + " instances, " +
+                           "calibration set, " +
+                           calibration.x.rows() + " instances, " +
+                           "and test set, " + test.x.rows() + " instances.");
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
         System.out.println("Training on " + training.x.rows() +
-                           ", calibrating on " + calibration.x.rows() +
-                           " and testing on " + test.x.rows() +
+                           " instances and calibrating on " +
+                           calibration.x.rows() +
                            " instances.");
 
 
@@ -88,7 +98,12 @@ public class jcp_train
             new SVMClassificationNonconformityFunction(classes);
 
         icc.fit(training.x, training.y, calibration.x, calibration.y);
-        System.out.println("Training complete. Evaluating on the test set...");
+        long t4 = System.currentTimeMillis();
+        System.out.println("Training complete.");
+        System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
+
+        System.out.println("Testing accuracy on " + test.x.rows() +
+                           " instances.");
 
         // Evaluation on the test set.
         ObjectMatrix2D pred = null;
@@ -102,7 +117,11 @@ public class jcp_train
             }
         }
 
-        System.out.println("Accuracy: " + (n / test.y.length) / 1000);
+        System.out.println("Accuracy " + (n / test.y.length));
+        long t5 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t5 - t4)/1000.0 + " sec.");
+        System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
+                           " sec.");
     }
 
     public static void main(String[] args)
