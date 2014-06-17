@@ -13,6 +13,7 @@ import cern.colt.matrix.DoubleMatrix2D;
  *
  * @author anders.gidenstam(at)hb.se
 */
+// TODO: Make sure to adhere to colt's conventions.
 
 public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
 {

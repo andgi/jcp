@@ -13,6 +13,7 @@ import cern.colt.matrix.DoubleMatrix2D;
  *
  * @author anders.gidenstam(at)hb.se
 */
+// TODO: Make sure to adhere to colt's conventions.
 
 public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
 {
@@ -75,7 +76,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @return  a new matrix of the corresponding dynamic type.
      */
     public DoubleMatrix1D like1D(int size) {
-         // FIXME: If needed.
+        // FIXME: If needed.
         throw new UnsupportedOperationException("Not implemented");
     }
 
@@ -158,6 +159,30 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
                                          native_matrix_get_row(Cptr, row));
         }
         return rowViews[row];
+    }
+
+    /**
+       Constructs and returns a new <i>slice view</i> representing the
+       columns of the given row.
+       The returned view is backed by this matrix, so changes in the
+       returned view are reflected in this matrix, and vice-versa.
+       To obtain a slice view on subranges, construct a sub-ranging
+       view (<tt>viewPart( ...)</tt>), then apply this method to the
+       sub-range view.
+
+       <p> <b>Example:</b> <table border="0"> <tr nowrap>
+       <td valign="top">2 x 3 matrix: <br> 1, 2, 3<br> 4, 5, 6</td>
+       <td>viewRow(0) ==&gt;</td>
+       <td valign="top">Matrix1D of size 3:<br> 1, 2, 3</td> </tr> </table>
+
+       @param row the row to fix.
+       @return a new slice view.
+       @throws IndexOutOfBoundsException if <tt>row < 0 || row >= rows()</tt>.
+       @see #viewColumn(int)
+    */
+    public DoubleMatrix1D viewRow(int row) {
+        checkRow(row);
+        return getRow(row);
     }
 
     /**
