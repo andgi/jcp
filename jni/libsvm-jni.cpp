@@ -424,7 +424,7 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
      jdoubleArray jprob_estimates)
 {
     struct svm_model* model = (struct svm_model*)jmodel_ptr;
-    struct svm_node * instance = (struct svm_node *)jinstance_ptr;
+    struct svm_node * instance = *(struct svm_node **)jinstance_ptr;
     jdouble* jprob_estimates_elems =
         env->GetDoubleArrayElements(jprob_estimates, NULL);
     if (env->ExceptionOccurred()) {
@@ -623,9 +623,11 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
      jint    size)
 {
     // Allocate one svm_node and mark it as EOL.
-    struct svm_node* v = (struct svm_node*)malloc(1 * sizeof(struct svm_node));
-    v[0].index = -1;
-    return (jlong)v;
+    struct svm_node** vptr =
+        (struct svm_node**)malloc(sizeof(struct svm_node*));
+    *vptr = (struct svm_node*)malloc(1 * sizeof(struct svm_node));
+    (*vptr)[0].index = -1;
+    return (jlong)vptr;
 }
 
 /*
@@ -639,8 +641,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
      jclass  jSDM1D,
      jlong   jptr)
 {
-    struct svm_node* v = (struct svm_node*)jptr;
-    free(v);
+    struct svm_node** vptr = (struct svm_node**)jptr;
+    free(*vptr);
+    free(vptr);
+    std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free(): "
+              << "Freed vector at " << (jlong)vptr << "." << std::endl;
+
 }
 
 /*
@@ -659,16 +665,17 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
     jint*    indices = env->GetIntArrayElements(jindices, NULL);
     jdouble* values = env->GetDoubleArrayElements(jvalues, NULL);
     int length = env->GetArrayLength(jvalues);
-    struct svm_node* v =
-        (struct svm_node*)malloc((length + 1) * sizeof(struct svm_node));
+    struct svm_node** vptr =
+        (struct svm_node**)malloc(sizeof(struct svm_node*));
+    *vptr = (struct svm_node*)malloc((length + 1) * sizeof(struct svm_node));
 
     for (i = 0; i < length; i++) {
-        v[i].index = indices[i];
-        v[i].value = values[i];
-        //printf(" %d: (%d, %e)\n", i, v[i].index, v[i].value);
+        (*vptr)[i].index = indices[i];
+        (*vptr)[i].value = values[i];
+        //printf(" %d: (%d, %e)\n", i, (*vptr)[i].index, (*vptr)v[i].value);
     }
-    v[i].index = -1;
-    v[i].value = 0.0;
+    (*vptr)[i].index = -1;
+    (*vptr)[i].value = 0.0;
 
     env->ReleaseDoubleArrayElements(jvalues, values, JNI_ABORT);
     env->ReleaseIntArrayElements(jindices, indices, JNI_ABORT);
@@ -678,7 +685,30 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
                   << std::endl;
         return 0;
     }
-    return (jlong)v;
+    return (jlong)vptr;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_assign
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL
+Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1assign
+    (JNIEnv* env,
+     jclass  jSDM1D,
+     jlong   dest_jptr,
+     jlong   src_jptr)
+{
+    struct svm_node** dest_vptr = (struct svm_node**)dest_jptr;
+    struct svm_node** src_vptr  = (struct svm_node**)src_jptr;
+
+    if (*dest_vptr != *src_vptr) {
+        // FIXME: There is no guarantee that this is the only pointer to
+        //        *dest_vptr. Currently the storage is leaked.
+        //free(*dest_vptr);
+        *dest_vptr = *src_vptr;
+    }
 }
 
 /*
@@ -693,12 +723,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1get
      jlong   jptr,
      jint    index)
 {
-    struct svm_node* v = (struct svm_node*)jptr;
+    struct svm_node** vptr = (struct svm_node**)jptr;
     int i = 0;
-    while (v[i].index != -1 && v[i].index < index) {
+    while ((*vptr)[i].index != -1 && (*vptr)[i].index < index) {
         i++;
     }
-    return (v[i].index == index) ? v[i].value : 0.0;
+    return ((*vptr)[i].index == index) ? (*vptr)[i].value : 0.0;
 
 }
 
@@ -715,19 +745,37 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
      jint    index,
      jdouble value)
 {
-    struct svm_node* v = (struct svm_node*)jptr;
+    struct svm_node** vptr = (struct svm_node**)jptr;
     int i = 0;
-    while (v[i].index != -1 && v[i].index < index) {
+    while ((*vptr)[i].index != -1 && (*vptr)[i].index < index) {
         i++;
     }
-    if (v[i].index == index) {
-        v[i].value = value;
-    } else {
-        std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set(): "
-                  << "The element at (" << index << ") "
-                  << "is zero and cannot be set." << std::endl;
-
+    if ((*vptr)[i].index == index) {
+        (*vptr)[i].value = value;
+        return;
     }
+
+    // The requested element was not found.
+    // Allocate a new larger array and copy the contents and the new element.
+    // FIXME: Using set() to initialize a matrix row element by element
+    //        will be slow.
+    struct svm_node* old = *vptr;
+    *vptr = (struct svm_node*)malloc((i+2) * sizeof(struct svm_node));
+    i = 0;
+    while (old[i].index != -1 && old[i].index < index) {
+        (*vptr)[i].index = old[i].index;
+        (*vptr)[i].value = old[i].value;
+        i++;
+    }
+    (*vptr)[i].index = index;
+    (*vptr)[i].value = value;
+    while (old[i].index != -1) {
+        (*vptr)[i+1].index = old[i].index;
+        (*vptr)[i+1].value = old[i].value;
+        i++;
+    }
+    (*vptr)[i+1].index = -1;
+    free(old);
 }
 
 /*
@@ -858,7 +906,7 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get_1row
      jlong   jptr,
      jint    row)
 {
-    return (jlong)((struct svm_node**)jptr)[row];
+    return (jlong)&((struct svm_node**)jptr)[row];
 }
 
 /*
@@ -876,11 +924,15 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set_1row
      jdoubleArray jvalues)
 {
     struct svm_node** m = (struct svm_node**)jptr;
+    // FIXME: Is it really safe to free the old row?
     free(m[row]);
-    m[row] =
-        (struct svm_node*)Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
+    struct svm_node** v =
+        (struct svm_node**)Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
             (env, jSDM2D, jcolumns, jvalues);
-    return (jlong)m[row];
+    m[row] = *v;
+    free(v);
+
+    return (jlong)&m[row];
 }
 
 #ifdef __cplusplus

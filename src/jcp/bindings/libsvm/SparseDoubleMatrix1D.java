@@ -5,6 +5,8 @@ package jcp.bindings.libsvm;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.list.DoubleArrayList;
+import cern.colt.list.IntArrayList;
 
 /**
  * Class for sparse 1-d matrices (aka <i>vectors</i>) holding
@@ -18,7 +20,7 @@ import cern.colt.matrix.DoubleMatrix2D;
 public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
 {
     /**
-     * C-side pointer to an array of svm_nodes storing the matrix
+     * C-side pointer to a pointer to an array of svm_nodes storing the matrix
      * contents.
      */
     long Cptr;
@@ -73,6 +75,39 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
         isNoView = false;
         this.Cptr = Cptr;
     }
+
+    /**
+     * Replaces all cell values of the receiver with the values of
+     * another matrix.  Both matrices must have the same size.
+     * If both matrices share the same cells (as is the case if they
+     * are views derived from the same matrix) and intersect in an
+     * ambiguous way, then replaces <i>as if</i> using an intermediate
+     * auxiliary deep copy of <tt>other</tt>.
+     *
+     * @param     other   the source matrix to copy from (may be identical to the receiver).
+     * @return <tt>this</tt> (for convenience only).
+     * @throws      IllegalArgumentException if <tt>size() != other.size()</tt>.
+     */
+    public DoubleMatrix1D assign(DoubleMatrix1D other) {
+        if (other==this) {
+            return this;
+        }
+        checkSize(other);
+        if (other instanceof jcp.bindings.libsvm.SparseDoubleMatrix1D) {
+            native_vector_assign(this.Cptr, ((SparseDoubleMatrix1D)other).Cptr);
+            return this;
+        } else {
+            IntArrayList indexList = new IntArrayList();
+            DoubleArrayList valueList = new DoubleArrayList();
+            other.getNonZeros(indexList, valueList);
+            // FIXME: This will leak the base pointer storage for the temporary
+            //        matrix.
+            native_vector_assign
+                (this.Cptr, native_vector_create_from(indexList.elements(),
+                                                      valueList.elements()));
+            return this;
+        }
+}
 
     /**
      * Construct and returns a new empty matrix <i>of the same dynamic
@@ -139,13 +174,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param value  the value to be filled into the specified cell.
      */
     public void setQuick(int index, double value) {
-        if (getQuick(index) == 0.0) {
-            // FIXME: If needed.
-            throw new UnsupportedOperationException("Not implemented");
-        } else {
-            // The entry exists already.
-            native_vector_set(Cptr, index, value);
-        }
+        native_vector_set(Cptr, index, value);
     }
 
     /**
@@ -171,6 +200,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     private static native void native_vector_free(long ptr);
     private static native long native_vector_create_from(int[]    columns,
                                                          double[] values);
+    private static native void native_vector_assign(long this_ptr,
+                                                    long source_ptr);
     private static native double native_vector_get(long ptr,
                                                    int column);
     private static native void native_vector_set(long ptr,

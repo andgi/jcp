@@ -35,6 +35,14 @@ JNIEXPORT jlong JNICALL Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1ve
 
 /*
  * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Method:    native_vector_assign
+ * Signature: (JJ)V
+ */
+JNIEXPORT void JNICALL Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1assign
+  (JNIEnv *, jclass, jlong, jlong);
+
+/*
+ * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_get
  * Signature: (JI)D
  */

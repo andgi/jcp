@@ -76,8 +76,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @return  a new matrix of the corresponding dynamic type.
      */
     public DoubleMatrix1D like1D(int size) {
-        // FIXME: If needed.
-        throw new UnsupportedOperationException("Not implemented");
+        return new SparseDoubleMatrix1D(size);
     }
 
     /**
@@ -147,6 +146,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @returns a <tt>SparseDoubleMatrix1D</tt> representing a view of the row.
      */
     public SparseDoubleMatrix1D getRow(int row) {
+        checkRow(row);
         if (rowViews[row] == null) {
             rowViews[row] =
                 new SparseDoubleMatrix1D(columns,
@@ -175,7 +175,6 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
        @see #viewColumn(int)
     */
     public DoubleMatrix1D viewRow(int row) {
-        checkRow(row);
         return getRow(row);
     }
 
