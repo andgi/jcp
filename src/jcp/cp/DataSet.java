@@ -28,11 +28,11 @@ public class DataSet
         int size3 = x.rows() - size1 - size2;
         Random random = new Random(new Date().getTime());
 
-        p1.x = x.like(size1, x.columns());
+        p1.x = newFromTemplate(p1.x, size1, x.columns());
         p1.y = new double[size1];
-        p2.x = x.like(size2, x.columns());
+        p2.x = newFromTemplate(p2.x, size2, x.columns());
         p2.y = new double[size2];
-        p3.x = x.like(size3, x.columns());
+        p3.x = newFromTemplate(p3.x, size3, x.columns());
         p3.y = new double[size3];
 
         // FIXME: Verify the uniformity of the partitioning scheme.
@@ -42,13 +42,13 @@ public class DataSet
         for (int r = 0; r < x.rows(); r++) {
             double p = random.nextDouble();
             if (p < f1 && r1 < size1) {
-                p1.copyInstance(r1, this, r);
+                p1.copyInstanceTo(r1, this, r);
                 r1++;
             } else if (p < f1 + f2 && r2 < size2) {
-                p2.copyInstance(r2, this, r);
+                p2.copyInstanceTo(r2, this, r);
                 r2++;
             } else if (r3 < size3) {
-                p3.copyInstance(r3, this, r);
+                p3.copyInstanceTo(r3, this, r);
                 r3++;
             } else {
                 r--;
@@ -56,15 +56,21 @@ public class DataSet
         }
     }
 
-    private void copyInstance(int destinationRow, DataSet source, int sourceRow)
+    private void copyInstanceTo(int destinationRow,
+                                DataSet source, int sourceRow)
     {
         y[destinationRow] = source.y[sourceRow];
-        // FIXME: Make this loop sparse!
-        for (int a = 0; a < source.x.columns(); a++) {
-            double v = source.x.get(sourceRow, a);
-            if (v != 0.0) {
-                x.set(destinationRow, a, v);
-            }
+        x.viewRow(destinationRow).assign(source.x.viewRow(sourceRow));
+    }
+
+    private DoubleMatrix2D newFromTemplate(DoubleMatrix2D template,
+                                           int rows,
+                                           int columns)
+    {
+        if (template != null) {
+            return template.like(rows, columns);
+        } else {
+            return x.like(rows, columns);
         }
     }
 }
