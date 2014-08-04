@@ -32,6 +32,8 @@ public class jcp_train
     private DataSet _calibration;
     private DataSet _test;
 
+    private final double SIGNIFICANCE_LEVEL = 0.10;
+
     public jcp_train()
     {
         super();
@@ -67,8 +69,7 @@ public class jcp_train
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
         System.out.println("Training on " + _training.x.rows() +
-                           " instances and calibrating for an error" +
-                           " probability of 0.05 on " +
+                           " instances and calibrating on " +
                            _calibration.x.rows() +
                            " instances.");
 
@@ -84,11 +85,12 @@ public class jcp_train
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
 
         System.out.println("Testing accuracy on " + _test.x.rows() +
-                           " instances.");
+                           " instances at a significance level of " +
+                           SIGNIFICANCE_LEVEL + ".");
 
         // Evaluation on the test set.
         ObjectMatrix2D pred = null;
-        pred = icc.predict(_test.x, 0.05);
+        pred = icc.predict(_test.x, SIGNIFICANCE_LEVEL);
         //System.out.println(pred);
 
         int correct = 0;
@@ -114,11 +116,9 @@ public class jcp_train
 
         System.out.println("Accuracy " + ((double)correct / _test.y.length));
         for (int s = 0; s < predictionAtSize.length; s++) {
-            System.out.println("  Predictions with " + s + " classes: " +
-                               predictionAtSize[s]);
-            System.out.println
-                ("  Accuracy at prediction size of " + s + " classes: " +
-                 (double)correctAtSize[s]/(double)predictionAtSize[s]);
+            System.out.println("  #Predictions with " + s + " classes: " +
+                               predictionAtSize[s] + ". Accuracy: " +
+                               (double)correctAtSize[s]/(double)predictionAtSize[s]);
         }
         System.out.println("Duration " + (double)(t5 - t4)/1000.0 + " sec.");
         System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +

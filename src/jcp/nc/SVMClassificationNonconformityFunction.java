@@ -13,6 +13,7 @@ import jcp.bindings.libsvm.*;
 public class SVMClassificationNonconformityFunction
     implements IClassificationNonconformityFunction
 {
+    private static final boolean DEBUG = false;
 
     svm_parameter _parameter;
     svm_model _model;
@@ -123,11 +124,18 @@ public class SVMClassificationNonconformityFunction
         double[] nc = new double[y.length];
         double[] probability = new double[_n_classes];
 
+        if (DEBUG) {
+            System.out.println("fastCalc_nc()");
+        }
         for (int i = 0; i < nc.length; i++) {
             SparseDoubleMatrix1D instance = x.getRow(i);
             svm.svm_predict_probability(_model, instance, probability);
 
-            nc[i] = 1 - probability[_class_index.get(y[i])];
+            nc[i] = probability[_class_index.get(y[i])];
+            if (DEBUG) {
+                System.out.println("  instance " + i + " target " + y[i] + ": " +
+                                   nc[i]);
+            }
         }
         return nc;
     }
