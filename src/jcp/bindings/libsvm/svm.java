@@ -7,9 +7,13 @@ import java.lang.UnsupportedOperationException;
 
 public class svm
 {
+    private static final boolean DEBUG = false;
 
     public static svm_model svm_train(svm_problem prob, svm_parameter param)
     {
+        if (DEBUG) {
+            System.out.println("svm_train(): slow path.");
+        }
         return new svm_model(native_svm_train(prob, param));
     }
 
@@ -17,6 +21,9 @@ public class svm
                                       SparseDoubleMatrix2D x,
                                       double[] y)
     {
+        if (DEBUG) {
+            System.out.println("svm_train(): fast path.");
+        }
         return new svm_model(native_svm_train_fast(param, x.Cptr, y));
     }
 
@@ -74,6 +81,9 @@ public class svm
                                                  svm_node[] x,
                                                  double[] prob_estimates)
     {
+        if (DEBUG) {
+            System.out.println("svm_predict_probability(): slow path.");
+        }
         return native_svm_predict_probability(model.Cptr, x, prob_estimates);
     }
 
@@ -81,6 +91,9 @@ public class svm
                                                  SparseDoubleMatrix1D x,
                                                  double[] prob_estimates)
     {
+        if (DEBUG) {
+            System.out.println("svm_predict_probability(): fast path.");
+        }
         return native_svm_predict_probability_fast(model.Cptr,
                                                    x.Cptr,
                                                    prob_estimates);
@@ -120,6 +133,9 @@ public class svm
     public static String svm_check_parameter(svm_problem prob,
                                              svm_parameter param)
     {
+        if (DEBUG) {
+            System.out.println("svm_check_parameter(): slow path.");
+        }
         return native_svm_check_parameter(prob, param);
     }
 
@@ -127,6 +143,9 @@ public class svm
                                              SparseDoubleMatrix2D x,
                                              double[] y)
     {
+        if (DEBUG) {
+            System.out.println("svm_check_parameter(): fast path.");
+        }
         return native_svm_check_parameter_fast(param, x.Cptr, y);
     }
 
@@ -191,14 +210,14 @@ public class svm
         try {
             System.loadLibrary("svm");
         } catch (UnsatisfiedLinkError e) {
-            System.out.println
+            System.err.println
                 ("Could not load libsvm.");
             System.exit(1);
         }
         try {
             System.loadLibrary("svm-jni");
         } catch (UnsatisfiedLinkError e) {
-            System.out.println
+            System.err.println
                 ("Could not load native JNI wrapper code for libsvm.");
             System.exit(1);
         }

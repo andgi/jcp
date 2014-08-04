@@ -67,7 +67,8 @@ public class jcp_train
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
         System.out.println("Training on " + _training.x.rows() +
-                           " instances and calibrating on " +
+                           " instances and calibrating for an error" +
+                           " probability of 0.05 on " +
                            _calibration.x.rows() +
                            " instances.");
 
