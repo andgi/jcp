@@ -16,7 +16,9 @@ Install instruction
    % ant all
 
 6. Include colt.jar and jcp/build/jar/jcp.jar in the Java class path.
+   The jcp_train.sh script does this for the default directory layout.
    E.g.
-   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.test.TestTCC
-   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.test.TestICC
+   % ./jcp_train.sh <libsvm style data set file>
+   Or without the shell script
+   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.cli.jcp_train <libsvm style data set file>
 
