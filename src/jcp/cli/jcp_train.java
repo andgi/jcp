@@ -25,12 +25,14 @@ import jcp.io.*;
 
 public class jcp_train
 {
+    private String  _datasetFilename;
     private DataSet _full;
     private SortedSet<Double> _classSet;
     private double[]          _classes;
     private DataSet _training;
     private DataSet _calibration;
     private DataSet _test;
+    private boolean _useCP = true;
 
     private final double SIGNIFICANCE_LEVEL = 0.10;
 
@@ -45,21 +47,53 @@ public class jcp_train
     public void run(String[] args)
         throws IOException
     {
-        // Load and create training and calibration sets.
-        if (args.length != 1) {
-            System.out.println("Usage: jcp_train <libsvm formatted data set>");
-            System.exit(-1);
-        }
+        processArguments(args);
         // FIXME: Only initial use case yet. Train & test.
-        runICCTest(args);
-        //runPlainSVMTest(args);
+        if (_useCP) {
+            runICCTest(_datasetFilename);
+        } else {
+            runPlainSVMTest(_datasetFilename);
+        }
     }
 
-    private void runICCTest(String[] args)
+    private void processArguments(String[] args)
+    {
+        // Load and create training and calibration sets.
+        if (args.length < 1) {
+            printUsage();
+            System.exit(-1);
+        } else {
+            for (int i = 0; i < args.length; i++) {
+                if (args[i].equals("-h")) {
+                    printUsage();
+                    System.exit(-1);
+                } else if (args[i].equals("-nocp")) {
+                    _useCP = false;
+                } else {
+                    // The last unknown argument should be the dataset file.
+                    _datasetFilename = args[i];
+                }
+            }
+        }
+    }
+
+    private void printUsage()
+    {
+        System.out.println
+            ("Usage: jcp_train [options] <libsvm formatted data set>");
+        System.out.println();
+        System.out.println
+            ("  -h                Print this message and exit.");
+        System.out.println
+            ("  -nocp             Test classification without " +
+             "conformal prediction.");
+    }
+
+    private void runICCTest(String datasetFilename)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
-        loadDataset(args[0]);
+        loadDataset(datasetFilename);
         extractClasses();
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
@@ -125,11 +159,11 @@ public class jcp_train
                            " sec.");
     }
 
-    private void runPlainSVMTest(String[] args)
+    private void runPlainSVMTest(String datasetFilename)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
-        loadDataset(args[0]);
+        loadDataset(datasetFilename);
         extractClasses();
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
