@@ -4,18 +4,23 @@ import cern.colt.matrix.ObjectMatrix2D;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.impl.SparseObjectMatrix2D;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 import java.util.Arrays;
 
 import jcp.nc.IClassificationNonconformityFunction;
 
-public class InductiveConformalClassifier { 
+public class InductiveConformalClassifier
+    implements java.io.Serializable
+{
     public IClassificationNonconformityFunction _nc;
     private double[] _calibration_scores;
     private double[] _targets;
-    
+
     private DoubleMatrix2D _xtr;
     private DoubleMatrix2D _xcal;
-    
+
     private double[] _ytr;
     private double[] _ycal;
 
@@ -52,4 +57,21 @@ public class InductiveConformalClassifier {
         }
         return response;
     }
+
+    private void writeObject(ObjectOutputStream oos)
+        throws java.io.IOException
+    {
+        oos.writeObject(_nc);
+        oos.writeObject(_calibration_scores);
+        oos.writeObject(_targets);
+    }
+
+    private void readObject(ObjectInputStream ois)
+        throws ClassNotFoundException, java.io.IOException
+    {
+        _nc = (IClassificationNonconformityFunction)ois.readObject();
+        _calibration_scores = (double[])ois.readObject();
+        _targets = (double[])ois.readObject();
+    }
+
 }

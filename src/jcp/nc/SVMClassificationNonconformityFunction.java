@@ -11,7 +11,8 @@ import cern.colt.matrix.DoubleMatrix2D;
 import jcp.bindings.libsvm.*;
 
 public class SVMClassificationNonconformityFunction
-    implements IClassificationNonconformityFunction
+    implements IClassificationNonconformityFunction,
+               java.io.Serializable
 {
     private static final boolean DEBUG = false;
 

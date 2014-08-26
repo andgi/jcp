@@ -8,6 +8,9 @@ import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.list.DoubleArrayList;
 import cern.colt.list.IntArrayList;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 /**
  * Class for sparse 1-d matrices (aka <i>vectors</i>) holding
  * <tt>double</tt> elements in the sparse format expected by the C
@@ -193,6 +196,20 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
             native_vector_free(Cptr);
             Cptr = 0;
         }
+    }
+
+    private void writeObject(ObjectOutputStream oos)
+        throws java.io.IOException
+    {
+        // FIXME. If needed.
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    private void readObject(ObjectInputStream ois)
+        throws ClassNotFoundException, java.io.IOException
+    {
+        // FIXME. If needed.
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     // Internal native functions.

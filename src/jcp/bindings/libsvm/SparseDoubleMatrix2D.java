@@ -6,6 +6,9 @@ package jcp.bindings.libsvm;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+
 /**
  * Class for sparse 2-d matrices holding <tt>double</tt> elements in
  * the sparse format expected by the C library libsvm. See the
@@ -228,6 +231,20 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
             native_matrix_free(Cptr, rows);
             Cptr = 0;
         }
+    }
+
+    private void writeObject(ObjectOutputStream oos)
+        throws java.io.IOException
+    {
+        // FIXME. If needed.
+        throw new UnsupportedOperationException("Not implemented");
+    }
+
+    private void readObject(ObjectInputStream ois)
+        throws ClassNotFoundException, java.io.IOException
+    {
+        // FIXME. If needed.
+        throw new UnsupportedOperationException("Not implemented");
     }
 
     // Internal native functions.
