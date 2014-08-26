@@ -18,7 +18,12 @@ Install instruction
 6. Include colt.jar and jcp/build/jar/jcp.jar in the Java class path.
    The jcp_train.sh script does this for the default directory layout.
    E.g.
-   % ./jcp_train.sh <libsvm style data set file>
+   % ./jcp_train.sh -h
    Or without the shell script
-   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.cli.jcp_train <libsvm style data set file>
+   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.cli.jcp_train -h
 
+7. Using the bash front-end scripts a model can be created using
+   % ./jcp_train.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_train_576_rbf_8vr.dat
+
+   And tested using
+   % ./jcp_predict.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_test_576_rbf_8vr.dat
