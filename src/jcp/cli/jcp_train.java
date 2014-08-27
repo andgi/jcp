@@ -365,15 +365,10 @@ public class jcp_train
     private void saveModel(InductiveConformalClassifier icc, String filename)
         throws IOException
     {
-        FileOutputStream   file;
-        ObjectOutputStream oos;
-        file = new FileOutputStream(filename);
-        oos  = new ObjectOutputStream(file);
-
-        oos.writeObject(icc);
-
-        oos.close();
-        file.close();
+        try (ObjectOutputStream oos =
+                 new ObjectOutputStream(new FileOutputStream(filename))) {
+            oos.writeObject(icc);
+        }
     }
 
     public static void main(String[] args)

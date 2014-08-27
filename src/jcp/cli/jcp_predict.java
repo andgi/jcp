@@ -231,20 +231,15 @@ public class jcp_predict
     private InductiveConformalClassifier loadModel(String filename)
         throws IOException
     {
-        FileInputStream   file;
-        ObjectInputStream ois;
         InductiveConformalClassifier icc = null;
-        file = new FileInputStream(filename);
-        ois  = new ObjectInputStream(file);
 
-        try {
+        try (ObjectInputStream ois =
+                 new ObjectInputStream(new FileInputStream(filename))) {
             icc = (InductiveConformalClassifier)ois.readObject();
         } catch (Exception e) {
             throw new IOException("Failed to load ICC model from '" +
                                   filename + "'. " + e.getMessage());
         }
-        ois.close();
-        file.close();
         return icc;
     }
 
