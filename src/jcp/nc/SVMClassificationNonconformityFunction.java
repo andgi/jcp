@@ -4,6 +4,8 @@ package jcp.nc;
 
 import java.util.Map;
 import java.util.TreeMap;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -15,6 +17,9 @@ public class SVMClassificationNonconformityFunction
                java.io.Serializable
 {
     private static final boolean DEBUG = false;
+    private static final boolean PARALLEL = true;
+
+    private static final ForkJoinPool taskPool = new ForkJoinPool();
 
     svm_parameter _parameter;
     svm_model _model;
@@ -128,15 +133,22 @@ public class SVMClassificationNonconformityFunction
         if (DEBUG) {
             System.out.println("fastCalc_nc()");
         }
-        for (int i = 0; i < nc.length; i++) {
-            SparseDoubleMatrix1D instance = x.getRow(i);
-            svm.svm_predict_probability(_model, instance, probability);
 
-            nc[i] = probability[_class_index.get(y[i])];
-            if (DEBUG) {
-                System.out.println("  instance " + i + " target " + y[i] + ": " +
-                                   nc[i]);
+        if (!PARALLEL) {
+            for (int i = 0; i < nc.length; i++) {
+                SparseDoubleMatrix1D instance = x.getRow(i);
+                svm.svm_predict_probability(_model, instance, probability);
+                
+                nc[i] = probability[_class_index.get(y[i])];
+                if (DEBUG) {
+                    System.out.println("  instance " + i + " target " + y[i] + ": " +
+                                       nc[i]);
+                }
             }
+        } else {
+            FastCalcNCAction all = new FastCalcNCAction(x, y, nc, 0, y.length);
+
+            taskPool.invoke(all);
         }
         return nc;
     }
@@ -168,4 +180,48 @@ public class SVMClassificationNonconformityFunction
         return attributes;
     }
 
+    class FastCalcNCAction extends RecursiveAction
+    {
+        jcp.bindings.libsvm.SparseDoubleMatrix2D _x;
+        double[] _y;
+        double[] _nc;
+        int _first;
+        int _last;
+
+        public FastCalcNCAction(jcp.bindings.libsvm.SparseDoubleMatrix2D x,
+                                double[] y,
+                                double[] nc,
+                                int first, int last)
+        {
+            _x = x;
+            _y = y;
+            _nc = nc;
+            _first = first;
+            _last = last;
+        }
+
+        protected void compute()
+        {
+            if (_last - _first < 100) {
+                computeDirectly();
+            } else {
+                int split = (_last - _first)/2;
+                invokeAll
+                    (new FastCalcNCAction(_x, _y, _nc, _first, _first + split),
+                     new FastCalcNCAction(_x, _y, _nc, _first + split, _last));
+            }
+        }
+
+        protected void computeDirectly()
+        {
+            double[] probability = new double[_n_classes];
+
+            for (int i = _first; i < _last; i++) {
+                SparseDoubleMatrix1D instance = _x.getRow(i);
+                svm.svm_predict_probability(_model, instance, probability);
+
+                _nc[i] = probability[_class_index.get(_y[i])];
+            }
+        }
+    }
 }
