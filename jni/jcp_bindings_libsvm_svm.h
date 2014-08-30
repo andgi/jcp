@@ -7,6 +7,8 @@
 #ifdef __cplusplus
 extern "C" {
 #endif
+#undef jcp_bindings_libsvm_svm_DEBUG
+#define jcp_bindings_libsvm_svm_DEBUG 0L
 /*
  * Class:     jcp_bindings_libsvm_svm
  * Method:    native_svm_train
@@ -94,6 +96,14 @@ JNIEXPORT jdouble JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1val
  */
 JNIEXPORT jdouble JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1predict
   (JNIEnv *, jclass, jlong, jobjectArray);
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_predict_fast
+ * Signature: (JJ)D
+ */
+JNIEXPORT jdouble JNICALL Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast
+  (JNIEnv *, jclass, jlong, jlong);
 
 /*
  * Class:     jcp_bindings_libsvm_svm

@@ -77,6 +77,11 @@ public class svm
         return native_svm_predict(model.Cptr, x);
     }
 
+    public static double svm_predict(svm_model model, SparseDoubleMatrix1D x)
+    {
+        return native_svm_predict_fast(model.Cptr, x.Cptr);
+    }
+
     public static double svm_predict_probability(svm_model model,
                                                  svm_node[] x,
                                                  double[] prob_estimates)
@@ -185,6 +190,8 @@ public class svm
                                                            double[] dec_values);
     private static native double native_svm_predict(long model_ptr,
                                                     svm_node[] x);
+    private static native double native_svm_predict_fast(long model_ptr,
+                                                         long x_ptr);
     private static native double native_svm_predict_probability
         (long model_ptr,
          svm_node[] x,

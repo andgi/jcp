@@ -19,6 +19,8 @@ import jcp.cp.*;
 import jcp.nc.*;
 import jcp.io.*;
 
+import jcp.ml.IClassifier;
+
 /**
  * Command line training tool for JCP.
  *
@@ -27,6 +29,7 @@ import jcp.io.*;
 
 public class jcp_train
 {
+    private IClassifier _classifier;
     private String  _dataSetFileName;
     private String  _modelFileName;
     private DataSet _full;
@@ -45,6 +48,7 @@ public class jcp_train
         _training    = new DataSet();
         _calibration = new DataSet();
         _test        = new DataSet();
+        _classifier = new jcp.bindings.libsvm.SVMClassifier();
     }
 
     public void run(String[] args)
@@ -172,11 +176,10 @@ public class jcp_train
                            _calibration.x.rows() +
                            " instances.");
 
-
         InductiveConformalClassifier icc =
             new InductiveConformalClassifier(_classes);
         icc._nc =
-            new SVMClassificationNonconformityFunction(_classes);
+            new ClassProbabilityNonconformityFunction(_classes, _classifier);
 
         icc.fit(_training.x, _training.y, _calibration.x, _calibration.y);
         long t4 = System.currentTimeMillis();
@@ -253,30 +256,8 @@ public class jcp_train
                            " instances and calibrating on " +
                            _calibration.x.rows() +
                            " instances.");
-        // Default libsvm parameter.
-        jcp.bindings.libsvm.svm_parameter parameter =
-            new jcp.bindings.libsvm.svm_parameter();
-        parameter.svm_type = jcp.bindings.libsvm.svm_parameter.C_SVC;
-        parameter.kernel_type = jcp.bindings.libsvm.svm_parameter.RBF;
-        parameter.degree = 3;
-        parameter.gamma = 1.0/_classes.length;
-        parameter.coef0 = 0;
-        parameter.nu = 0.5;
-        parameter.cache_size = 100;
-        parameter.C = 1;
-        parameter.eps = 1e-3;
-        parameter.p = 0.1;
-        parameter.shrinking = 1;
-        parameter.probability = 1;
-        parameter.nr_weight = 0;
-        parameter.weight_label = new int[0];
-        parameter.weight = new double[0];
 
-        jcp.bindings.libsvm.svm_model model =
-            jcp.bindings.libsvm.svm.svm_train
-                (parameter,
-                 (jcp.bindings.libsvm.SparseDoubleMatrix2D)_training.x,
-                 _training.y);
+        _classifier.fit(_training.x, _training.y);
         long t4 = System.currentTimeMillis();
         System.out.println("Training complete.");
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
@@ -291,11 +272,7 @@ public class jcp_train
         for (int i = 0; i < _test.x.rows(); i++) {
             int classIndex = _classSet.headSet(_test.y[i]).size();
             double prediction =
-                jcp.bindings.libsvm.svm.svm_predict_probability
-                    (model,
-                     (jcp.bindings.libsvm.SparseDoubleMatrix1D)
-                         _test.x.viewRow(i),
-                     probability);
+                _classifier.predict(_test.x.viewRow(i), probability);
             if (prediction == _test.y[i]) {
                 correct++;
             }
@@ -349,7 +326,7 @@ public class jcp_train
                               double calibrationFraction)
     {
         // Set template matrix types for the split data set.
-        _training.x = new jcp.bindings.libsvm.SparseDoubleMatrix2D(0, 0);
+        _training.x = _classifier.nativeStorageTemplate().like2D(0,0);
         _calibration.x = _training.x;
         _test.x = _training.x;
         // Partition the full data set into training, calibartion and test sets.

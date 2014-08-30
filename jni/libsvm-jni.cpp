@@ -376,6 +376,32 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict
 
 /*
  * Class:     jcp_bindings_libsvm_svm
+ * Method:    native_svm_predict_fast
+ * Signature: (JJ)D
+ */
+JNIEXPORT jdouble JNICALL
+Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast
+    (JNIEnv* env,
+     jclass  jsvm,
+     jlong   jmodel_ptr,
+     jlong   jinstance_ptr)
+{
+    struct svm_model* model = (struct svm_model*)jmodel_ptr;
+    struct svm_node * instance = *(struct svm_node **)jinstance_ptr;
+    if (env->ExceptionOccurred()) {
+        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast():"
+                  << " Java exception at argument conversion."
+                  << std::endl;
+        return 0.0;
+    }
+    double result = svm_predict(model,
+                                instance);
+
+    return result;
+}
+
+/*
+ * Class:     jcp_bindings_libsvm_svm
  * Method:    native_svm_predict_probability
  * Signature: (J[Ljcp/bindings/libsvm/svm_node;[D)D
  */

@@ -68,7 +68,7 @@ public class TestICC {
             InductiveConformalClassifier icc = new InductiveConformalClassifier(new double[]{0, 1, 2});
             icc._nc =
                 //new AverageClassificationNonconformityFunction(new double[]{0, 1, 2});
-                new SVMClassificationNonconformityFunction(new double[]{0.0, 1.0, 2.0});
+                new ClassProbabilityNonconformityFunction(new double[]{0.0, 1.0, 2.0});
             icc.fit(xtr, ytr, xcal, ycal);
 
 
