@@ -19,6 +19,7 @@ import jcp.cp.*;
 import jcp.nc.*;
 import jcp.io.*;
 
+import jcp.ml.ClassifierFactory;
 import jcp.ml.IClassifier;
 
 /**
@@ -48,7 +49,7 @@ public class jcp_train
         _training    = new DataSet();
         _calibration = new DataSet();
         _test        = new DataSet();
-        _classifier = new jcp.bindings.libsvm.SVMClassifier();
+        _classifier  = new jcp.bindings.libsvm.SVMClassifier();
     }
 
     public void run(String[] args)
@@ -75,6 +76,32 @@ public class jcp_train
                 if (args[i].equals("-h")) {
                     printUsage();
                     System.exit(-1);
+                } else if (args[i].equals("-c")) {
+                    if (++i < args.length) {
+                        boolean ok = false;
+                        try {
+                            int c = Integer.parseInt(args[i]);
+                            if (0 <= c &&
+                                c < ClassifierFactory.getInstance().
+                                        getClassifierTypes().length) {
+                                _classifier =
+                                    ClassifierFactory.getInstance().
+                                        createClassifier(c);
+                                ok = true;
+                            }
+                        } catch (Exception e) {
+                            // Handled below as ok is false.
+                        }
+                        if (!ok) {
+                            System.err.println
+                                ("Error: Illegal classifier number '" +
+                                 args[i] +
+                                 "' given to -c.");
+                            System.err.println();
+                            printUsage();
+                            System.exit(-1);
+                        }
+                    }
                 } else if (args[i].equals("-m")) {
                     if (++i < args.length) {
                         _modelFileName = args[i];
@@ -139,6 +166,18 @@ public class jcp_train
         System.out.println();
         System.out.println
             ("  -h                Print this message and exit.");
+        System.out.println
+            ("  -c <classifier #> Select the classifier to use.");
+        System.out.println
+            ("                    The following classifiers are supported.");
+        {
+            int i = 0;
+            for (String c : ClassifierFactory.getInstance().
+                                getClassifierTypes()) {
+                System.out.println("                      " + i + ". " + c);
+                i++;
+            }
+        }
         System.out.println
             ("  -m <model file>   Save the created model.");
         System.out.println
@@ -267,12 +306,10 @@ public class jcp_train
 
         // Evaluation on the test set.
         int correct = 0;
-        double[] probability = new double[_classes.length];
-
         for (int i = 0; i < _test.x.rows(); i++) {
             int classIndex = _classSet.headSet(_test.y[i]).size();
             double prediction =
-                _classifier.predict(_test.x.viewRow(i), probability);
+                _classifier.predict(_test.x.viewRow(i));
             if (prediction == _test.y[i]) {
                 correct++;
             }

@@ -1,29 +1,39 @@
 Install instruction
 
-1. Install colt and libsvm next to the jcp directory.
+1. Install colt, libsvm and OpenCV next to the jcp directory.
+   OpenCV might be available as a binary package. The OpenCV ML module
+   and the Java bindings (jni) are required.
 
 2. Build libsvm. Copy libsvm.so into jcp/lib
 
-3. Set up LD_LIBRARY_PATH to include jcp/lib.
+3. Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library directory
+   and the directory where is Java binding (jni) reside.
    E.g.
-   % export LD_LIBRARY_PATH=$HOME/Work/projects/BOEL-KK-2013-2015/src/jcp/lib/
+   % export LD_LIBRARY_PATH=$HOME/projects/BOEL-KK-2013-2015/src/jcp/lib/:/usr/lib/jni
 
-4. Set up JDKDIR to point to the JDK installation.
+4. Set up JAVA_HOME to point to the JDK installation.
    E.g.
-   % export JDKDIR=/opt/jdk1.7.0_09
+   % export JAVA_HOME=/opt/jdk1.7.0_09
 
-5. Build jcp.
-   % ant all
+5. Set up OCVJARDIR to point to the directory with the OpenCV Java binding.
+   E.g.
+   % export OCVJARDIR=/usr/share/OpenCV/java/
 
-6. Include colt.jar and jcp/build/jar/jcp.jar in the Java class path.
+6. Build jcp.
+   % ant -DocvJarDir=$OCVJARDIR all
+
+7. Include jcp/build/jar/jcp.jar and the colt and the OpenCV jars in the
+   Java class path.
    The jcp_train.sh script does this for the default directory layout.
    E.g.
    % ./jcp_train.sh -h
-   Or without the shell script
-   % java -classpath 'build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar' jcp.cli.jcp_train -h
 
-7. Using the bash front-end scripts a model can be created using
+8. Using the bash front-end scripts a model can be created using
    % ./jcp_train.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_train_576_rbf_8vr.dat
 
    And tested using
    % ./jcp_predict.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_test_576_rbf_8vr.dat
+
+   Or just created and tested on a split of one data set without saving
+   the model:
+   % ./jcp_train.sh -v ../pisvm-datasets/mnist_train_576_rbf_8vr.dat

@@ -32,6 +32,7 @@ public class jcp_predict
 
     private SortedSet<Double> _classSet;
     private double[]          _classes;
+    private InductiveConformalClassifier _icc;
 
     public jcp_predict()
     {
@@ -138,7 +139,7 @@ public class jcp_predict
         System.out.println("Loading the model '" + modelFileName +
                            "'.");
         long t1 = System.currentTimeMillis();
-        InductiveConformalClassifier icc = loadModel(modelFileName);
+        _icc = loadModel(modelFileName);
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
                           
@@ -155,7 +156,7 @@ public class jcp_predict
 
         // Evaluation on the test set.
         ObjectMatrix2D pred = null;
-        pred = icc.predict(testSet.x, _significanceLevel);
+        pred = _icc.predict(testSet.x, _significanceLevel);
         //System.out.println(pred);
 
         int correct = 0;
@@ -199,9 +200,10 @@ public class jcp_predict
         DataSet dataSet =
             new libsvmReader().read
                 (file,
-                 // Select the desired representation.
-                 //new cern.colt.matrix.impl.SparseDoubleMatrix2D(0, 0));
-                 new jcp.bindings.libsvm.SparseDoubleMatrix2D(0, 0));
+                 // Select the desired representation. FIXME: This is ugly.
+                 (_icc._nc.getClassifier() != null)
+                 ? _icc._nc.getClassifier().nativeStorageTemplate().like2D(0, 0)
+                 : new cern.colt.matrix.impl.SparseDoubleMatrix2D(0, 0));
         file.close();
 
         System.out.println("Loaded the dataset " + filename + " containing " +

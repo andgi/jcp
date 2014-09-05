@@ -96,6 +96,11 @@ public class ClassProbabilityNonconformityFunction
         throw new UnsupportedOperationException("Not implemented");
     }
 
+    public jcp.ml.IClassifier getClassifier()
+    {
+        return _model;
+    }
+
     class CalcNCAction extends RecursiveAction
     {
         DoubleMatrix2D _x;

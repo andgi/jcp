@@ -11,4 +11,6 @@ public interface IClassificationNonconformityFunction {
     public double[] calc_nc(DoubleMatrix2D x, double[] y);
     public double[] calc_nc(DoubleMatrix2D xtrain, double[] ytrain,
                             DoubleMatrix1D xtest, double ytest);
+
+    public jcp.ml.IClassifier getClassifier();
 }

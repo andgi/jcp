@@ -60,4 +60,9 @@ public class AverageClassificationNonconformityFunction implements IClassificati
         
         return nc;
     }
+
+    public jcp.ml.IClassifier getClassifier()
+    {
+        return null;
+    }
 }
