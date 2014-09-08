@@ -6,37 +6,38 @@ import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
 import org.opencv.ml.CvStatModel;
-import org.opencv.ml.CvSVM;
-import org.opencv.ml.CvSVMParams;
+import org.opencv.ml.CvRTrees;
+import org.opencv.ml.CvRTParams;
 
 import jcp.ml.IClassifier;
 
-public class SVMClassifier
+public class RForestClassifier
     extends ClassifierBase
     implements java.io.Serializable
 {
-    protected CvSVMParams _parameters;
+    protected CvRTParams _parameters;
 
-    public SVMClassifier()
+    public RForestClassifier()
     {
         this(null);
     }
 
-    public SVMClassifier(CvSVMParams parameters)
+    public RForestClassifier(CvRTParams parameters)
     {
-        _model = new CvSVM();
+        _model = new CvRTrees();
         _parameters = parameters;
     }
 
     public void fit(DoubleMatrix2D x, double[] y)
     {
-        ((CvSVM)_model).train(asDDM2D(x).asMat(),
-                              asDDM1D(y).asMat());
+        ((CvRTrees)_model).train(asDDM2D(x).asMat(),
+                                 1, // should be CV_ROW_SAMPLE enum/constant
+                                 asDDM1D(y).asMat());
     }
 
     public double predict(DoubleMatrix1D instance)
     {
-        return ((CvSVM)_model).predict(asDDM1D(instance).asMat());
+        return ((CvRTrees)_model).predict(asDDM1D(instance).asMat());
     }
 
     public double predict(DoubleMatrix1D instance,
@@ -44,7 +45,8 @@ public class SVMClassifier
     {
         // FIXME: This method is not properly implemented yet. It might work
         //        for {-1, 1} two-class problems.
-        double prediction = ((CvSVM)_model).predict(asDDM1D(instance).asMat());
+        double prediction =
+            ((CvRTrees)_model).predict(asDDM1D(instance).asMat());
         probabilityEstimates[0] = 0.5 + 0.5*prediction;
         probabilityEstimates[1] = 0.5 - 0.5*prediction;
         return prediction;
@@ -52,6 +54,6 @@ public class SVMClassifier
 
     protected CvStatModel getNewInstance()
     {
-        return new CvSVM();
+        return new CvRTrees();
     }
 }

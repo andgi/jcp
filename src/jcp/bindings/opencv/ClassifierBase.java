@@ -68,6 +68,8 @@ abstract class ClassifierBase
         return _storageTemplate;
     }
 
+    protected abstract CvStatModel getNewInstance();
+
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException
     {
@@ -90,8 +92,7 @@ abstract class ClassifierBase
         String fileName = (String)ois.readObject();
 
         // Load the OpenCV model from the designated file.
-        // FIXME: Can this really load any subclass to CvStatModel?
-        _model = new org.opencv.ml.CvSVM();
+        _model = getNewInstance();
         _model.load(fileName);
     }
 }
