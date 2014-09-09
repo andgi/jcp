@@ -19,13 +19,8 @@ public class RandomForestClassifier
 
     public RandomForestClassifier()
     {
-        this(null);
-    }
-
-    public RandomForestClassifier(CvRTParams parameters)
-    {
         _model = new CvRTrees();
-        _parameters = parameters;
+        _parameters = null;
     }
 
     public void fit(DoubleMatrix2D x, double[] y)
