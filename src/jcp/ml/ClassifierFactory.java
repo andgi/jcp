@@ -16,7 +16,7 @@ public final class ClassifierFactory
         {
             "jcp.bindings.libsvm.SVMClassifier",
             "jcp.bindings.opencv.SVMClassifier",
-            "jcp.bindings.opencv.RForestClassifier"
+            "jcp.bindings.opencv.RandomForestClassifier"
         };
 
     private ClassifierFactory()
@@ -37,7 +37,7 @@ public final class ClassifierFactory
         case 1:
             return new jcp.bindings.opencv.SVMClassifier();
         case 2:
-            return new jcp.bindings.opencv.RForestClassifier();
+            return new jcp.bindings.opencv.RandomForestClassifier();
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
         }

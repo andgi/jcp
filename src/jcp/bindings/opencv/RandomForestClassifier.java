@@ -11,18 +11,18 @@ import org.opencv.ml.CvRTParams;
 
 import jcp.ml.IClassifier;
 
-public class RForestClassifier
+public class RandomForestClassifier
     extends ClassifierBase
     implements java.io.Serializable
 {
     protected CvRTParams _parameters;
 
-    public RForestClassifier()
+    public RandomForestClassifier()
     {
         this(null);
     }
 
-    public RForestClassifier(CvRTParams parameters)
+    public RandomForestClassifier(CvRTParams parameters)
     {
         _model = new CvRTrees();
         _parameters = parameters;
