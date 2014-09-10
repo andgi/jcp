@@ -5,6 +5,8 @@ package jcp.bindings.libsvm;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
+import org.json.JSONObject;
+
 import jcp.ml.IClassifier;
 
 public class SVMClassifier
@@ -13,36 +15,111 @@ public class SVMClassifier
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
-    protected svm_parameter _parameter;
+    protected svm_parameter _parameters;
     protected svm_model _model;
 
     public SVMClassifier()
     {
-        this(null);
+        this((svm_parameter)null);
     }
 
-    public SVMClassifier(svm_parameter parameter)
+    public SVMClassifier(JSONObject parameters)
     {
-        _parameter = parameter;
+        this();
+        if (parameters.has("svm_type")) {
+            String type = parameters.getString("svm_type");
+            if (type.equals("C_SVC")) {
+                _parameters.svm_type = svm_parameter.C_SVC;
+            } else if (type.equals("NU_SVC")) {
+                _parameters.svm_type = svm_parameter.NU_SVC;
+            } else if (type.equals("ONE_CLASS")) {
+                _parameters.svm_type = svm_parameter.ONE_CLASS;
+            } else if (type.equals("EPSILON_SVR")) {
+                _parameters.svm_type = svm_parameter.EPSILON_SVR;
+            } else if (type.equals("NU_SVR")) {
+                _parameters.svm_type = svm_parameter.NU_SVR;
+            } else {
+                throw new IllegalArgumentException
+                              ("jcp.bindings.libsvm.SVMClassifier: " +
+                               "Unknown svm_type '" + type + "'.");
+            }
+        }
+        if (parameters.has("kernel_type")) {
+            String type = parameters.getString("kernel_type");
+            if (type.equals("LINEAR")) {
+                _parameters.kernel_type = svm_parameter.LINEAR;
+            } else if (type.equals("POLY")) {
+                _parameters.kernel_type = svm_parameter.POLY;
+            } else if (type.equals("RBF")) {
+                _parameters.kernel_type = svm_parameter.RBF;
+            } else if (type.equals("SIGMOID")) {
+                _parameters.kernel_type = svm_parameter.SIGMOID;
+            } else if (type.equals("PRECOMPUTED")) {
+                _parameters.kernel_type = svm_parameter.PRECOMPUTED;
+            } else {
+                throw new IllegalArgumentException
+                              ("jcp.bindings.libsvm.SVMClassifier: " +
+                               "Unknown kernel_type '" + type + "'.");
+            }
+        }
+        if (parameters.has("degree")) {
+            _parameters.degree = (int)parameters.getDouble("degree");
+        }
+        if (parameters.has("gamma")) {
+            _parameters.gamma = parameters.getDouble("gamma");
+        }
+        if (parameters.has("coef0")) {
+            _parameters.coef0 = parameters.getDouble("coef0");
+        }
+        if (parameters.has("C")) {
+            _parameters.C = parameters.getDouble("C");
+        }
+        if (parameters.has("nu")) {
+            _parameters.nu = parameters.getDouble("nu");
+        }
+        if (parameters.has("p")) {
+            _parameters.p = parameters.getDouble("p");
+        }
+        if (parameters.has("cache_size")) {
+            _parameters.cache_size = parameters.getDouble("cache_size");
+        }
+        if (parameters.has("shrinking")) {
+            _parameters.shrinking = parameters.getInt("shrinking");
+        }
+        if (parameters.has("estimate_probability")) {
+            _parameters.probability = parameters.getInt("estimate_probability");
+        }
+        if (parameters.has("termination_criteria")) {
+            JSONObject termination =
+                parameters.getJSONObject("termination_criteria");
+            if (termination.has("epsilon")) {
+                _parameters.eps = termination.getDouble("epsilon");
+            }
+        }
+    }
 
-        if (_parameter == null) {
+    public SVMClassifier(svm_parameter parameters)
+    {
+        _parameters = parameters;
+
+        if (_parameters == null) {
             // Default libsvm parameter.
-            _parameter = new svm_parameter();
-            _parameter.svm_type = svm_parameter.C_SVC;
-            _parameter.kernel_type = svm_parameter.RBF;
-            _parameter.degree = 3;
-            _parameter.gamma = 1.0/2; // FIXME: Should be 1/#classes
-            _parameter.coef0 = 0;
-            _parameter.nu = 0.5;
-            _parameter.cache_size = 100;
-            _parameter.C = 1;
-            _parameter.eps = 1e-3;
-            _parameter.p = 0.1;
-            _parameter.shrinking = 1;
-            _parameter.probability = 1; // Must be set for the NC-function.
-            _parameter.nr_weight = 0;
-            _parameter.weight_label = new int[0];
-            _parameter.weight = new double[0];
+            _parameters = new svm_parameter();
+            _parameters.svm_type = svm_parameter.C_SVC;
+            _parameters.kernel_type = svm_parameter.RBF;
+            _parameters.degree = 3;
+            _parameters.gamma = 1.0/2; // FIXME: Should be 1/#classes
+            _parameters.coef0 = 0;
+            _parameters.nu = 0.5;
+            _parameters.cache_size = 100;
+            _parameters.C = 1;
+            _parameters.eps = 1e-3;
+            _parameters.p = 0.1;
+            _parameters.shrinking = 1;
+            _parameters.probability = 1; // Must be set for the NC-function.
+            _parameters.nr_weight = 0;
+            _parameters.weight_label = new int[0];
+            _parameters.weight = new double[0];
         }
     }
 
@@ -56,7 +133,7 @@ public class SVMClassifier
             tmp_x.assign(x);
         }
 
-        _model = svm.svm_train(_parameter, tmp_x, y);
+        _model = svm.svm_train(_parameters, tmp_x, y);
     }
 
     public double predict(DoubleMatrix1D instance)

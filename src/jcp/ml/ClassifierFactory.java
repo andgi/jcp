@@ -2,6 +2,8 @@
 // License: to be defined.
 package jcp.ml;
 
+import org.json.JSONObject;
+
 /**
  * Singleton factory for JCP classifiers.
  *
@@ -30,13 +32,19 @@ public final class ClassifierFactory
 
     public IClassifier createClassifier(int type)
     {
-        // FIXME: Configuration parameters need to be passed in somehow.
+        JSONObject config = new JSONObject();
+        return createClassifier(type, config);
+    }
+
+    public IClassifier createClassifier(int type, JSONObject config)
+    {
         switch (type) {
         case 0:
-            return new jcp.bindings.libsvm.SVMClassifier();
+            return new jcp.bindings.libsvm.SVMClassifier(config);
         case 1:
-            return new jcp.bindings.opencv.SVMClassifier();
+            return new jcp.bindings.opencv.SVMClassifier(config);
         case 2:
+            // FIXME: Configuration parameters need to be passed in.
             return new jcp.bindings.opencv.RandomForestClassifier();
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");

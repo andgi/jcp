@@ -10,6 +10,8 @@ import org.opencv.ml.CvSVM;
 import org.opencv.ml.CvSVMParams;
 import org.opencv.core.TermCriteria;
 
+import org.json.JSONObject;
+
 import jcp.ml.IClassifier;
 
 public class SVMClassifier
@@ -20,7 +22,82 @@ public class SVMClassifier
 
     public SVMClassifier()
     {
-        this(null);
+        this((CvSVMParams)null);
+    }
+
+    public SVMClassifier(JSONObject parameters)
+    {
+        this();
+        if (parameters.has("svm_type")) {
+            String type = parameters.getString("svm_type");
+            if (type.equals("C_SVC")) {
+                _parameters.set_svm_type(CvSVM.C_SVC);
+            } else if (type.equals("NU_SVC")) {
+                _parameters.set_svm_type(CvSVM.NU_SVC);
+            } else if (type.equals("ONE_CLASS")) {
+                _parameters.set_svm_type(CvSVM.ONE_CLASS);
+            } else if (type.equals("EPSILON_SVR")) {
+                _parameters.set_svm_type(CvSVM.EPS_SVR);
+            } else if (type.equals("NU_SVR")) {
+                _parameters.set_svm_type(CvSVM.NU_SVR);
+            } else {
+                throw new IllegalArgumentException
+                              ("jcp.bindings.opencv.SVMClassifier: " +
+                               "Unknown svm_type '" + type + "'.");
+            }
+        }
+        if (parameters.has("kernel_type")) {
+            String type = parameters.getString("kernel_type");
+            if (type.equals("LINEAR")) {
+                _parameters.set_kernel_type(CvSVM.LINEAR);
+            } else if (type.equals("POLY")) {
+                _parameters.set_kernel_type(CvSVM.POLY);
+            } else if (type.equals("RBF")) {
+                _parameters.set_kernel_type(CvSVM.RBF);
+            } else if (type.equals("SIGMOID")) {
+                _parameters.set_kernel_type(CvSVM.SIGMOID);
+            } else {
+                throw new IllegalArgumentException
+                              ("jcp.bindings.opencv.SVMClassifier: " +
+                               "Unknown kernel_type '" + type + "'.");
+            }
+        }
+        if (parameters.has("degree")) {
+            _parameters.set_degree(parameters.getDouble("degree"));
+        }
+        if (parameters.has("gamma")) {
+            _parameters.set_gamma(parameters.getDouble("gamma"));
+        }
+        if (parameters.has("coef0")) {
+            _parameters.set_coef0(parameters.getDouble("coef0"));
+        }
+        if (parameters.has("C")) {
+            _parameters.set_C(parameters.getDouble("C"));
+        }
+        if (parameters.has("nu")) {
+            _parameters.set_nu(parameters.getDouble("nu"));
+        }
+        if (parameters.has("p")) {
+            _parameters.set_p(parameters.getDouble("p"));
+        }
+        if (parameters.has("termination_criteria")) {
+            JSONObject termination =
+                parameters.getJSONObject("termination_criteria");
+            int criteria = 0;
+            int max_iter = 0;
+            double epsilon = 0.0;
+            if (termination.has("max_count")) {
+                criteria += TermCriteria.MAX_ITER;
+                max_iter = termination.getInt("max_iter");
+            }
+            if (termination.has("epsilon")) {
+                criteria += TermCriteria.EPS;
+                epsilon = termination.getDouble("epsilon");
+            }
+            _parameters.set_term_crit(new TermCriteria(criteria,
+                                                       max_iter,
+                                                       epsilon));
+        }
     }
 
     public SVMClassifier(CvSVMParams parameters)

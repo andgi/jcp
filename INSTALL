@@ -1,34 +1,37 @@
 Install instruction
 
-1. Install colt, libsvm and OpenCV next to the jcp directory.
-   OpenCV might be available as a binary package. The OpenCV ML module
-   and the Java bindings (jni) are required.
-
-2. Build libsvm. Copy libsvm.so into jcp/lib
-
-3. Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library directory
-   and the directory where is Java binding (jni) reside.
-   E.g.
-   % export LD_LIBRARY_PATH=$HOME/projects/BOEL-KK-2013-2015/src/jcp/lib/:/usr/lib/jni
-
-4. Set up JAVA_HOME to point to the JDK installation.
+1. Set up JAVA_HOME to point to the JDK installation.
    E.g.
    % export JAVA_HOME=/opt/jdk1.7.0_09
 
-5. Set up OCVJARDIR to point to the directory with the OpenCV Java binding.
-   E.g.
-   % export OCVJARDIR=/usr/share/OpenCV/java/
+2. Install the dependencies.
+   * Install colt as "colt" next to the jcp directory to support the
+     preset class path.
+   * Install org.JSON as "JSON/json.jar" next to the jcp directory to
+     support the preset class path.
+   * Install OpenCV. OpenCV might be available as a binary package.
+     The OpenCV Core and ML modules and the Java bindings (jni) are required.
+     Set up OCVJARDIR to point to the directory with the OpenCV Java binding.
+     E.g.
+     % export OCVJARDIR=/usr/share/OpenCV/java/
+   * Install libsvm. Copy libsvm.so into jcp/lib.
 
-6. Build jcp.
+3. Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library directory
+   and the directory where its Java binding (jni) reside.
+   E.g.
+   % export LD_LIBRARY_PATH=$HOME/projects/BOEL-KK-2013-2015/src/jcp/lib/:/usr/lib/jni
+
+4. Build jcp.
    % ant -DocvJarDir=$OCVJARDIR all
 
-7. Include jcp/build/jar/jcp.jar and the colt and the OpenCV jars in the
+5. Include jcp/build/jar/jcp.jar and the colt, JSON and the OpenCV jars in the
    Java class path.
-   The jcp_train.sh script does this for the default directory layout.
+   The jcp_train.sh and jcp_predict.sh scripts do this for the default
+   directory layout.
    E.g.
    % ./jcp_train.sh -h
 
-8. Using the bash front-end scripts a model can be created using
+6. Using the bash front-end scripts a model can be created and saved using
    % ./jcp_train.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_train_576_rbf_8vr.dat
 
    And tested using

@@ -6,6 +6,7 @@
 
   <path id="classpath">
     <fileset dir="../colt/lib" includes="*.jar" />
+    <fileset dir="../JSON" includes="json.jar" />
     <fileset dir="${ocvJarDir}" includes="opencv.jar" />
   </path>
 

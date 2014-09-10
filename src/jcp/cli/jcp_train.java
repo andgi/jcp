@@ -15,6 +15,9 @@ import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.ObjectMatrix2D;
 
+import org.json.JSONObject;
+import org.json.JSONTokener;
+
 import jcp.cp.*;
 import jcp.nc.*;
 import jcp.io.*;
@@ -67,6 +70,9 @@ public class jcp_train
 
     private void processArguments(String[] args)
     {
+        int classifierType = 0;
+        JSONObject classifierConfig = new JSONObject();
+
         // Load and create training and calibration sets.
         if (args.length < 1) {
             printUsage();
@@ -84,9 +90,7 @@ public class jcp_train
                             if (0 <= c &&
                                 c < ClassifierFactory.getInstance().
                                         getClassifierTypes().length) {
-                                _classifier =
-                                    ClassifierFactory.getInstance().
-                                        createClassifier(c);
+                                classifierType = c;
                                 ok = true;
                             }
                         } catch (Exception e) {
@@ -101,6 +105,24 @@ public class jcp_train
                             printUsage();
                             System.exit(-1);
                         }
+                    }
+                } else if (args[i].equals("-p")) {
+                    boolean ok = false;
+                    if (++i < args.length) {
+                        try {
+                            classifierConfig = loadClassifierConfig(args[i]);
+                            ok = true;
+                        } catch (Exception e) {
+                            // Handled below as ok is false.
+                        }
+                    }
+                    if (!ok) {
+                        System.err.println
+                            ("Error: No or bad configuration file given " +
+                             "to -p.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
                     }
                 } else if (args[i].equals("-m")) {
                     if (++i < args.length) {
@@ -157,6 +179,9 @@ public class jcp_train
             printUsage();
             System.exit(-1);
         }
+        _classifier =
+            ClassifierFactory.getInstance().createClassifier(classifierType,
+                                                             classifierConfig);
     }
 
     private void printUsage()
@@ -178,6 +203,9 @@ public class jcp_train
                 i++;
             }
         }
+        System.out.println
+            ("  -p <config file>  File with configuration parameters for the " +
+             "classifier in JSON format.");
         System.out.println
             ("  -m <model file>   Save the created model.");
         System.out.println
@@ -374,6 +402,19 @@ public class jcp_train
                            "calibration set, " +
                            _calibration.x.rows() + " instances, " +
                            "and test set, " + _test.x.rows() + " instances.");
+    }
+
+    private JSONObject loadClassifierConfig(String filename)
+        throws IOException
+    {
+        try (FileInputStream fis = new FileInputStream(filename)) {
+            return new JSONObject(new JSONTokener(fis));
+        } catch (Exception e) {
+            System.err.println
+                ("Error: Failed to load classifier configuration from '" +
+                 filename + "'.");
+            throw e;
+        }
     }
 
     private void saveModel(InductiveConformalClassifier icc, String filename)
