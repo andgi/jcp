@@ -11,6 +11,8 @@ Install instruction
      support the preset class path.
    * Install OpenCV. OpenCV might be available as a binary package.
      The OpenCV Core and ML modules and the Java bindings (jni) are required.
+     To build the JNI binding the option 'build shared libs' MUST be set to NO.
+     Use a recent Cmake.
      Set up OCVJARDIR to point to the directory with the OpenCV Java binding.
      E.g.
      % export OCVJARDIR=/usr/share/OpenCV/java/
