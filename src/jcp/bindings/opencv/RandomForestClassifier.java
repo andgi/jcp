@@ -28,6 +28,7 @@ public class RandomForestClassifier
         ((CvRTrees)_model).train(asDDM2D(x).asMat(),
                                  1, // should be CV_ROW_SAMPLE enum/constant
                                  asDDM1D(y).asMat());
+        _attributeCount = x.columns();
     }
 
     public double predict(DoubleMatrix1D instance)

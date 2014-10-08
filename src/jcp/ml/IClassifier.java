@@ -12,5 +12,7 @@ public interface IClassifier
     public double predict(DoubleMatrix1D instance,
                           double[] probabilityEstimates);
 
+    public int getAttributeCount();
+
     public DoubleMatrix1D nativeStorageTemplate();
 }

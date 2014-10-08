@@ -209,6 +209,15 @@ public class jcp_predict
         System.out.println("Loaded the dataset " + filename + " containing " +
                            dataSet.x.rows() + " instances with " +
                            dataSet.x.columns() + " attributes.");
+        if (dataSet.x.columns() !=
+            _icc._nc.getClassifier().getAttributeCount()) {
+            System.err.println
+                ("Warning: " +
+                 "The number of attributes in the data set, " +
+                 dataSet.x.columns() + ", " +
+                 "does not match the number of attributes in the model, " +
+                 _icc._nc.getClassifier().getAttributeCount() + ".");
+        }
         return dataSet;
     }
 

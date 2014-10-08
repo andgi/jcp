@@ -17,6 +17,7 @@ public class SVMClassifier
         new SparseDoubleMatrix1D(0);
     protected svm_parameter _parameters;
     protected svm_model _model;
+    protected int _attributeCount = -1;
 
     public SVMClassifier()
     {
@@ -134,6 +135,7 @@ public class SVMClassifier
         }
 
         _model = svm.svm_train(_parameters, tmp_x, y);
+        _attributeCount = tmp_x.columns();
     }
 
     public double predict(DoubleMatrix1D instance)
@@ -163,6 +165,11 @@ public class SVMClassifier
         return svm.svm_predict_probability(_model,
                                            tmp_instance,
                                            probabilityEstimates);
+    }
+
+    public int getAttributeCount()
+    {
+        return _attributeCount;
     }
 
     public DoubleMatrix1D nativeStorageTemplate()

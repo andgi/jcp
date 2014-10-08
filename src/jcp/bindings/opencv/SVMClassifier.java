@@ -128,6 +128,7 @@ public class SVMClassifier
                               new org.opencv.core.Mat(),
                               new org.opencv.core.Mat(),
                               _parameters);
+        _attributeCount = x.columns();
         // FIXME: Fit and forget. Ugly hack due to CvSVMParams not being
         //        serializable.
         _parameters = null;
