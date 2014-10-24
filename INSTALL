@@ -32,6 +32,7 @@ Install instruction
    directory layout.
    E.g.
    % ./jcp_train.sh -h
+   % ./jcp_predict.sh -h
 
 6. Using the bash front-end scripts a model can be created and saved using
    % ./jcp_train.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_train_576_rbf_8vr.dat

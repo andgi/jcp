@@ -2,9 +2,7 @@
 // License: to be defined.
 package jcp.cli;
 
-import java.io.FileInputStream;
-import java.io.ObjectInputStream;
-import java.io.IOException;
+import java.io.*;
 import java.util.Date;
 import java.util.SortedSet;
 import java.util.TreeSet;
@@ -27,6 +25,7 @@ import jcp.io.*;
 public class jcp_predict
 {
     private String  _testSetFileName;
+    private String  _outputFileName;
     private String  _modelFileName;
     private double  _significanceLevel = 0.10;
 
@@ -45,7 +44,7 @@ public class jcp_predict
         processArguments(args);
 
         // FIXME: Only initial use case yet. Load & test.        
-        runICCTest(_modelFileName, _testSetFileName);
+        runICCTest(_modelFileName, _testSetFileName, _outputFileName);
     }
 
     private void processArguments(String[] args)
@@ -97,9 +96,27 @@ public class jcp_predict
                         printUsage();
                         System.exit(-1);
                     }
+                } else if (args[i].startsWith("-")) {
+                    System.err.println
+                        ("Error: Unknown option '" + args[i] + "'.");
+                    System.err.println();
+                    printUsage();
+                    System.exit(-1);
                 } else {
-                    // The last unknown argument should be the test set file.
-                    _testSetFileName = args[i];
+                    // Any unrecognized arguments should
+                    // be the test set file and the optional output file.
+                    if (_testSetFileName == null) {
+                        _testSetFileName = args[i];
+                    } else if (_outputFileName == null) {
+                        _outputFileName = args[i];
+                    } else {
+                        System.err.println
+                            ("Error: Unexpected redundant argument found '" +
+                             args[i] + "'.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
                 }
             }
         }
@@ -122,7 +139,8 @@ public class jcp_predict
     private void printUsage()
     {
         System.out.println
-            ("Usage: jcp_predict [options] <libsvm formatted data set>");
+            ("Usage: jcp_predict [options] <libsvm formatted data set>" +
+             " [<output file>]");
         System.out.println();
         System.out.println
             ("  -h                Print this message and exit.");
@@ -133,9 +151,18 @@ public class jcp_predict
              "significance level for the test phase (0.0-1.0).");
     }
 
-    private void runICCTest(String modelFileName, String dataSetFileName)
+    private void runICCTest(String modelFileName,
+                            String dataSetFileName,
+                            String outputFileName)
         throws IOException
     {
+        BufferedWriter output = null;
+        if (outputFileName != null) {
+            output = new BufferedWriter
+                (new OutputStreamWriter(new FileOutputStream(outputFileName),
+                                        "utf-8"));
+        }
+
         System.out.println("Loading the model '" + modelFileName +
                            "'.");
         long t1 = System.currentTimeMillis();
@@ -169,8 +196,15 @@ public class jcp_predict
             for (int c = 0; c < _classes.length; c++) {
                 if ((Boolean)pred.get(i, c)) {
                     predictionSize++;
+                    if (output != null) {
+                        output.write("" + _classes[c] + " ");
+                    }
                 }
             }
+            if (output != null) {
+                output.newLine();
+            }
+
             predictionAtSize[predictionSize]++;
 
             if ((Boolean)pred.get(i, classIndex)) {
@@ -179,6 +213,10 @@ public class jcp_predict
             }
         }
         long t4 = System.currentTimeMillis();
+
+        if (output != null) {
+            output.close();
+        }
 
         System.out.println("Accuracy " + ((double)correct / testSet.y.length));
         for (int s = 0; s < predictionAtSize.length; s++) {
