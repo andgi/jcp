@@ -17,6 +17,7 @@ public final class ClassifierFactory
     private static final String[] _classifierNames =
         {
             "jcp.bindings.libsvm.SVMClassifier",
+            "jcp.bindings.jlibsvm.SVMClassifier",
             "jcp.bindings.opencv.SVMClassifier",
             "jcp.bindings.opencv.RandomForestClassifier"
         };
@@ -42,8 +43,10 @@ public final class ClassifierFactory
         case 0:
             return new jcp.bindings.libsvm.SVMClassifier(config);
         case 1:
-            return new jcp.bindings.opencv.SVMClassifier(config);
+            return new jcp.bindings.jlibsvm.SVMClassifier(config);
         case 2:
+            return new jcp.bindings.opencv.SVMClassifier(config);
+        case 3:
             // FIXME: Configuration parameters need to be passed in.
             return new jcp.bindings.opencv.RandomForestClassifier();
         default:

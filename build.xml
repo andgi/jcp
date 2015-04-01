@@ -8,6 +8,7 @@
     <fileset dir="../colt/lib" includes="*.jar" />
     <fileset dir="../JSON" includes="json.jar" />
     <fileset dir="${ocvJarDir}" includes="opencv.jar" />
+    <fileset dir="../libsvm-java" includes="libsvm.jar" />
   </path>
 
   <property name="build.dir"   value="build"/>

@@ -9,6 +9,8 @@ Install instruction
      preset class path.
    * Install org.JSON as "JSON/json.jar" next to the jcp directory to
      support the preset class path.
+   * Install the Java port of libsvm as "libsvm-java/libsvm.jar" next
+     to the jcp directory to support the preset class path.
    * Install OpenCV. OpenCV might be available as a binary package.
      The OpenCV Core and ML modules and the Java bindings (jni) are required.
      To build the JNI binding the option 'build shared libs' MUST be set to NO.
@@ -16,7 +18,7 @@ Install instruction
      Set up OCVJARDIR to point to the directory with the OpenCV Java binding.
      E.g.
      % export OCVJARDIR=/usr/share/OpenCV/java/
-   * Install libsvm. Copy libsvm.so into jcp/lib.
+   * Install the C/C++ version of libsvm. Copy libsvm.so into jcp/lib.
 
 3. Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library directory
    and the directory where its Java binding (jni) reside.
@@ -26,8 +28,8 @@ Install instruction
 4. Build jcp.
    % ant -DocvJarDir=$OCVJARDIR all
 
-5. Include jcp/build/jar/jcp.jar and the colt, JSON and the OpenCV jars in the
-   Java class path.
+5. Include jcp/build/jar/jcp.jar and the colt, JSON, Java libsvm and the
+   OpenCV jars in the Java class path.
    The jcp_train.sh and jcp_predict.sh scripts do this for the default
    directory layout.
    E.g.
