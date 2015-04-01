@@ -11,6 +11,8 @@ Install instruction
      support the preset class path.
    * Install the Java port of libsvm as "libsvm-java/libsvm.jar" next
      to the jcp directory to support the preset class path.
+   * Install liblinear-java as "liblinear-java/liblinear-java.jar" next
+     to the jcp directory to support the preset class path.
    * Install OpenCV. OpenCV might be available as a binary package.
      The OpenCV Core and ML modules and the Java bindings (jni) are required.
      To build the JNI binding the option 'build shared libs' MUST be set to NO.
@@ -28,8 +30,8 @@ Install instruction
 4. Build jcp.
    % ant -DocvJarDir=$OCVJARDIR all
 
-5. Include jcp/build/jar/jcp.jar and the colt, JSON, Java libsvm and the
-   OpenCV jars in the Java class path.
+5. Include jcp/build/jar/jcp.jar and the colt, JSON, Java libsvm, liblinear
+   and the OpenCV jars in the Java class path.
    The jcp_train.sh and jcp_predict.sh scripts do this for the default
    directory layout.
    E.g.

@@ -1,4 +1,4 @@
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2015  Anders Gidenstam
 // License: to be defined.
 package jcp.ml;
 
@@ -18,6 +18,7 @@ public final class ClassifierFactory
         {
             "jcp.bindings.libsvm.SVMClassifier",
             "jcp.bindings.jlibsvm.SVMClassifier",
+            "jcp.bindings.jliblinear.LinearClassifier",
             "jcp.bindings.opencv.SVMClassifier",
             "jcp.bindings.opencv.RandomForestClassifier"
         };
@@ -45,8 +46,10 @@ public final class ClassifierFactory
         case 1:
             return new jcp.bindings.jlibsvm.SVMClassifier(config);
         case 2:
-            return new jcp.bindings.opencv.SVMClassifier(config);
+            return new jcp.bindings.jliblinear.LinearClassifier(config);
         case 3:
+            return new jcp.bindings.opencv.SVMClassifier(config);
+        case 4:
             // FIXME: Configuration parameters need to be passed in.
             return new jcp.bindings.opencv.RandomForestClassifier();
         default:

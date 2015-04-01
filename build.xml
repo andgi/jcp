@@ -9,6 +9,7 @@
     <fileset dir="../JSON" includes="json.jar" />
     <fileset dir="${ocvJarDir}" includes="opencv.jar" />
     <fileset dir="../libsvm-java" includes="libsvm.jar" />
+    <fileset dir="../liblinear-java" includes="liblinear-java.jar" />
   </path>
 
   <property name="build.dir"   value="build"/>
