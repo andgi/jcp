@@ -1,4 +1,4 @@
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2015  Anders Gidenstam
 // License: to be defined.
 package jcp.nc;
 
@@ -59,7 +59,7 @@ public class ClassProbabilityNonconformityFunction
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    
+    @Deprecated
     public double[] calc_nc(DoubleMatrix2D x, double[] y)
     {
         double[] nc = new double[y.length];
@@ -94,6 +94,19 @@ public class ClassProbabilityNonconformityFunction
                             double ytest)
     {
         throw new UnsupportedOperationException("Not implemented");
+    }
+
+    public double calculateNonConformityScore(DoubleMatrix1D x, double y)
+    {
+        double[] probability = new double[_n_classes];
+        _model.predict(x, probability);
+
+        double nc = probability[_class_index.get(y)];
+        if (DEBUG) {
+            System.out.println("  instance (" + x + ") target " + y +
+                               ": " + nc);
+        }
+        return nc;
     }
 
     public jcp.ml.IClassifier getClassifier()

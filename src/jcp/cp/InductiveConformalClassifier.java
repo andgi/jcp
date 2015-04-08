@@ -1,19 +1,30 @@
+// Copyright (C) 2014  Henrik Linusson
+// Copyright (C) 2015  Anders Gidenstam
+// License: to be defined.
 package jcp.cp;
 
+import cern.colt.matrix.ObjectMatrix1D;
 import cern.colt.matrix.ObjectMatrix2D;
+import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.impl.SparseObjectMatrix2D;
+import cern.colt.matrix.impl.DenseObjectMatrix1D;
+import cern.colt.matrix.impl.DenseObjectMatrix2D;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import java.util.Arrays;
+import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.RecursiveAction;
 
 import jcp.nc.IClassificationNonconformityFunction;
 
 public class InductiveConformalClassifier
     implements java.io.Serializable
 {
+    private static final boolean PARALLEL = true;
+    private static final ForkJoinPool taskPool = new ForkJoinPool();
+
     public IClassificationNonconformityFunction _nc;
     private double[] _calibration_scores;
     private double[] _targets;
@@ -24,12 +35,14 @@ public class InductiveConformalClassifier
     private double[] _ytr;
     private double[] _ycal;
 
-    public InductiveConformalClassifier(double[] targets) {
+    public InductiveConformalClassifier(double[] targets)
+    {
         _targets = targets;
     }
 
     public void fit(DoubleMatrix2D xtr, double[] ytr,
-                    DoubleMatrix2D xcal, double[] ycal) {
+                    DoubleMatrix2D xcal, double[] ycal)
+    {
         _xtr = xtr;
         _ytr = ytr;
         _xcal = xcal;
@@ -40,22 +53,67 @@ public class InductiveConformalClassifier
         Arrays.sort(_calibration_scores);
     }
 
-    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance) {
+    /**
+     * Computes the set of labels predicted at the selected significance
+     * level for each instance in x.
+     * The method is parallellized over the instances.
+     *
+     * @param x             the instances.
+     * @param significance  the significance level [0-1].
+     * @return an <tt>ObjectMatrix2D</tt> containing the predicted labels for each instance.
+     */
+    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance)
+    {
         int n = x.rows();
-        ObjectMatrix2D response = new SparseObjectMatrix2D(n, _targets.length);
-        double[] y = new double[n];
-        
-        for (int i = 0; i < _targets.length; i++) {
-            for (int j = 0; j < n; j++)
-                y[j] = _targets[i];
-            // TODO: Underlying model should really only have to predict once.
-            double[] nc_pred = _nc.calc_nc(x, y);
-            boolean[] include = Util.calc_inclusion(nc_pred, _calibration_scores, significance);
-            for (int j = 0; j < n; j++) {
-                response.set(j, i, include[j]);
+        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _targets.length);
+        if (!PARALLEL) {
+            for (int i = 0; i < n; i++) {
+                DoubleMatrix1D instance = x.viewRow(i);
+                ObjectMatrix1D labels   = response.viewRow(i);
+                predict(instance, significance, labels);
             }
+        } else {
+            ClassifyAction all =
+                new ClassifyAction(x, response, significance, 0, n);
+            taskPool.invoke(all);
         }
         return response;
+    }
+
+    /**
+     * Computes the set of labels predicted for the instance x at the
+     * selected significance level.
+     *
+     * @param x             the instance.
+     * @param significance  the significance level [0-1].
+     * @return an <tt>ObjectMatrix1D</tt> containing the predicted labels.
+     */
+    public ObjectMatrix1D predict(DoubleMatrix1D x, double significance)
+    {
+        ObjectMatrix1D response = new DenseObjectMatrix1D(_targets.length);
+        predict(x, significance, response);
+        return response;
+    }
+
+    /**
+     * Computes the set of labels predicted for the instance x at the
+     * selected significance level.
+     *
+     * @param x             the instance.
+     * @param significance  the significance level [0-1].
+     * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
+     */
+    public void predict(DoubleMatrix1D x, double significance,
+                        ObjectMatrix1D labels)
+    {
+        for (int i = 0; i < _targets.length; i++) {
+            // TODO: Underlying model should really only have to predict once.
+            double  nc_pred = _nc.calculateNonConformityScore(x, _targets[i]);
+            boolean include = Util.calculateInclusion(nc_pred,
+                                                      _calibration_scores,
+                                                      significance);
+            labels.set(i, include);
+        }
     }
 
     private void writeObject(ObjectOutputStream oos)
@@ -74,4 +132,47 @@ public class InductiveConformalClassifier
         _targets = (double[])ois.readObject();
     }
 
+    class ClassifyAction extends RecursiveAction
+    {
+        DoubleMatrix2D _x;
+        ObjectMatrix2D _response;
+        double _significance;
+        int _first;
+        int _last;
+
+        public ClassifyAction(DoubleMatrix2D x,
+                              ObjectMatrix2D response,
+                              double significance,
+                              int first, int last)
+        {
+            _x = x;
+            _response = response;
+            _significance = significance;
+            _first = first;
+            _last = last;
+        }
+
+        protected void compute()
+        {
+            if (_last - _first < 100) {
+                computeDirectly();
+            } else {
+                int split = (_last - _first)/2;
+                invokeAll
+                    (new ClassifyAction(_x, _response, _significance,
+                                        _first, _first + split),
+                     new ClassifyAction(_x, _response, _significance,
+                                        _first + split, _last));
+            }
+        }
+
+        protected void computeDirectly()
+        {
+            for (int i = _first; i < _last; i++) {
+                DoubleMatrix1D instance = _x.viewRow(i);
+                ObjectMatrix1D labels   = _response.viewRow(i);
+                predict(instance, _significance, labels);
+            }
+        }
+    }
 }

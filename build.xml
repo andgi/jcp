@@ -26,7 +26,8 @@
     <javac includeantruntime="false"
            srcdir="${src.dir}" destdir="${classes.dir}"
            classpathref="classpath"
-           debug="true"/>
+           debug="true"
+           deprecation="true"/>
   </target>
   <target name="compile-jni">
     <exec executable="bash" failonerror="true">
