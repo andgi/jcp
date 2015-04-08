@@ -16,7 +16,7 @@ import libsvm.svm_node;
  * version of libsvm. See the documentation for libsvm for more details.
  *
  * @author anders.gidenstam(at)hb.se
-*/
+ */
 // TODO: Make sure to adhere to colt's conventions.
 
 public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
@@ -73,7 +73,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * All entries are initially <tt>0</tt>.
      * @param columns the number of columns the matrix shall have.
      * @throws IllegalArgumentException if
-               <tt>columns<0 || columns > Integer.MAX_VALUE</tt>.
+               <tt>columns&lt;0 || columns &gt; Integer.MAX_VALUE</tt>.
     */
     public SparseDoubleMatrix1D(int columns)
     {
