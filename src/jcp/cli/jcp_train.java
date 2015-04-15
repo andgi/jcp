@@ -1,14 +1,11 @@
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2015  Anders Gidenstam
 // License: to be defined.
 package jcp.cli;
 
 import java.io.FileInputStream;
-import java.io.FileOutputStream;
-import java.io.ObjectOutputStream;
 import java.io.IOException;
-import java.util.Date;
+import java.util.AbstractMap.SimpleEntry;
 import java.util.SortedSet;
-import java.util.TreeSet;
 import java.util.Random;
 
 import cern.colt.matrix.DoubleMatrix1D;
@@ -37,8 +34,6 @@ public class jcp_train
     private String  _dataSetFileName;
     private String  _modelFileName;
     private DataSet _full;
-    private SortedSet<Double> _classSet;
-    private double[]          _classes;
     private DataSet _training;
     private DataSet _calibration;
     private DataSet _test;
@@ -48,7 +43,6 @@ public class jcp_train
 
     public jcp_train()
     {
-        super();
         _training    = new DataSet();
         _calibration = new DataSet();
         _test        = new DataSet();
@@ -225,8 +219,11 @@ public class jcp_train
         throws IOException
     {
         long t1 = System.currentTimeMillis();
-        loadDataset(dataSetFileName);
-        extractClasses();
+        _full = DataSetTools.loadDataSet(dataSetFileName);
+        SimpleEntry<double[],SortedSet<Double>> pair =
+            DataSetTools.extractClasses(_full);
+        double[] classes = pair.getKey();
+        SortedSet<Double> classSet = pair.getValue();
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
@@ -244,9 +241,9 @@ public class jcp_train
                            " instances.");
 
         InductiveConformalClassifier icc =
-            new InductiveConformalClassifier(_classes);
+            new InductiveConformalClassifier(classes);
         icc._nc =
-            new ClassProbabilityNonconformityFunction(_classes, _classifier);
+            new ClassProbabilityNonconformityFunction(classes, _classifier);
 
         icc.fit(_training.x, _training.y, _calibration.x, _calibration.y);
         long t4 = System.currentTimeMillis();
@@ -254,46 +251,8 @@ public class jcp_train
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
 
         if (_validate) {
-            System.out.println("Testing accuracy on " + _test.x.rows() +
-                               " instances at a significance level of " +
-                               _significanceLevel + ".");
-
-            // Evaluation on the test set.
-            ObjectMatrix2D pred = null;
-            pred = icc.predict(_test.x, _significanceLevel);
-            //System.out.println(pred);
-
-            int correct = 0;
-            int[] correctAtSize = new int[_classSet.size()+1];
-            int[] predictionAtSize = new int[_classSet.size()+1];
-
-            for (int i = 0; i < pred.rows(); i++){
-                int classIndex = _classSet.headSet(_test.y[i]).size();
-                int predictionSize = 0;
-                for (int c = 0; c < _classes.length; c++) {
-                    if ((Boolean)pred.get(i, c)) {
-                        predictionSize++;
-                    }
-                }
-                predictionAtSize[predictionSize]++;
-
-                if ((Boolean)pred.get(i, classIndex)) {
-                    correct++;
-                    correctAtSize[predictionSize]++;
-                }
-            }
+            ICCTools.runTest(icc, _test, null, _significanceLevel);
             long t5 = System.currentTimeMillis();
-
-            System.out.println("Accuracy " +
-                               ((double)correct / _test.y.length));
-            for (int s = 0; s < predictionAtSize.length; s++) {
-                System.out.println
-                    ("  #Predictions with " + s + " classes: " +
-                     predictionAtSize[s] + ". Accuracy: " +
-                     (double)correctAtSize[s]/(double)predictionAtSize[s]);
-            }
-            System.out.println("Duration " + (double)(t5 - t4)/1000.0 +
-                               " sec.");
             System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
                                " sec.");
         }
@@ -301,7 +260,7 @@ public class jcp_train
         if (_modelFileName != null) {
             System.out.println("Saving the model to '" +
                                _modelFileName + "'...");
-            saveModel(icc, _modelFileName);
+            ICCTools.saveModel(icc, _modelFileName);
             System.out.println("... Done.");
         }
     }
@@ -310,8 +269,11 @@ public class jcp_train
         throws IOException
     {
         long t1 = System.currentTimeMillis();
-        loadDataset(dataSetFileName);
-        extractClasses();
+        _full = DataSetTools.loadDataSet(dataSetFileName);
+        SimpleEntry<double[],SortedSet<Double>> pair =
+            DataSetTools.extractClasses(_full);
+        double[] classes = pair.getKey();
+        SortedSet<Double> classSet = pair.getValue();
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
@@ -335,7 +297,6 @@ public class jcp_train
         // Evaluation on the test set.
         int correct = 0;
         for (int i = 0; i < _test.x.rows(); i++) {
-            int classIndex = _classSet.headSet(_test.y[i]).size();
             double prediction =
                 _classifier.predict(_test.x.viewRow(i));
             if (prediction == _test.y[i]) {
@@ -348,43 +309,6 @@ public class jcp_train
         System.out.println("Duration " + (double)(t5 - t4)/1000.0 + " sec.");
         System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
                            " sec.");
-    }
-
-    private void loadDataset(String filename)
-        throws IOException
-    {
-        FileInputStream file;
-        file = new FileInputStream(filename);
-
-        _full =
-            new libsvmReader().read
-                (file,
-                 // Select the desired representation.
-                 new cern.colt.matrix.impl.SparseDoubleMatrix2D(0, 0));
-                 //new jcp.bindings.libsvm.SparseDoubleMatrix2D(0, 0));
-        file.close();
-
-        System.out.println("Loaded the dataset " + filename + " containing " +
-                           _full.x.rows() + " instances with " +
-                           _full.x.columns() + " attributes.");
-    }
-
-    private void extractClasses()
-    {
-        _classSet = new TreeSet<Double>();
-        for (int r = 0; r < _full.x.rows(); r++) {
-            if (!_classSet.contains(_full.y[r])) {
-                _classSet.add(_full.y[r]);
-            }
-        }
-        _classes = new double[_classSet.size()];
-        System.out.println("Classes: ");
-        int i = 0;
-        for (Double c : _classSet.toArray(new Double[0])) {
-            _classes[i] = c;
-            System.out.println("   " + _classes[i]);
-            i++;
-        }
     }
 
     private void splitDataset(double trainingFraction,
@@ -414,15 +338,6 @@ public class jcp_train
                 ("Error: Failed to load classifier configuration from '" +
                  filename + "'.");
             throw e;
-        }
-    }
-
-    private void saveModel(InductiveConformalClassifier icc, String filename)
-        throws IOException
-    {
-        try (ObjectOutputStream oos =
-                 new ObjectOutputStream(new FileOutputStream(filename))) {
-            oos.writeObject(icc);
         }
     }
 
