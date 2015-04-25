@@ -14,16 +14,14 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import java.util.Arrays;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
 
 import jcp.nc.IClassificationNonconformityFunction;
+import jcp.util.ParallelizedAction;
 
 public class InductiveConformalClassifier
     implements java.io.Serializable
 {
     private static final boolean PARALLEL = true;
-    private static final ForkJoinPool taskPool = new ForkJoinPool();
 
     public IClassificationNonconformityFunction _nc;
     private double[] _calibration_scores;
@@ -75,7 +73,7 @@ public class InductiveConformalClassifier
         } else {
             ClassifyAction all =
                 new ClassifyAction(x, response, significance, 0, n);
-            taskPool.invoke(all);
+            all.start();
         }
         return response;
     }
@@ -132,47 +130,34 @@ public class InductiveConformalClassifier
         _targets = (double[])ois.readObject();
     }
 
-    class ClassifyAction extends RecursiveAction
+    class ClassifyAction extends jcp.util.ParallelizedAction
     {
         DoubleMatrix2D _x;
         ObjectMatrix2D _response;
         double _significance;
-        int _first;
-        int _last;
 
         public ClassifyAction(DoubleMatrix2D x,
                               ObjectMatrix2D response,
                               double significance,
                               int first, int last)
         {
+            super(first, last);
             _x = x;
             _response = response;
             _significance = significance;
-            _first = first;
-            _last = last;
         }
 
-        protected void compute()
+        protected void compute(int i)
         {
-            if (_last - _first < 100) {
-                computeDirectly();
-            } else {
-                int split = (_last - _first)/2;
-                invokeAll
-                    (new ClassifyAction(_x, _response, _significance,
-                                        _first, _first + split),
-                     new ClassifyAction(_x, _response, _significance,
-                                        _first + split, _last));
-            }
+            DoubleMatrix1D instance = _x.viewRow(i);
+            ObjectMatrix1D labels   = _response.viewRow(i);
+            predict(instance, _significance, labels);
         }
 
-        protected void computeDirectly()
+        protected ParallelizedAction createSubtask(int first, int last)
         {
-            for (int i = _first; i < _last; i++) {
-                DoubleMatrix1D instance = _x.viewRow(i);
-                ObjectMatrix1D labels   = _response.viewRow(i);
-                predict(instance, _significance, labels);
-            }
+            return new ClassifyAction(_x, _response, _significance,
+                                      first, last);
         }
     }
 }

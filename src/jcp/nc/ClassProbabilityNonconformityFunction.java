@@ -4,13 +4,12 @@ package jcp.nc;
 
 import java.util.Map;
 import java.util.TreeMap;
-import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.RecursiveAction;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
 import jcp.ml.IClassifier;
+import jcp.util.ParallelizedAction;
 
 public class ClassProbabilityNonconformityFunction
     implements IClassificationNonconformityFunction,
@@ -18,8 +17,6 @@ public class ClassProbabilityNonconformityFunction
 {
     private static final boolean DEBUG = false;
     private static final boolean PARALLEL = true;
-
-    private static final ForkJoinPool taskPool = new ForkJoinPool();
 
     IClassifier _model;
     int _n_classes;
@@ -82,8 +79,7 @@ public class ClassProbabilityNonconformityFunction
             }
         } else {
             CalcNCAction all = new CalcNCAction(x, y, nc, 0, y.length);
-
-            taskPool.invoke(all);
+            all.start();
         }
         return nc;
     }
@@ -114,48 +110,35 @@ public class ClassProbabilityNonconformityFunction
         return _model;
     }
 
-    class CalcNCAction extends RecursiveAction
+    class CalcNCAction extends jcp.util.ParallelizedAction
     {
         DoubleMatrix2D _x;
         double[] _y;
         double[] _nc;
-        int _first;
-        int _last;
 
         public CalcNCAction(DoubleMatrix2D x,
                             double[] y,
                             double[] nc,
                             int first, int last)
         {
+            super(first, last);
             _x = x;
             _y = y;
             _nc = nc;
-            _first = first;
-            _last = last;
         }
 
-        protected void compute()
-        {
-            if (_last - _first < 100) {
-                computeDirectly();
-            } else {
-                int split = (_last - _first)/2;
-                invokeAll
-                    (new CalcNCAction(_x, _y, _nc, _first, _first + split),
-                     new CalcNCAction(_x, _y, _nc, _first + split, _last));
-            }
-        }
-
-        protected void computeDirectly()
+        protected void compute(int i)
         {
             double[] probability = new double[_n_classes];
 
-            for (int i = _first; i < _last; i++) {
-                DoubleMatrix1D instance = _x.viewRow(i);
-                _model.predict(instance, probability);
+            DoubleMatrix1D instance = _x.viewRow(i);
+            _model.predict(instance, probability);
+            _nc[i] = probability[_class_index.get(_y[i])];
+        }
 
-                _nc[i] = probability[_class_index.get(_y[i])];
-            }
+        protected ParallelizedAction createSubtask(int first, int last)
+        {
+            return new CalcNCAction(_x, _y, _nc, first, last);
         }
     }
 }
