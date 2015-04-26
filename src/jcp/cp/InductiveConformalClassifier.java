@@ -26,7 +26,7 @@ public class InductiveConformalClassifier
     private static final boolean PARALLEL = true;
 
     public IClassificationNonconformityFunction _nc;
-    private double[] _calibration_scores;
+    private double[] _calibrationScores;
     private double[] _targets;
 
     private DoubleMatrix2D _xtr;
@@ -49,8 +49,22 @@ public class InductiveConformalClassifier
         _ycal = ycal;
         
         _nc.fit(_xtr, _ytr);
-        _calibration_scores = _nc.calc_nc(_xcal, _ycal);
-        Arrays.sort(_calibration_scores);
+
+        int n = _xcal.rows();
+        _calibrationScores = new double[n];
+        if (!PARALLEL) {
+            for (int i = 0; i < n; i++) {
+                DoubleMatrix1D instance = _xcal.viewRow(i);
+                _calibrationScores[i] =
+                    _nc.calculateNonConformityScore(instance, _ycal[i]);
+            }
+        } else {
+            CalculateNCScoresAction all =
+                new CalculateNCScoresAction(_xcal, _ycal, _calibrationScores,
+                                            0, n);
+            all.start();
+        }
+        Arrays.sort(_calibrationScores);
     }
 
     /**
@@ -110,7 +124,7 @@ public class InductiveConformalClassifier
             // TODO: Underlying model should really only have to predict once.
             double  nc_pred = _nc.calculateNonConformityScore(x, _targets[i]);
             boolean include = Util.calculateInclusion(nc_pred,
-                                                      _calibration_scores,
+                                                      _calibrationScores,
                                                       significance);
             labels.set(i, include);
         }
@@ -167,7 +181,7 @@ public class InductiveConformalClassifier
             //       once per instance.
             double ncScore = _nc.calculateNonConformityScore(x, _targets[i]);
             double pValue  = Util.calculatePValue(ncScore,
-                                                  _calibration_scores);
+                                                  _calibrationScores);
             pValues.set(i, pValue);
         }
     }
@@ -176,7 +190,7 @@ public class InductiveConformalClassifier
         throws java.io.IOException
     {
         oos.writeObject(_nc);
-        oos.writeObject(_calibration_scores);
+        oos.writeObject(_calibrationScores);
         oos.writeObject(_targets);
     }
 
@@ -184,7 +198,7 @@ public class InductiveConformalClassifier
         throws ClassNotFoundException, java.io.IOException
     {
         _nc = (IClassificationNonconformityFunction)ois.readObject();
-        _calibration_scores = (double[])ois.readObject();
+        _calibrationScores = (double[])ois.readObject();
         _targets = (double[])ois.readObject();
     }
 
@@ -244,6 +258,37 @@ public class InductiveConformalClassifier
         {
             return new ClassifyPValuesAction(_x, _response,
                                              first, last);
+        }
+    }
+
+    class CalculateNCScoresAction extends jcp.util.ParallelizedAction
+    {
+        DoubleMatrix2D _x;
+        double[] _y;
+        double[] _nonConformityScores;
+
+        public CalculateNCScoresAction(DoubleMatrix2D x,
+                                       double[] y,
+                                       double[] nonConformityScores,
+                                       int first, int last)
+        {
+            super(first, last);
+            _x = x;
+            _y = y;
+            _nonConformityScores = nonConformityScores;
+        }
+
+        protected void compute(int i)
+        {
+            DoubleMatrix1D instance = _x.viewRow(i);
+            _nonConformityScores[i] =
+                _nc.calculateNonConformityScore(instance, _y[i]);
+        }
+
+        protected ParallelizedAction createSubtask(int first, int last)
+        {
+            return new CalculateNCScoresAction(_x, _y, _nonConformityScores,
+                                               first, last);
         }
     }
 }
