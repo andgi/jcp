@@ -7,6 +7,8 @@ import cern.colt.matrix.ObjectMatrix1D;
 import cern.colt.matrix.ObjectMatrix2D;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.matrix.impl.DenseDoubleMatrix1D;
+import cern.colt.matrix.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.impl.DenseObjectMatrix1D;
 import cern.colt.matrix.impl.DenseObjectMatrix2D;
 
@@ -71,8 +73,8 @@ public class InductiveConformalClassifier
                 predict(instance, significance, labels);
             }
         } else {
-            ClassifyAction all =
-                new ClassifyAction(x, response, significance, 0, n);
+            ClassifyLabelsAction all =
+                new ClassifyLabelsAction(x, response, significance, 0, n);
             all.start();
         }
         return response;
@@ -114,6 +116,62 @@ public class InductiveConformalClassifier
         }
     }
 
+    /**
+     * Computes the predicted p-values for each target and instance in x.
+     * The method is parallellized over the instances.
+     *
+     * @param x             the instances.
+     * @return an <tt>DoubleMatrix2D</tt> containing the predicted p-values for each instance.
+     */
+    public DoubleMatrix2D predictPValues(DoubleMatrix2D x)
+    {
+        int n = x.rows();
+        DoubleMatrix2D response = new DenseDoubleMatrix2D(n, _targets.length);
+        if (!PARALLEL) {
+            for (int i = 0; i < n; i++) {
+                DoubleMatrix1D instance = x.viewRow(i);
+                DoubleMatrix1D pValues  = response.viewRow(i);
+                predictPValues(instance, pValues);
+            }
+        } else {
+            ClassifyPValuesAction all =
+                new ClassifyPValuesAction(x, response, 0, n);
+            all.start();
+        }
+        return response;
+    }
+
+   /**
+     * Computes the predicted p-values for the instance x.
+     *
+     * @param x    the instance.
+     * @return an <tt>DoubleMatrix1D</tt> containing the predicted p-values.
+     */
+    public DoubleMatrix1D predictPValues(DoubleMatrix1D x)
+    {
+        DoubleMatrix1D response = new DenseDoubleMatrix1D(_targets.length);
+        predictPValues(x, response);
+        return response;
+    }
+
+   /**
+     * Computes the predicted p-values for the instance x.
+     *
+     * @param x          the instance.
+     * @param pValues    an initialized <tt>DoubleMatrix1D</tt> to store the p-values.
+     */
+    public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues)
+    {
+        for (int i = 0; i < _targets.length; i++) {
+            // TODO: The underlying model should really only have to predict
+            //       once per instance.
+            double ncScore = _nc.calculateNonConformityScore(x, _targets[i]);
+            double pValue  = Util.calculatePValue(ncScore,
+                                                  _calibration_scores);
+            pValues.set(i, pValue);
+        }
+    }
+
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException
     {
@@ -130,16 +188,16 @@ public class InductiveConformalClassifier
         _targets = (double[])ois.readObject();
     }
 
-    class ClassifyAction extends jcp.util.ParallelizedAction
+    class ClassifyLabelsAction extends jcp.util.ParallelizedAction
     {
         DoubleMatrix2D _x;
         ObjectMatrix2D _response;
         double _significance;
 
-        public ClassifyAction(DoubleMatrix2D x,
-                              ObjectMatrix2D response,
-                              double significance,
-                              int first, int last)
+        public ClassifyLabelsAction(DoubleMatrix2D x,
+                                    ObjectMatrix2D response,
+                                    double significance,
+                                    int first, int last)
         {
             super(first, last);
             _x = x;
@@ -156,8 +214,36 @@ public class InductiveConformalClassifier
 
         protected ParallelizedAction createSubtask(int first, int last)
         {
-            return new ClassifyAction(_x, _response, _significance,
-                                      first, last);
+            return new ClassifyLabelsAction(_x, _response, _significance,
+                                            first, last);
+        }
+    }
+
+    class ClassifyPValuesAction extends jcp.util.ParallelizedAction
+    {
+        DoubleMatrix2D _x;
+        DoubleMatrix2D _response;
+
+        public ClassifyPValuesAction(DoubleMatrix2D x,
+                                     DoubleMatrix2D response,
+                                     int first, int last)
+        {
+            super(first, last);
+            _x = x;
+            _response = response;
+        }
+
+        protected void compute(int i)
+        {
+            DoubleMatrix1D instance = _x.viewRow(i);
+            DoubleMatrix1D pValues  = _response.viewRow(i);
+            predictPValues(instance, pValues);
+        }
+
+        protected ParallelizedAction createSubtask(int first, int last)
+        {
+            return new ClassifyPValuesAction(_x, _response,
+                                             first, last);
         }
     }
 }
