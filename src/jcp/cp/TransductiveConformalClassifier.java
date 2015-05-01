@@ -1,3 +1,6 @@
+// Copyright (C) 2014  Henrik Linusson
+// Copyright (C) 2015  Anders Gidenstam
+// License: to be defined.
 package jcp.cp;
 
 import cern.colt.matrix.DoubleMatrix1D;
@@ -9,23 +12,28 @@ import java.util.Arrays;
 
 import jcp.nc.IClassificationNonconformityFunction;
 
-public class TransductiveConformalClassifier {
+public class TransductiveConformalClassifier
+    implements IConformalClassifier, java.io.Serializable
+{
     public IClassificationNonconformityFunction _nc;
     private double[] _targets;
-    
+
     private DoubleMatrix2D _xtr;   
     private double[] _ytr;
 
-    public TransductiveConformalClassifier(double[] targets) {
+    public TransductiveConformalClassifier(double[] targets)
+    {
         _targets = targets;
     }
 
-    public void fit(DoubleMatrix2D xtr, double[] ytr) {
+    public void fit(DoubleMatrix2D xtr, double[] ytr)
+    {
         _xtr = xtr;
         _ytr = ytr;
     }
-    
-    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance) {
+
+    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance)
+    {
         int n = x.rows();
         ObjectMatrix2D response = new SparseObjectMatrix2D(n, _targets.length);
         
@@ -36,6 +44,11 @@ public class TransductiveConformalClassifier {
             }
         }
         return response;
+    }
+
+    public IClassificationNonconformityFunction getNonconformityFunction()
+    {
+        return _nc;
     }
 
     private boolean[] _predict(DoubleMatrix1D xtest, double ytest, double significance) {

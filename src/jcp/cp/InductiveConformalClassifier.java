@@ -21,7 +21,7 @@ import jcp.nc.IClassificationNonconformityFunction;
 import jcp.util.ParallelizedAction;
 
 public class InductiveConformalClassifier
-    implements java.io.Serializable
+    implements IConformalClassifier, java.io.Serializable
 {
     private static final boolean PARALLEL = true;
 
@@ -184,6 +184,11 @@ public class InductiveConformalClassifier
                                                   _calibrationScores);
             pValues.set(i, pValue);
         }
+    }
+
+    public IClassificationNonconformityFunction getNonconformityFunction()
+    {
+        return _nc;
     }
 
     private void writeObject(ObjectOutputStream oos)

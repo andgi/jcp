@@ -29,11 +29,11 @@ public class DataSetTools
     }
 
     public static DataSet loadDataSet(String filename,
-                                      InductiveConformalClassifier icc)
+                                      IConformalClassifier cc)
         throws IOException
     {
         boolean hasClassifier =
-            icc != null && icc._nc.getClassifier() != null;
+            cc != null && cc.getNonconformityFunction().getClassifier() != null;
         FileInputStream file;
         file = new FileInputStream(filename);
 
@@ -42,7 +42,8 @@ public class DataSetTools
                 (file,
                  // Select the desired representation. FIXME: This is ugly.
                  hasClassifier
-                 ? icc._nc.getClassifier().nativeStorageTemplate().like2D(0, 0)
+                 ? cc.getNonconformityFunction().getClassifier().
+                       nativeStorageTemplate().like2D(0, 0)
                  : new cern.colt.matrix.impl.SparseDoubleMatrix2D(0, 0));
         file.close();
 
@@ -51,13 +52,15 @@ public class DataSetTools
                            dataSet.x.columns() + " attributes.");
         if (hasClassifier &&
             dataSet.x.columns() !=
-                icc._nc.getClassifier().getAttributeCount()) {
+                cc.getNonconformityFunction().getClassifier().
+                    getAttributeCount()) {
             System.err.println
                 ("Warning: " +
                  "The number of attributes in the data set, " +
                  dataSet.x.columns() + ", " +
                  "does not match the number of attributes in the model, " +
-                 icc._nc.getClassifier().getAttributeCount() + ".");
+                 cc.getNonconformityFunction().getClassifier().
+                     getAttributeCount() + ".");
         }
         return dataSet;
     }

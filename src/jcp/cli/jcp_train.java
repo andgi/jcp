@@ -37,6 +37,7 @@ public class jcp_train
     private DataSet _training;
     private DataSet _calibration;
     private DataSet _test;
+    private boolean _useTCC = false;
     private boolean _useCP = true;
     private boolean _validate = false;
     private double  _significanceLevel = 0.10;
@@ -53,9 +54,12 @@ public class jcp_train
         throws IOException
     {
         processArguments(args);
-        if (_useCP) {
+        if (_useCP && _useTCC) {
+            // Supports train and save and/or test.
+            trainTCC(_dataSetFileName);
+        } else if (_useCP) {
             // Supports train, calibrate and save and/or test.
-            runICCTest(_dataSetFileName);
+            trainICC(_dataSetFileName);
         } else {
             // FIXME: Only initial use case yet. Train & test.
             runPlainSVMTest(_dataSetFileName);
@@ -158,6 +162,8 @@ public class jcp_train
                     }
                 } else if (args[i].equals("-v")) {
                     _validate = true;
+                } else if (args[i].equals("-tcc")) {
+                    _useTCC = true;
                 } else if (args[i].equals("-nocp")) {
                     _useCP = false;
                 } else {
@@ -211,11 +217,16 @@ public class jcp_train
             ("                    Reserves 50% of the data set for " +
              "validation.");
         System.out.println
+            ("  -icc              Use inductive conformal classification " +
+             "(default).");
+        System.out.println
+            ("  -tcc              Use transductive conformal classification.");
+        System.out.println
             ("  -nocp             Test classification without " +
              "conformal prediction.");
     }
 
-    private void runICCTest(String dataSetFileName)
+    private void trainICC(String dataSetFileName)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
@@ -251,7 +262,7 @@ public class jcp_train
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
 
         if (_validate) {
-            ICCTools.runTest(icc, _test, null, _significanceLevel);
+            CCTools.runTest(icc, _test, null, _significanceLevel);
             long t5 = System.currentTimeMillis();
             System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
                                " sec.");
@@ -260,7 +271,56 @@ public class jcp_train
         if (_modelFileName != null) {
             System.out.println("Saving the model to '" +
                                _modelFileName + "'...");
-            ICCTools.saveModel(icc, _modelFileName);
+            CCTools.saveModel(icc, _modelFileName);
+            System.out.println("... Done.");
+        }
+    }
+
+  private void trainTCC(String dataSetFileName)
+        throws IOException
+    {
+        long t1 = System.currentTimeMillis();
+        _full = DataSetTools.loadDataSet(dataSetFileName);
+        SimpleEntry<double[],SortedSet<Double>> pair =
+            DataSetTools.extractClasses(_full);
+        double[] classes = pair.getKey();
+        SortedSet<Double> classSet = pair.getValue();
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
+
+        if (_validate) {
+            splitDataset(0.5, 0.0);
+        } else {
+            splitDataset(1.0, 0.0);
+        }
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+
+        System.out.println("TCC training set " + _training.x.rows() +
+                           " instances.");
+
+        TransductiveConformalClassifier tcc =
+            new TransductiveConformalClassifier(classes);
+        tcc._nc =
+            //new ClassProbabilityNonconformityFunction(classes, _classifier);
+            new AverageClassificationNonconformityFunction(classes);
+
+        tcc.fit(_training.x, _training.y);
+        long t4 = System.currentTimeMillis();
+        System.out.println("Training complete.");
+        System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
+
+        if (_validate) {
+            CCTools.runTest(tcc, _test, null, _significanceLevel);
+            long t5 = System.currentTimeMillis();
+            System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
+                               " sec.");
+        }
+
+        if (_modelFileName != null) {
+            System.out.println("Saving the model to '" +
+                               _modelFileName + "'...");
+            CCTools.saveModel(tcc, _modelFileName);
             System.out.println("... Done.");
         }
     }

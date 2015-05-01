@@ -37,8 +37,8 @@ public class jcp_predict
     {
         processArguments(args);
 
-        ICCTools.runTest(_modelFileName, _testSetFileName, _outputFileName,
-                         _significanceLevel);
+        CCTools.runTest(_modelFileName, _testSetFileName, _outputFileName,
+                        _significanceLevel);
     }
 
     private void processArguments(String[] args)

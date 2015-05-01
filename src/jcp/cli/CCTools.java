@@ -16,12 +16,12 @@ import jcp.nc.*;
 import jcp.io.*;
 
 /**
- * Higher-level tools for Inductive Conformal Classification.
+ * Higher-level tools for Conformal Classification.
  *
  * @author anders.gidenstam(at)hb.se
  */
 
-public class ICCTools
+public class CCTools
 {
     public static void runTest(String modelFileName,
                                String dataSetFileName,
@@ -39,24 +39,24 @@ public class ICCTools
         System.out.println("Loading the model '" + modelFileName +
                            "'.");
         long t1 = System.currentTimeMillis();
-        InductiveConformalClassifier icc = loadModel(modelFileName);
+        IConformalClassifier cc = loadModel(modelFileName);
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
         System.out.println("Loading the data set '" + dataSetFileName +
                            "'.");
-        DataSet testSet = DataSetTools.loadDataSet(dataSetFileName, icc);
+        DataSet testSet = DataSetTools.loadDataSet(dataSetFileName, cc);
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
-        runTest(icc, testSet, outputFileName, significanceLevel);
+        runTest(cc, testSet, outputFileName, significanceLevel);
 
         long t4 = System.currentTimeMillis();
         System.out.println("Total Duration " + (double)(t4 - t1)/1000.0 +
                            " sec.");
     }
 
-    public static void runTest(InductiveConformalClassifier icc,
+    public static void runTest(IConformalClassifier cc,
                                DataSet testSet,
                                String outputFileName,
                                double significanceLevel)
@@ -84,7 +84,7 @@ public class ICCTools
 
         // Evaluation on the test set.
         ObjectMatrix2D pred = null;
-        pred = icc.predict(testSet.x, significanceLevel);
+        pred = cc.predict(testSet.x, significanceLevel);
         //System.out.println(pred);
 
         int correct = 0;
@@ -128,28 +128,29 @@ public class ICCTools
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
     }
 
-    public static InductiveConformalClassifier loadModel(String filename)
+    public static IConformalClassifier loadModel(String filename)
         throws IOException
     {
-        InductiveConformalClassifier icc = null;
+        IConformalClassifier cc = null;
 
         try (ObjectInputStream ois =
                  new ObjectInputStream(new FileInputStream(filename))) {
-            icc = (InductiveConformalClassifier)ois.readObject();
+            cc = (IConformalClassifier)ois.readObject();
         } catch (Exception e) {
-            throw new IOException("Failed to load ICC model from '" +
+            throw new IOException("Failed to load Conformal Classifier model" +
+                                  " from '" +
                                   filename + "'. " + e.getMessage());
         }
-        return icc;
+        return cc;
     }
 
-    public static void saveModel(InductiveConformalClassifier icc,
+    public static void saveModel(IConformalClassifier cc,
                                  String filename)
         throws IOException
     {
         try (ObjectOutputStream oos =
                  new ObjectOutputStream(new FileOutputStream(filename))) {
-            oos.writeObject(icc);
+            oos.writeObject(cc);
         }
     }
 }

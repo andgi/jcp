@@ -10,7 +10,7 @@ import java.util.Map;
 import java.util.TreeMap;
 
 public class AverageClassificationNonconformityFunction
-    implements IClassificationNonconformityFunction
+    implements IClassificationNonconformityFunction, java.io.Serializable
 {
     int[] _class_count;
     int _n_classes;
