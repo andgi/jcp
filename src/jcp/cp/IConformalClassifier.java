@@ -11,7 +11,6 @@ import jcp.nc.IClassificationNonconformityFunction;
 
 public interface IConformalClassifier
 {
-
     /**
      * Computes the set of labels predicted at the selected significance
      * level for each instance in x.
@@ -31,7 +30,7 @@ public interface IConformalClassifier
      * @param significance  the significance level [0-1].
      * @return an <tt>ObjectMatrix1D</tt> containing the predicted labels.
      */
-    //public ObjectMatrix1D predict(DoubleMatrix1D x, double significance);
+    public ObjectMatrix1D predict(DoubleMatrix1D x, double significance);
 
     /**
      * Computes the set of labels predicted for the instance x at the
@@ -41,8 +40,8 @@ public interface IConformalClassifier
      * @param significance  the significance level [0-1].
      * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
      */
-    //public void predict(DoubleMatrix1D x, double significance,
-    //                    ObjectMatrix1D labels);
+    public void predict(DoubleMatrix1D x, double significance,
+                        ObjectMatrix1D labels);
 
     /**
      * Computes the predicted p-values for each target and instance in x.
@@ -51,7 +50,7 @@ public interface IConformalClassifier
      * @param x             the instances.
      * @return an <tt>DoubleMatrix2D</tt> containing the predicted p-values for each instance.
      */
-    //public DoubleMatrix2D predictPValues(DoubleMatrix2D x)
+    public DoubleMatrix2D predictPValues(DoubleMatrix2D x);
 
     /**
      * Computes the predicted p-values for the instance x.
@@ -59,7 +58,7 @@ public interface IConformalClassifier
      * @param x    the instance.
      * @return an <tt>DoubleMatrix1D</tt> containing the predicted p-values.
      */
-    //public DoubleMatrix1D predictPValues(DoubleMatrix1D x);
+    public DoubleMatrix1D predictPValues(DoubleMatrix1D x);
 
     /**
      * Computes the predicted p-values for the instance x.
@@ -67,8 +66,13 @@ public interface IConformalClassifier
      * @param x          the instance.
      * @param pValues    an initialized <tt>DoubleMatrix1D</tt> to store the p-values.
      */
-    //public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues);
+    public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues);
 
+    /**
+     * Returns the associated nonconformity function.
+     *
+     * @return the associated <tt>IClassificationNonconformityFunction</tt>.
+     */
     public IClassificationNonconformityFunction getNonconformityFunction();
 
 }

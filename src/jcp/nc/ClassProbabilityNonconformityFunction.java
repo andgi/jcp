@@ -47,11 +47,9 @@ public class ClassProbabilityNonconformityFunction
         _model.fit(x, y);
     }
 
-    
-    public void fit(DoubleMatrix2D xtr,
-                    double[] ytr,
-                    DoubleMatrix1D xtest,
-                    double ytest)
+    public IClassificationNonconformityFunction
+        fitNew(DoubleMatrix2D xtr, double[] ytr,
+               DoubleMatrix1D xtest, double ytest)
     {
         throw new UnsupportedOperationException("Not implemented");
     }

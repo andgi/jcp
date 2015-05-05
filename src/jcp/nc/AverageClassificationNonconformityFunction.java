@@ -37,14 +37,25 @@ public class AverageClassificationNonconformityFunction
     }
 
     
-    public void fit(DoubleMatrix2D xtr, double[] ytr,
-                    DoubleMatrix1D xtest, double ytest)
+    private void fit(DoubleMatrix2D xtr, double[] ytr,
+                     DoubleMatrix1D xtest, double ytest)
     {
         for (double y_ : ytr)
             _class_count[_class_index.get(y_)]++;
         
         _class_count[_class_index.get(ytest)]++;
         _n_instances = ytr.length + 1;
+    }
+
+    public IClassificationNonconformityFunction
+        fitNew(DoubleMatrix2D xtr, double[] ytr,
+               DoubleMatrix1D xtest, double ytest)
+    {
+        // FIXME: Part of the work for the same training set could be shared.
+        AverageClassificationNonconformityFunction nc =
+            new AverageClassificationNonconformityFunction(_classes);
+        nc.fit(xtr, ytr, xtest, ytest);
+        return nc;
     }
 
     @Deprecated
@@ -57,7 +68,6 @@ public class AverageClassificationNonconformityFunction
         return nc;
     }
 
-    
     public double[] calc_nc(DoubleMatrix2D xtr, double[] ytr,
                             DoubleMatrix1D xtest, double ytest)
     {
