@@ -30,6 +30,7 @@ import jcp.ml.IClassifier;
 
 public class jcp_train
 {
+    private int     _ncFunctionType = 0;
     private IClassifier _classifier;
     private String  _dataSetFileName;
     private String  _modelFileName;
@@ -80,6 +81,31 @@ public class jcp_train
                 if (args[i].equals("-h")) {
                     printUsage();
                     System.exit(-1);
+                } else if (args[i].equals("-nc")) {
+                    if (++i < args.length) {
+                        boolean ok = false;
+                        try {
+                            int c = Integer.parseInt(args[i]);
+                            String[] NCFs =
+                                ClassificationNonconformityFunctionFactory.
+                                    getInstance().getNonconformityFunctions();
+                            if (0 <= c && c < NCFs.length) {
+                                _ncFunctionType = c;
+                                ok = true;
+                            }
+                        } catch (Exception e) {
+                            // Handled below as ok is false.
+                        }
+                        if (!ok) {
+                            System.err.println
+                                ("Error: Illegal nonconformity function " +
+                                 "number '" + args[i] +
+                                 "' given to -nc.");
+                            System.err.println();
+                            printUsage();
+                            System.exit(-1);
+                        }
+                    }
                 } else if (args[i].equals("-c")) {
                     if (++i < args.length) {
                         boolean ok = false;
@@ -192,15 +218,33 @@ public class jcp_train
         System.out.println
             ("  -h                Print this message and exit.");
         System.out.println
+            ("  -nc <ncfunc #>    Select the nonconformity function to use.");
+        System.out.println
+            ("                    The following nonconformity functions are" +
+             " supported:");
+        {
+            String[] NCFs =
+                ClassificationNonconformityFunctionFactory.getInstance().
+                    getNonconformityFunctions();
+            for (int i = 0; i < NCFs.length; i++) {
+                System.out.print("                      " + i + ". " + NCFs[i]);
+                if (i == _ncFunctionType) {
+                    System.out.println(" (selected)");
+                } else {
+                    System.out.println();
+                }
+            }
+        }
+        System.out.println
             ("  -c <classifier #> Select the classifier to use.");
         System.out.println
-            ("                    The following classifiers are supported.");
+            ("                    The following classifiers are supported:");
         {
-            int i = 0;
-            for (String c : ClassifierFactory.getInstance().
-                                getClassifierTypes()) {
-                System.out.println("                      " + i + ". " + c);
-                i++;
+            String[] classifiers =
+                ClassifierFactory.getInstance().getClassifierTypes();
+            for (int i = 0; i < classifiers.length; i++) {
+                System.out.println("                      " + i + ". " +
+                                   classifiers[i]);
             }
         }
         System.out.println
@@ -254,7 +298,10 @@ public class jcp_train
         InductiveConformalClassifier icc =
             new InductiveConformalClassifier(classes);
         icc._nc =
-            new ClassProbabilityNonconformityFunction(classes, _classifier);
+            ClassificationNonconformityFunctionFactory.getInstance().
+                createNonconformityFunction(_ncFunctionType,
+                                            classes,
+                                            _classifier);
 
         icc.fit(_training.x, _training.y, _calibration.x, _calibration.y);
         long t4 = System.currentTimeMillis();
@@ -302,8 +349,10 @@ public class jcp_train
         TransductiveConformalClassifier tcc =
             new TransductiveConformalClassifier(classes);
         tcc._nc =
-            //new ClassProbabilityNonconformityFunction(classes, _classifier);
-            new AverageClassificationNonconformityFunction(classes);
+            ClassificationNonconformityFunctionFactory.getInstance().
+                createNonconformityFunction(_ncFunctionType,
+                                            classes,
+                                            _classifier);
 
         tcc.fit(_training.x, _training.y);
         long t4 = System.currentTimeMillis();
