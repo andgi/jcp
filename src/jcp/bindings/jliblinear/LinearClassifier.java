@@ -106,6 +106,13 @@ public class LinearClassifier
         _attributeCount = tmp_x.columns();
     }
 
+    public IClassifier fitNew(DoubleMatrix2D x, double[] y)
+    {
+        LinearClassifier clone = new LinearClassifier(_parameters);
+        clone.fit(x, y);
+        return clone;
+    }
+
     public double predict(DoubleMatrix1D instance)
     {
         SparseDoubleMatrix1D tmp_instance;

@@ -1,4 +1,4 @@
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2015  Anders Gidenstam
 // License: to be defined.
 package jcp.bindings.libsvm;
 
@@ -136,6 +136,13 @@ public class SVMClassifier
 
         _model = svm.svm_train(_parameters, tmp_x, y);
         _attributeCount = tmp_x.columns();
+    }
+
+    public IClassifier fitNew(DoubleMatrix2D x, double[] y)
+    {
+        SVMClassifier clone = new SVMClassifier(_parameters);
+        clone.fit(x, y);
+        return clone;
     }
 
     public double predict(DoubleMatrix1D instance)

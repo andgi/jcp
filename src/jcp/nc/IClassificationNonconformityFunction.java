@@ -9,7 +9,11 @@ import cern.colt.matrix.DoubleMatrix2D;
 public interface IClassificationNonconformityFunction
 {
     public void fit(DoubleMatrix2D x, double[] y);
+    public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
+                                                       double[] y);
 
+    // FIXME: This method is inefficient if the underlying classifier
+    //        still needs everything in one X and Y structure.
     public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
                DoubleMatrix1D xtest, double ytest);

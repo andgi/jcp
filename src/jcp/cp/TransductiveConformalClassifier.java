@@ -108,6 +108,39 @@ public class TransductiveConformalClassifier
     }
 
     /**
+     * Computes the set of labels predicted for the instance x at the
+     * selected significance level using prepared buffers for the training set.
+     *
+     * @param x             the instance.
+     * @param significance  the significance level [0-1].
+     * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
+     * @param xtr           an initialized <tt>DoubleMatrix2D</tt> containing the training instances and, last, one free slot.
+     * @param ytr           an initialized <tt>double[]</tt> array containing the training instances and, last, one free slot.
+     */
+    private void predict(DoubleMatrix1D x, double significance,
+                         ObjectMatrix1D labels,
+                         DoubleMatrix2D xtr, double[] ytr)
+    {
+        for (int i = 0; i < _targets.length; i++) {
+            // Set up the training set for this prediction.
+            int last = xtr.rows() - 1;
+            xtr.viewRow(last).assign(x);
+            ytr[last] = _targets[i];
+
+            // Create a nonconformity function instance and predict.
+            IClassificationNonconformityFunction ncf =
+                _nc.fitNew(xtr, ytr);
+            double[] nc = ncf.calc_nc(xtr, ytr);
+            double[] nc_cal = Arrays.copyOf(nc, nc.length - 1);
+            Arrays.sort(nc_cal);
+            double ncScore = nc[nc.length - 1];
+            boolean include =
+                Util.calculateInclusion(ncScore, nc_cal, significance);
+            labels.set(i, include);
+        }
+    }
+
+    /**
      * Computes the predicted p-values for each target and instance in x.
      * The method is parallellized over the instances.
      *
@@ -166,14 +199,83 @@ public class TransductiveConformalClassifier
         }
     }
 
+    /**
+     * Computes the predicted p-values for the instance x
+     * using prepared buffers for the training set.
+     *
+     * @param x        the instance.
+     * @param pValues  an initialized <tt>DoubleMatrix1D</tt> to store the p-values.
+     * @param xtr      an initialized <tt>DoubleMatrix2D</tt> containing the training instances and, last, one free slot.
+     * @param ytr      an initialized <tt>double[]</tt> array containing the training instances and, last, one free slot.
+     */
+    private void predictPValues(DoubleMatrix1D x,
+                                DoubleMatrix1D pValues,
+                                DoubleMatrix2D xtr, double[] ytr)
+    {
+        for (int i = 0; i < _targets.length; i++) {
+            // Set up the training set for this prediction.
+            int last = xtr.rows() - 1;
+            xtr.viewRow(last).assign(x);
+            ytr[last] = _targets[i];
+
+            // Create a nonconformity function instance and predict.
+            IClassificationNonconformityFunction ncf =
+                _nc.fitNew(xtr, ytr);
+            double[] nc = ncf.calc_nc(xtr, ytr);
+            double[] nc_cal = Arrays.copyOf(nc, nc.length - 1);
+            Arrays.sort(nc_cal);
+            double ncScore = nc[nc.length - 1];
+            double pValue  = Util.calculatePValue(ncScore, nc_cal);
+            pValues.set(i, pValue);
+        }
+    }
+
     public IClassificationNonconformityFunction getNonconformityFunction()
     {
         return _nc;
     }
 
-    class ClassifyLabelsAction extends jcp.util.ParallelizedAction
+    abstract class ClassifyAction extends jcp.util.ParallelizedAction
     {
-        DoubleMatrix2D _x;
+        protected DoubleMatrix2D _x;
+        protected DoubleMatrix2D _myXtr;
+        protected double[]       _myYtr;
+
+        public ClassifyAction(DoubleMatrix2D x,
+                              int first, int last)
+        {
+            super(first, last);
+            _x = x;
+        }
+
+        protected void initialize(int first, int last)
+        {
+            super.initialize(first, last);
+            // Create a local copy of the training set with one free slot
+            // for the instance to be predicted.
+            int n = _xtr.rows();
+            _myXtr = _xtr.like(n + 1, _x.columns());
+            _myYtr = new double[n + 1];
+            // FIXME: This way to copy the data is probably very inefficient.
+            //        Most of the underlying data-structures are row-oriented
+            //        and this should be used to share the row data.
+            for (int r = 0; r < n; r++) {
+                _myXtr.viewRow(r).assign(_xtr.viewRow(r));
+                _myYtr[r] = _ytr[r];
+            }
+        }
+
+        protected void finalize(int first, int last)
+        {
+            super.finalize(first, last);
+            // Allow faster reclamation.
+            _myXtr = null;
+            _myYtr = null;
+        }
+    }
+
+    class ClassifyLabelsAction extends ClassifyAction
+    {
         ObjectMatrix2D _response;
         double _significance;
 
@@ -182,8 +284,7 @@ public class TransductiveConformalClassifier
                                     double significance,
                                     int first, int last)
         {
-            super(first, last);
-            _x = x;
+            super(x, first, last);
             _response = response;
             _significance = significance;
         }
@@ -192,7 +293,7 @@ public class TransductiveConformalClassifier
         {
             DoubleMatrix1D instance = _x.viewRow(i);
             ObjectMatrix1D labels   = _response.viewRow(i);
-            predict(instance, _significance, labels);
+            predict(instance, _significance, labels, _myXtr, _myYtr);
         }
 
         protected ParallelizedAction createSubtask(int first, int last)
@@ -202,17 +303,15 @@ public class TransductiveConformalClassifier
         }
     }
 
-    class ClassifyPValuesAction extends jcp.util.ParallelizedAction
+    class ClassifyPValuesAction extends ClassifyAction
     {
-        DoubleMatrix2D _x;
         DoubleMatrix2D _response;
 
         public ClassifyPValuesAction(DoubleMatrix2D x,
                                      DoubleMatrix2D response,
                                      int first, int last)
         {
-            super(first, last);
-            _x = x;
+            super(x, first, last);
             _response = response;
         }
 
@@ -220,7 +319,7 @@ public class TransductiveConformalClassifier
         {
             DoubleMatrix1D instance = _x.viewRow(i);
             DoubleMatrix1D pValues  = _response.viewRow(i);
-            predictPValues(instance, pValues);
+            predictPValues(instance, pValues, _myXtr, _myYtr);
         }
 
         protected ParallelizedAction createSubtask(int first, int last)

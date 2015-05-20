@@ -134,6 +134,15 @@ public class SVMClassifier
         _parameters = null;
     }
 
+    public IClassifier fitNew(DoubleMatrix2D x, double[] y)
+    {
+        // FIXME: If fit() has been called on the parent model the
+        //        _parameters attribute has been reset to null.
+        SVMClassifier clone = new SVMClassifier(_parameters);
+        clone.fit(x, y);
+        return clone;
+    }
+
     public double predict(DoubleMatrix1D instance)
     {
         return ((CvSVM)_model).predict(asDDM1D(instance).asMat());

@@ -47,11 +47,38 @@ public class ClassProbabilityNonconformityFunction
         _model.fit(x, y);
     }
 
-    public IClassificationNonconformityFunction
+    public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
+                                                       double[] y)
+    {
+        ClassProbabilityNonconformityFunction ncf =
+            new ClassProbabilityNonconformityFunction
+                (_classes,
+                 (IClassifier)_model.fitNew(x, y));
+        return ncf;
+    }
+
+     public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
                DoubleMatrix1D xtest, double ytest)
     {
-        throw new UnsupportedOperationException("Not implemented");
+        int n = xtr.rows();
+        DoubleMatrix2D trainingX = xtr.like(n + 1, xtr.columns());
+        double[]       trainingY = new double[n + 1];
+        // FIXME: This way to copy the data is probably very inefficient.
+        //        Most of the underlying data-structures are row-oriented
+        //        and this should be used to share the row data.
+        for (int r = 0; r < n; r++) {
+            trainingX.viewRow(r).assign(xtr.viewRow(r));
+            trainingY[r] = ytr[r];
+        }
+        trainingX.viewRow(n).assign(xtest);
+        trainingY[n] = ytest;
+
+        ClassProbabilityNonconformityFunction ncf =
+            new ClassProbabilityNonconformityFunction
+                (_classes,
+                 (IClassifier)_model.fitNew(trainingX, trainingY));
+        return ncf;
     }
 
     @Deprecated
@@ -87,7 +114,13 @@ public class ClassProbabilityNonconformityFunction
                             DoubleMatrix1D xtest,
                             double ytest)
     {
-        throw new UnsupportedOperationException("Not implemented");
+        double[] nc = new double[ytr.length + 1];
+        double[] nctr = calc_nc(xtr, ytr);
+        for (int i = 0; i < nctr.length; i++) {
+            nc[i] = nctr[i];
+        }
+        nc[nctr.length] = calculateNonConformityScore(xtest, ytest);
+        return nc;
     }
 
     public double calculateNonConformityScore(DoubleMatrix1D x, double y)

@@ -47,6 +47,16 @@ public class AverageClassificationNonconformityFunction
         _n_instances = ytr.length + 1;
     }
 
+    public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
+                                                       double[] y)
+    {
+        // FIXME: Part of the work for the same training set could be shared.
+        AverageClassificationNonconformityFunction nc =
+            new AverageClassificationNonconformityFunction(_classes);
+        nc.fit(x, y);
+        return nc;
+    }
+
     public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
                DoubleMatrix1D xtest, double ytest)

@@ -31,6 +31,13 @@ public class RandomForestClassifier
         _attributeCount = x.columns();
     }
 
+    public IClassifier fitNew(DoubleMatrix2D x, double[] y)
+    {
+        RandomForestClassifier clone = new RandomForestClassifier();
+        clone.fit(x, y);
+        return clone;
+    }
+
     public double predict(DoubleMatrix1D instance)
     {
         return ((CvRTrees)_model).predict(asDDM1D(instance).asMat());
