@@ -196,29 +196,39 @@ public class SVMClassifier
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException
     {
-        // Create a (likely) unique file name for the Java libsvm model.
-        String fileName =
-            Long.toHexString(Double.doubleToLongBits(Math.random())) +
-            ".jlibsvm";
-
-        // Write the model to a separate file.
-        svm.svm_save_model(fileName, _model);
-
-        // Write the attribute count and model file name to the
-        // Java output stream.
+        // Save the classifier parameters.
+        oos.writeObject(_parameters);
+        // Save the attribute count.
         oos.writeObject(_attributeCount);
-        oos.writeObject(fileName);
+        // Save the model if it has been trained.
+        if (_model != null) {
+            // Create a (likely) unique file name for the Java libsvm model.
+            String fileName =
+                Long.toHexString(Double.doubleToLongBits(Math.random())) +
+                ".jlibsvm";
+
+            // Save the model to a separate file.
+            svm.svm_save_model(fileName, _model);
+            // Save the model file name.
+            oos.writeObject(fileName);
+        } else {
+            // Save null if the model has not been trained.
+            oos.writeObject(null);
+        }
     }
 
     private void readObject(ObjectInputStream ois)
         throws ClassNotFoundException, java.io.IOException
     {
+        // Load the classifier parameters.
+        _parameters = (svm_parameter)ois.readObject();
         // Load the attribute count.
         _attributeCount = (int)ois.readObject();
         // Load the model file name from the Java input stream.
         String fileName = (String)ois.readObject();
-
-        // Load the model from the designated file.
-        _model = svm.svm_load_model(fileName);
+        if (fileName != null) {
+            // Load the model from the designated file.
+            _model = svm.svm_load_model(fileName);
+        }
     }
 }

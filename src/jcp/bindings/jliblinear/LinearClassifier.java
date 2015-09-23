@@ -21,73 +21,24 @@ public class LinearClassifier
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
-    protected Parameter _parameters;
+    protected JSONObject _jsonParameters;
     protected Model _model;
     protected int _attributeCount = -1;
 
     public LinearClassifier()
     {
-        this((Parameter)null);
     }
 
     public LinearClassifier(JSONObject parameters)
     {
         this();
-        if (parameters.has("solver_type")) {
-            String type = parameters.getString("solver_type");
-            if (type.equals("L2R_LR")) {
-                _parameters.setSolverType(SolverType.L2R_LR);
-            } else if (type.equals("L2R_L2LOSS_SVC_DUAL")) {
-                _parameters.setSolverType(SolverType.L2R_L2LOSS_SVC_DUAL);
-            } else if (type.equals("L2R_L2LOSS_SVC")) {
-                _parameters.setSolverType(SolverType.L2R_L2LOSS_SVC);
-            } else if (type.equals("L2R_L1LOSS_SVC_DUAL")) {
-                _parameters.setSolverType(SolverType.L2R_L1LOSS_SVC_DUAL);
-            } else if (type.equals("MCSVM_CS")) {
-                _parameters.setSolverType(SolverType.MCSVM_CS);
-            } else if (type.equals("L1R_L2LOSS_SVC")) {
-                _parameters.setSolverType(SolverType.L1R_L2LOSS_SVC);
-            } else if (type.equals("L1R_LR")) {
-                _parameters.setSolverType(SolverType.L1R_LR);
-            } else if (type.equals("L2R_LR_DUAL")) {
-                _parameters.setSolverType(SolverType.L2R_LR_DUAL);
-            } else if (type.equals("L2R_L2LOSS_SVR")) {
-                _parameters.setSolverType(SolverType.L2R_L2LOSS_SVR);
-            } else if (type.equals("L2R_L2LOSS_SVR_DUAL")) {
-                _parameters.setSolverType(SolverType.L2R_L2LOSS_SVR_DUAL);
-            } else if (type.equals("L2R_L1LOSS_SVR_DUAL")) {
-                _parameters.setSolverType(SolverType.L2R_L1LOSS_SVR_DUAL);
-            } else {
-                throw new IllegalArgumentException
-                              ("jcp.bindings.jliblinear.LinearClassifier: " +
-                               "Unknown SolverType '" + type + "'.");
-            }
-        }
-        if (parameters.has("C")) {
-            _parameters.setC(parameters.getDouble("C"));
-        }
-        if (parameters.has("eps")) {
-            _parameters.setEps(parameters.getDouble("eps"));
-        }
-        if (parameters.has("p")) {
-            _parameters.setP(parameters.getDouble("p"));
-        }
-    }
-
-    public LinearClassifier(Parameter parameters)
-    {
-        _parameters = parameters;
-
-        if (_parameters == null) {
-            // Default parameters.
-            _parameters = new Parameter(SolverType.L2R_LR,
-                                        1.0,
-                                        0.01);
-        }
+        _jsonParameters = parameters;
     }
 
     public void fit(DoubleMatrix2D x, double[] y)
     {
+        Parameter parameters = readParameters();
+
         SparseDoubleMatrix2D tmp_x;
         if (x instanceof SparseDoubleMatrix2D) {
             tmp_x = (SparseDoubleMatrix2D)x;
@@ -102,13 +53,13 @@ public class LinearClassifier
         problem.x = tmp_x.rows;
         problem.y = y;
 
-        _model = Linear.train(problem, _parameters);
+        _model = Linear.train(problem, parameters);
         _attributeCount = tmp_x.columns();
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
     {
-        LinearClassifier clone = new LinearClassifier(_parameters);
+        LinearClassifier clone = new LinearClassifier(_jsonParameters);
         clone.fit(x, y);
         return clone;
     }
@@ -154,35 +105,105 @@ public class LinearClassifier
         return _storageTemplate;
     }
 
+    private Parameter readParameters()
+    {
+        // Default parameters.
+        Parameter parameters = new Parameter(SolverType.L2R_LR,
+                                             1.0,
+                                             0.01);
+
+        if (_jsonParameters != null) {
+            if (_jsonParameters.has("solver_type")) {
+                String type = _jsonParameters.getString("solver_type");
+                if (type.equals("L2R_LR")) {
+                    parameters.setSolverType(SolverType.L2R_LR);
+                } else if (type.equals("L2R_L2LOSS_SVC_DUAL")) {
+                    parameters.setSolverType(SolverType.L2R_L2LOSS_SVC_DUAL);
+                } else if (type.equals("L2R_L2LOSS_SVC")) {
+                    parameters.setSolverType(SolverType.L2R_L2LOSS_SVC);
+                } else if (type.equals("L2R_L1LOSS_SVC_DUAL")) {
+                    parameters.setSolverType(SolverType.L2R_L1LOSS_SVC_DUAL);
+                } else if (type.equals("MCSVM_CS")) {
+                    parameters.setSolverType(SolverType.MCSVM_CS);
+                } else if (type.equals("L1R_L2LOSS_SVC")) {
+                    parameters.setSolverType(SolverType.L1R_L2LOSS_SVC);
+                } else if (type.equals("L1R_LR")) {
+                    parameters.setSolverType(SolverType.L1R_LR);
+                } else if (type.equals("L2R_LR_DUAL")) {
+                    parameters.setSolverType(SolverType.L2R_LR_DUAL);
+                } else if (type.equals("L2R_L2LOSS_SVR")) {
+                    parameters.setSolverType(SolverType.L2R_L2LOSS_SVR);
+                } else if (type.equals("L2R_L2LOSS_SVR_DUAL")) {
+                    parameters.setSolverType(SolverType.L2R_L2LOSS_SVR_DUAL);
+                } else if (type.equals("L2R_L1LOSS_SVR_DUAL")) {
+                    parameters.setSolverType(SolverType.L2R_L1LOSS_SVR_DUAL);
+                } else {
+                    throw new IllegalArgumentException
+                                  ("jcp.bindings.jliblinear.LinearClassifier: "
+                                   + "Unknown SolverType '" + type + "'.");
+                }
+            }
+            if (_jsonParameters.has("C")) {
+                parameters.setC(_jsonParameters.getDouble("C"));
+            }
+            if (_jsonParameters.has("eps")) {
+                parameters.setEps(_jsonParameters.getDouble("eps"));
+            }
+            if (_jsonParameters.has("p")) {
+                parameters.setP(_jsonParameters.getDouble("p"));
+            }
+        }
+        return parameters;
+    }
+
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException
     {
-        // Create a (likely) unique file name for the liblinear model.
-        String fileName =
-            Long.toHexString(Double.doubleToLongBits(Math.random())) +
-            ".jliblinear";
-
-        File file = new File(fileName);
-        // Write the liblinear model to a separate file.
-        Linear.saveModel(file, _model);
-
-        // Write the attribute count and model file name to the
-        // Java output stream.
+        // Save the model parameters.
+        if (_jsonParameters != null) {
+            oos.writeObject(_jsonParameters.toString());
+        } else {
+            oos.writeObject(null);
+        }
+        // Save the attribute count.
         oos.writeObject(_attributeCount);
-        oos.writeObject(fileName);
+
+        // Save the model if it has been trained.
+        if (_model != null) {
+            // Create a (likely) unique file name for the liblinear model.
+            String fileName =
+                Long.toHexString(Double.doubleToLongBits(Math.random())) +
+                ".jliblinear";
+
+            File file = new File(fileName);
+            // Save the liblinear model to a separate file.
+            Linear.saveModel(file, _model);
+            // Save the model file name.
+            oos.writeObject(fileName);
+        } else {
+            // The model has not been trained.
+            oos.writeObject(null);
+        }
     }
 
     private void readObject(ObjectInputStream ois)
         throws ClassNotFoundException, java.io.IOException
     {
+        // Load the model parameters.
+        String jsonText = (String)ois.readObject();
+        if (jsonText != null) {
+            _jsonParameters = new JSONObject(jsonText);
+        }
         // Load the attribute count.
         _attributeCount = (int)ois.readObject();
+
         // Load model file name from the Java input stream.
         String fileName = (String)ois.readObject();
-
-        // Load the liblinear model from the designated file.
-        File file = new File(fileName);
-        // Load the model from a separate file.
-        _model = Linear.loadModel(file);
+        if (fileName != null) {
+            // Load the liblinear model from the designated file.
+            File file = new File(fileName);
+            // Load the model from a separate file.
+            _model = Linear.loadModel(file);
+        }
     }
 }

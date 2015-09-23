@@ -12,6 +12,8 @@ import cern.colt.matrix.impl.DenseDoubleMatrix2D;
 import cern.colt.matrix.impl.DenseObjectMatrix1D;
 import cern.colt.matrix.impl.DenseObjectMatrix2D;
 
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
 import java.util.Arrays;
 
 import jcp.nc.IClassificationNonconformityFunction;
@@ -233,6 +235,50 @@ public class TransductiveConformalClassifier
     public IClassificationNonconformityFunction getNonconformityFunction()
     {
         return _nc;
+    }
+
+    private void writeObject(ObjectOutputStream oos)
+        throws java.io.IOException
+    {
+        // Save the non-conformity function with its untrained or
+        // partially(?) trained  predictor.
+        // It is assumed that the predictor saves its configuration parameters.
+        oos.writeObject(_nc);
+        // Save the targets.
+        oos.writeObject(_targets);
+        // Save the training set in a space efficient representation.
+        // FIXME: What representation is space efficient?
+        //        Colt SparseDoubleMatrix2D isn't.
+        // FIXME: The training set is currently always loaded back into the
+        //        classifier's preferred representation.
+        DoubleMatrix2D tmp_xtr;
+        if (_xtr instanceof jcp.bindings.jlibsvm.SparseDoubleMatrix2D) {
+            tmp_xtr = _xtr;
+        } else {
+            tmp_xtr =
+                new jcp.bindings.jlibsvm.SparseDoubleMatrix2D(_xtr.rows(),
+                                                              _xtr.columns());
+            tmp_xtr.assign(_xtr);
+        }
+        oos.writeObject(tmp_xtr);
+        oos.writeObject(_ytr);
+    }
+
+    private void readObject(ObjectInputStream ois)
+        throws ClassNotFoundException, java.io.IOException
+    {
+        _nc = (IClassificationNonconformityFunction)ois.readObject();
+        _targets = (double[])ois.readObject();
+        DoubleMatrix2D tmp_xtr =
+            (DoubleMatrix2D)ois.readObject();
+        if(_nc != null && _nc.getClassifier() != null) {
+            _xtr = _nc.getClassifier().nativeStorageTemplate().
+                       like2D(tmp_xtr.rows(), tmp_xtr.columns());
+            _xtr.assign(tmp_xtr);
+        } else {
+            _xtr = tmp_xtr;
+        }
+        _ytr = (double[])ois.readObject();
     }
 
     abstract class ClassifyAction extends jcp.util.ParallelizedAction

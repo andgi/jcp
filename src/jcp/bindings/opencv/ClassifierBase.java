@@ -1,4 +1,4 @@
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2015  Anders Gidenstam
 // License: to be defined.
 package jcp.bindings.opencv;
 
@@ -9,6 +9,8 @@ import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
 import org.opencv.ml.CvStatModel;
+
+import org.json.JSONObject;
 
 import jcp.ml.IClassifier;
 
@@ -21,6 +23,7 @@ abstract class ClassifierBase
         new DenseDoubleMatrix1D(0);
 
     protected CvStatModel _model;
+    protected JSONObject _jsonParameters;
     protected int _attributeCount = -1;
 
     protected DenseDoubleMatrix2D asDDM2D(DoubleMatrix2D x)
@@ -119,30 +122,48 @@ abstract class ClassifierBase
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException
     {
-        // Create a (likely) unique file name for the OpenCV model.
-        String fileName =
-            Long.toHexString(Double.doubleToLongBits(Math.random())) +
-            ".opencv";
-
-        // Write the OpenCV model to a separate file.
-        _model.save(fileName);
-
-        // Write the attribute count and OpenCV model file name to the
-        // Java output stream.
+        // Save the model parameters.
+        if (_jsonParameters != null) {
+            oos.writeObject(_jsonParameters.toString());
+        } else {
+            oos.writeObject(null);
+        }
+        // Save the attribute count.
         oos.writeObject(_attributeCount);
-        oos.writeObject(fileName);
+        // Save the model if it has been trained.
+        if (_attributeCount > -1) {
+            // Create a (likely) unique file name for the OpenCV model.
+            String fileName =
+                Long.toHexString(Double.doubleToLongBits(Math.random())) +
+                ".opencv";
+
+            // Save the OpenCV model to a separate file.
+            _model.save(fileName);
+            // Save the model file name.
+            oos.writeObject(fileName);
+        } else {
+            // The model has not been trained.
+            oos.writeObject(null);
+        }
     }
 
     private void readObject(ObjectInputStream ois)
         throws ClassNotFoundException, java.io.IOException
     {
+        // Load the model parameters.
+        String jsonText = (String)ois.readObject();
+        if (jsonText != null) {
+            _jsonParameters = new JSONObject(jsonText);
+        }
         // Load the attribute count.
         _attributeCount = (int)ois.readObject();
+
         // Load OpenCV model file name from the Java input stream.
         String fileName = (String)ois.readObject();
-
-        // Load the OpenCV model from the designated file.
-        _model = getNewInstance();
-        _model.load(fileName);
+        if (fileName != null) {
+            // Load the OpenCV model from the designated file.
+            _model = getNewInstance();
+            _model.load(fileName);
+        }
     }
 }

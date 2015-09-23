@@ -1,4 +1,4 @@
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2015  Anders Gidenstam
 // License: to be defined.
 package jcp.bindings.opencv;
 
@@ -9,22 +9,25 @@ import org.opencv.ml.CvStatModel;
 import org.opencv.ml.CvRTrees;
 import org.opencv.ml.CvRTParams;
 
+import org.json.JSONObject;
+
 import jcp.ml.IClassifier;
 
 public class RandomForestClassifier
     extends ClassifierBase
     implements java.io.Serializable
 {
-    protected CvRTParams _parameters;
-
     public RandomForestClassifier()
     {
-        _model = new CvRTrees();
-        _parameters = null;
     }
 
     public void fit(DoubleMatrix2D x, double[] y)
     {
+        CvRTParams parameters;
+        if (_model == null) {
+            _model = new CvRTrees();
+        }
+
         ((CvRTrees)_model).train(asDDM2D(x).asMat(),
                                  1, // should be CV_ROW_SAMPLE enum/constant
                                  asDDM1D(y).asMat());

@@ -51,6 +51,8 @@ public class DataSetTools
                            dataSet.x.rows() + " instances with " +
                            dataSet.x.columns() + " attributes.");
         if (hasClassifier &&
+            cc.getNonconformityFunction().getClassifier().
+                getAttributeCount() > -1 &&
             dataSet.x.columns() !=
                 cc.getNonconformityFunction().getClassifier().
                     getAttributeCount()) {
