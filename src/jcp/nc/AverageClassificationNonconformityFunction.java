@@ -17,7 +17,7 @@ public class AverageClassificationNonconformityFunction
     double[] _classes;
     Map<Double, Integer> _class_index = new TreeMap<Double, Integer>();
     float _n_instances;
-    
+
     public AverageClassificationNonconformityFunction(double[] classes)
     {
         _n_classes = classes.length;

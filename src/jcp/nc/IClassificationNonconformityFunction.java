@@ -6,7 +6,16 @@ package jcp.nc;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
+/**
+ * Represents an instance of a specific non-conformity function for
+ * conformal classification.
+ *
+ * Contract for JCP use:
+ * 1. The non-conformity function must be serializable, both as untrained and
+ *    as trained.
+ */
 public interface IClassificationNonconformityFunction
+    extends java.io.Serializable
 {
     public void fit(DoubleMatrix2D x, double[] y);
     public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,

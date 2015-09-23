@@ -139,7 +139,10 @@ public class CCTools
         } catch (Exception e) {
             throw new IOException("Failed to load Conformal Classifier model" +
                                   " from '" +
-                                  filename + "'. " + e.getMessage());
+                                  filename + "'.\n" +
+                                  e + "\n" +
+                                  e.getMessage() + "\n" +
+                                  e.getStackTrace());
         }
         return cc;
     }

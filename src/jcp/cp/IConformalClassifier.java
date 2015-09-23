@@ -9,7 +9,16 @@ import cern.colt.matrix.DoubleMatrix2D;
 
 import jcp.nc.IClassificationNonconformityFunction;
 
+/**
+ * Represents an instance of a specific conformal classification
+ * algorithm.
+ *
+ * Contract for JCP use:
+ * 1. The ConformalClassifier must be serializable, both as untrained and as
+ *    trained.
+ */
 public interface IConformalClassifier
+    extends java.io.Serializable
 {
     /**
      * Computes the set of labels predicted at the selected significance
