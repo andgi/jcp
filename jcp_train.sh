@@ -1,2 +1,5 @@
-#!/bin/sh
-java -Xmx4096m -classpath build/jar/jcp.jar:../colt/lib/colt.jar:../colt/lib/concurrent.jar:$OCVJARDIR/opencv.jar:../JSON/json.jar:../libsvm-java/libsvm.jar:../liblinear-java/liblinear-java.jar jcp.cli.jcp_train $@
+#!/bin/bash
+
+DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+
+java -Xmx4096m -classpath ${DIR}/build/jar/jcp.jar:${DIR}/../colt/lib/colt.jar:${DIR}/../colt/lib/concurrent.jar:$OCVJARDIR/opencv.jar:${DIR}/../JSON/json.jar:${DIR}/../libsvm-java/libsvm.jar:${DIR}/../liblinear-java/liblinear-java.jar jcp.cli.jcp_train $@
