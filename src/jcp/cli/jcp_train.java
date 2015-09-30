@@ -3,7 +3,9 @@
 package jcp.cli;
 
 import java.io.FileInputStream;
+import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.ObjectOutputStream;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.SortedSet;
 import java.util.Random;
@@ -62,8 +64,8 @@ public class jcp_train
             // Supports train, calibrate and save and/or test.
             trainICC(_dataSetFileName);
         } else {
-            // FIXME: Only initial use case yet. Train & test.
-            runPlainSVMTest(_dataSetFileName);
+            // Supports train and save and/or test.
+            trainPlainClassifier(_dataSetFileName);
         }
     }
 
@@ -266,7 +268,7 @@ public class jcp_train
         System.out.println
             ("  -tcc              Use transductive conformal classification.");
         System.out.println
-            ("  -nocp             Test classification without " +
+            ("  -nocp             Use classification without " +
              "conformal prediction.");
     }
 
@@ -374,7 +376,7 @@ public class jcp_train
         }
     }
 
-    private void runPlainSVMTest(String dataSetFileName)
+    private void trainPlainClassifier(String dataSetFileName)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
@@ -386,7 +388,12 @@ public class jcp_train
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
-        splitDataset(0.4, 0.0);
+        if (_validate) {
+            splitDataset(0.5, 0.0);
+        } else {
+            splitDataset(1.0, 0.0);
+        }
+
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
@@ -400,24 +407,34 @@ public class jcp_train
         System.out.println("Training complete.");
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
 
-        System.out.println("Testing accuracy on " + _test.x.rows() +
-                           " instances.");
-
         // Evaluation on the test set.
-        int correct = 0;
-        for (int i = 0; i < _test.x.rows(); i++) {
-            double prediction =
-                _classifier.predict(_test.x.viewRow(i));
-            if (prediction == _test.y[i]) {
-                correct++;
-            }
-        }
-        long t5 = System.currentTimeMillis();
+        if (_validate) {
+            System.out.println("Testing accuracy on " + _test.x.rows() +
+                               " instances.");
 
-        System.out.println("Accuracy " + ((double)correct / _test.y.length));
-        System.out.println("Duration " + (double)(t5 - t4)/1000.0 + " sec.");
-        System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
-                           " sec.");
+            int correct = 0;
+            for (int i = 0; i < _test.x.rows(); i++) {
+                double prediction =
+                    _classifier.predict(_test.x.viewRow(i));
+                if (prediction == _test.y[i]) {
+                    correct++;
+                }
+            }
+            long t5 = System.currentTimeMillis();
+
+            System.out.println("Accuracy " +
+                               ((double)correct / _test.y.length));
+            System.out.println("Duration " +
+                               (double)(t5 - t4)/1000.0 + " sec.");
+            System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
+                               " sec.");
+        }
+        if (_modelFileName != null) {
+            System.out.println("Saving the model to '" +
+                               _modelFileName + "'...");
+            savePlainModel(_classifier, _modelFileName);
+            System.out.println("... Done.");
+        }
     }
 
     private void splitDataset(double trainingFraction,
@@ -447,6 +464,16 @@ public class jcp_train
                 ("Error: Failed to load classifier configuration from '" +
                  filename + "'.");
             throw e;
+        }
+    }
+
+    private static void savePlainModel(IClassifier c,
+                                       String filename)
+        throws IOException
+    {
+        try (ObjectOutputStream oos =
+                 new ObjectOutputStream(new FileOutputStream(filename))) {
+            oos.writeObject(c);
         }
     }
 

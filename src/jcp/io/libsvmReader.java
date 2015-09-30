@@ -26,7 +26,7 @@ public class libsvmReader
     extends DataSetReader
 {
     public DataSet read(InputStream    source,
-                        DoubleMatrix2D template)
+                        DoubleMatrix1D template)
         throws IOException
     {
         BufferedReader br =
@@ -73,7 +73,7 @@ public class libsvmReader
 
         // Create and initialize x.
         if (template != null) {
-            p.x = template.like(rows, columns);
+            p.x = template.like2D(rows, columns);
         } else {
             // Default to libsvm data storage.
             //p.x = new jcp.bindings.libsvm.SparseDoubleMatrix2D(rows, columns);

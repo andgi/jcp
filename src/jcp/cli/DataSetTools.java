@@ -9,7 +9,6 @@ import java.util.TreeSet;
 import java.util.Random;
 
 import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
 
 import jcp.cp.*;
 import jcp.io.*;
@@ -25,7 +24,9 @@ public class DataSetTools
     public static DataSet loadDataSet(String filename)
         throws IOException
     {
-        return loadDataSet(filename, null);
+        return
+            loadDataSet(filename,
+                        new cern.colt.matrix.impl.SparseDoubleMatrix1D(0));
     }
 
     public static DataSet loadDataSet(String filename,
@@ -34,22 +35,14 @@ public class DataSetTools
     {
         boolean hasClassifier =
             cc != null && cc.getNonconformityFunction().getClassifier() != null;
-        FileInputStream file;
-        file = new FileInputStream(filename);
+        DoubleMatrix1D template =
+            hasClassifier
+            ? cc.getNonconformityFunction().getClassifier().
+                  nativeStorageTemplate()
+            : new cern.colt.matrix.impl.SparseDoubleMatrix1D(0);
 
-        DataSet dataSet =
-            new libsvmReader().read
-                (file,
-                 // Select the desired representation. FIXME: This is ugly.
-                 hasClassifier
-                 ? cc.getNonconformityFunction().getClassifier().
-                       nativeStorageTemplate().like2D(0, 0)
-                 : new cern.colt.matrix.impl.SparseDoubleMatrix2D(0, 0));
-        file.close();
+        DataSet dataSet = loadDataSet(filename, template);
 
-        System.out.println("Loaded the dataset " + filename + " containing " +
-                           dataSet.x.rows() + " instances with " +
-                           dataSet.x.columns() + " attributes.");
         if (hasClassifier &&
             cc.getNonconformityFunction().getClassifier().
                 getAttributeCount() > -1 &&
@@ -64,6 +57,21 @@ public class DataSetTools
                  cc.getNonconformityFunction().getClassifier().
                      getAttributeCount() + ".");
         }
+        return dataSet;
+    }
+
+    public static DataSet loadDataSet(String filename,
+                                      DoubleMatrix1D template)
+        throws IOException
+    {
+        FileInputStream file;
+        file = new FileInputStream(filename);
+        DataSet dataSet = new libsvmReader().read(file, template);
+        file.close();
+
+        System.out.println("Loaded the dataset " + filename + " containing " +
+                           dataSet.x.rows() + " instances with " +
+                           dataSet.x.columns() + " attributes.");
         return dataSet;
     }
 

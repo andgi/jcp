@@ -5,7 +5,7 @@ package jcp.io;
 import java.io.InputStream;
 import java.io.IOException;
 
-import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.matrix.DoubleMatrix1D;
 
 import jcp.cp.DataSet;
 
@@ -18,7 +18,7 @@ import jcp.cp.DataSet;
 public abstract class DataSetReader
 {
     public abstract DataSet read(InputStream    source,
-                                 DoubleMatrix2D template)
+                                 DoubleMatrix1D template)
         throws IOException;
 
     public DataSet read(InputStream source)

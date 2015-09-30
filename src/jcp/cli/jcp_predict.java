@@ -8,6 +8,8 @@ import jcp.cp.*;
 import jcp.nc.*;
 import jcp.io.*;
 
+import jcp.ml.IClassifier;
+
 /**
  * Command line prediction tool for JCP.
  *
@@ -21,6 +23,7 @@ public class jcp_predict
     private String  _pValuesOutputFileName;
     private String  _modelFileName;
     private double  _significanceLevel = 0.10;
+    private boolean _useCP = true;
 
     public jcp_predict()
     {
@@ -32,9 +35,14 @@ public class jcp_predict
     {
         processArguments(args);
 
-        CCTools.runTest(_modelFileName, _testSetFileName,
-                        _pValuesOutputFileName, _labelsOutputFileName,
-                        _significanceLevel);
+        if (_useCP) {
+            CCTools.runTest(_modelFileName, _testSetFileName,
+                            _pValuesOutputFileName, _labelsOutputFileName,
+                            _significanceLevel);
+        } else {
+            runPlainTest(_modelFileName, _testSetFileName,
+                         _labelsOutputFileName);
+        }
     }
 
     private void processArguments(String[] args)
@@ -106,6 +114,8 @@ public class jcp_predict
                         printUsage();
                         System.exit(-1);
                     }
+                } else if (args[i].equals("-nocp")) {
+                    _useCP = false;
                 } else if (args[i].startsWith("-")) {
                     System.err.println
                         ("Error: Unknown option '" + args[i] + "'.");
@@ -159,6 +169,86 @@ public class jcp_predict
             ("  -sl <file>        Save the predicted labels in <file>.");
         System.out.println
             ("  -sp <file>        Save the predicted p-values in <file>.");
+        System.out.println
+            ("  -nocp             Use a classifier without " +
+             "conformal prediction. Must be given for -nocp models.");
+    }
+
+    private static void runPlainTest(String modelFileName,
+                                     String dataSetFileName,
+                                     String labelsOutputFileName)
+        throws IOException
+    {
+        System.out.println("Loading the model '" + modelFileName +
+                           "'.");
+        long t1 = System.currentTimeMillis();
+        IClassifier c = loadPlainModel(modelFileName);
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
+
+        System.out.println("Loading the data set '" + dataSetFileName +
+                           "'.");
+        DataSet testSet = DataSetTools.loadDataSet(dataSetFileName,
+                                                   c.nativeStorageTemplate());
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+
+        BufferedWriter labelsOutput = null;
+        if (labelsOutputFileName != null) {
+            labelsOutput =
+                new BufferedWriter
+                    (new OutputStreamWriter
+                        (new FileOutputStream(labelsOutputFileName), "utf-8"));
+        }
+
+        System.out.println("Testing accuracy on " + testSet.x.rows() +
+                           " instances.");
+
+        int correct = 0;
+        for (int i = 0; i < testSet.x.rows(); i++) {
+            double prediction =
+                c.predict(testSet.x.viewRow(i));
+            if (labelsOutput != null) {
+                labelsOutput.write("" + prediction + " ");
+            }
+            if (prediction == testSet.y[i]) {
+                correct++;
+            }
+            if (labelsOutput != null) {
+                labelsOutput.newLine();
+            }
+        }
+        long t4 = System.currentTimeMillis();
+        if (labelsOutput != null) {
+            labelsOutput.close();
+        }
+
+        System.out.println("Accuracy " +
+                           ((double)correct / testSet.y.length));
+        System.out.println("Duration " +
+                           (double)(t4 - t3)/1000.0 + " sec.");
+
+        System.out.println("Total Duration " + (double)(t4 - t1)/1000.0 +
+                           " sec.");
+    }
+
+    private static IClassifier loadPlainModel(String filename)
+        throws IOException
+    {
+        IClassifier c = null;
+
+        try (ObjectInputStream ois =
+                 new ObjectInputStream(new FileInputStream(filename))) {
+            c = (IClassifier)ois.readObject();
+        } catch (Exception e) {
+            throw new IOException("Failed to load IClassifier model" +
+                                  " from '" +
+                                  filename + "'.\n" +
+                                  e + "\n" +
+                                  e.getMessage() + "\n" +
+                                  e.getStackTrace());
+        }
+        return c;
     }
 
     public static void main(String[] args)
