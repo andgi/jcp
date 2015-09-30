@@ -2,11 +2,13 @@ JCP - Java Conformal Predictors
 -------------------------------
 
 TODO
-* Allow command line control of data set partitioning into training,
-  calibration and test.
 * JSON configuration for all classifiers (OpenCV random forest is missing this).
 * Add class conditional conformal classification.
 * Add/integrate inductive conformal regression.
+* More non-conformity functions.
+* Proper support for multi-class classification.
+* Framework for predictive performance metrics.
+* Add support for cross-validation.
 
 KNOWN BUGS
 * Most parts only marginally tested -> more bugs to come..

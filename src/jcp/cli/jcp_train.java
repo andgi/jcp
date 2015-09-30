@@ -44,6 +44,8 @@ public class jcp_train
     private boolean _useCP = true;
     private boolean _validate = false;
     private double  _significanceLevel = 0.10;
+    private double  _validationFraction = 0.5;
+    private double  _calibrationFraction = 0.2;
 
     public jcp_train()
     {
@@ -194,6 +196,62 @@ public class jcp_train
                     _useTCC = true;
                 } else if (args[i].equals("-nocp")) {
                     _useCP = false;
+                } else if (args[i].equals("-vf")) {
+                    if (++i < args.length) {
+                        boolean ok = false;
+                        try {
+                            double vf = Double.parseDouble(args[i]);
+                            if (0.0 <= vf && vf <= 1.0) {
+                                _validationFraction = vf;
+                                ok = true;
+                            }
+                        } catch (Exception e) {
+                            // Handled below as ok is false.
+                        }
+                        if (!ok) {
+                            System.err.println
+                                ("Error: Illegal validation fraction '" +
+                                 args[i] +
+                                 "' given to -vf.");
+                            System.err.println();
+                            printUsage();
+                            System.exit(-1);
+                        }
+                    } else {
+                        System.err.println
+                            ("Error: No validation fraction given to -vf.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
+                } else if (args[i].equals("-cf")) {
+                    if (++i < args.length) {
+                        boolean ok = false;
+                        try {
+                            double cf = Double.parseDouble(args[i]);
+                            if (0.0 <= cf && cf <= 1.0) {
+                                _calibrationFraction = cf;
+                                ok = true;
+                            }
+                        } catch (Exception e) {
+                            // Handled below as ok is false.
+                        }
+                        if (!ok) {
+                            System.err.println
+                                ("Error: Illegal calibration fraction '" +
+                                 args[i] +
+                                 "' given to -cf.");
+                            System.err.println();
+                            printUsage();
+                            System.exit(-1);
+                        }
+                    } else {
+                        System.err.println
+                            ("Error: No calibration fraction given to -cf.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
                 } else {
                     // The last unknown argument should be the dataset file.
                     _dataSetFileName = args[i];
@@ -256,12 +314,12 @@ public class jcp_train
             ("  -m <model file>   Save the created model.");
         System.out.println
             ("  -s <significance> Set the conformal prediction " +
-             "significance level for the test phase (0.0-1.0).");
+             "significance level for the validation phase (0.0-1.0).");
         System.out.println
             ("  -v                Validate the model after training.");
         System.out.println
-            ("                    Reserves 50% of the data set for " +
-             "validation.");
+            ("                    By default reserves 50% of the data set " +
+             "for validation.");
         System.out.println
             ("  -icc              Use inductive conformal classification " +
              "(default).");
@@ -270,6 +328,18 @@ public class jcp_train
         System.out.println
             ("  -nocp             Use classification without " +
              "conformal prediction.");
+        System.out.println
+            ("  -cf <fraction>    Use  <fraction> of the training set for " +
+             "calibration (0.0 - 1.0, default 0.2).");
+        System.out.println
+            ("                    Applies to inductive conformal " +
+             "classification.");
+        System.out.println
+            ("  -vf <fraction>    Use  <fraction> of the data set for " +
+             "validation (0.0 - 1.0, default 0.5).");
+        System.out.println
+            ("                    Applies when doing validation after " +
+             "training.");
     }
 
     private void trainICC(String dataSetFileName)
@@ -285,9 +355,10 @@ public class jcp_train
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
         if (_validate) {
-            splitDataset(0.4, 0.1);
+            splitDataset((1 - _validationFraction)*(1 - _calibrationFraction),
+                         (1 - _validationFraction)*_calibrationFraction);
         } else {
-            splitDataset(0.8, 0.2);
+            splitDataset((1 - _calibrationFraction), _calibrationFraction);
         }
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
@@ -338,7 +409,7 @@ public class jcp_train
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
         if (_validate) {
-            splitDataset(0.5, 0.0);
+            splitDataset((1 - _validationFraction), 0.0);
         } else {
             splitDataset(1.0, 0.0);
         }
@@ -389,7 +460,7 @@ public class jcp_train
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
         if (_validate) {
-            splitDataset(0.5, 0.0);
+            splitDataset((1 - _validationFraction), 0.0);
         } else {
             splitDataset(1.0, 0.0);
         }
