@@ -1,0 +1,19 @@
+JCP - Java Conformal Predictors
+-------------------------------
+
+TODO
+* Allow command line control of data set partitioning into training,
+  calibration and test.
+* Enable -nocp models to be saved.
+* JSON configuration for all classifiers (OpenCV random forset is missing this).
+* Add class conditional conformal classification.
+* Add/integrate inductive conformal regression.
+
+KNOWN BUGS
+* Most parts only marginally tested -> more bugs to come..
+* Memory leaks in the JCP code for matrix manipulation in the libsvm binding.
+  -> TCC, in particular, might run out of memory.
+* Memory leaks in OpenCV code for matrix manipulation in the OpenCV bindings.
+  -> TCC, in particular, might run out of memory.
+* Saved TCC models include the training set in a rather space inefficient
+  encoding.

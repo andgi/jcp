@@ -5,11 +5,8 @@ package jcp.cli;
 import java.io.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.SortedSet;
-import java.util.Random;
 
-import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.ObjectMatrix2D;
 
 import jcp.cp.*;
 import jcp.nc.*;
@@ -25,17 +22,11 @@ public class CCTools
 {
     public static void runTest(String modelFileName,
                                String dataSetFileName,
-                               String outputFileName,
+                               String pValuesOutputFileName,
+                               String labelsOutputFileName,
                                double significanceLevel)
         throws IOException
     {
-        BufferedWriter output = null;
-        if (outputFileName != null) {
-            output = new BufferedWriter
-                (new OutputStreamWriter(new FileOutputStream(outputFileName),
-                                        "utf-8"));
-        }
-
         System.out.println("Loading the model '" + modelFileName +
                            "'.");
         long t1 = System.currentTimeMillis();
@@ -49,7 +40,8 @@ public class CCTools
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
-        runTest(cc, testSet, outputFileName, significanceLevel);
+        runTest(cc, testSet, pValuesOutputFileName,
+                labelsOutputFileName, significanceLevel);
 
         long t4 = System.currentTimeMillis();
         System.out.println("Total Duration " + (double)(t4 - t1)/1000.0 +
@@ -58,15 +50,24 @@ public class CCTools
 
     public static void runTest(IConformalClassifier cc,
                                DataSet testSet,
-                               String outputFileName,
+                               String pValuesOutputFileName,
+                               String labelsOutputFileName,
                                double significanceLevel)
         throws IOException
     {
-        BufferedWriter output = null;
-        if (outputFileName != null) {
-            output = new BufferedWriter
-                (new OutputStreamWriter(new FileOutputStream(outputFileName),
-                                        "utf-8"));
+        BufferedWriter pValuesOutput = null;
+        if (pValuesOutputFileName != null) {
+            pValuesOutput =
+                new BufferedWriter
+                    (new OutputStreamWriter
+                        (new FileOutputStream(pValuesOutputFileName), "utf-8"));
+        }
+        BufferedWriter labelsOutput = null;
+        if (labelsOutputFileName != null) {
+            labelsOutput =
+                new BufferedWriter
+                    (new OutputStreamWriter
+                        (new FileOutputStream(labelsOutputFileName), "utf-8"));
         }
 
         long t1 = System.currentTimeMillis();
@@ -83,40 +84,49 @@ public class CCTools
                            significanceLevel + ".");
 
         // Evaluation on the test set.
-        ObjectMatrix2D pred = null;
-        pred = cc.predict(testSet.x, significanceLevel);
-        //System.out.println(pred);
+        DoubleMatrix2D pValues = cc.predictPValues(testSet.x);
 
         int correct = 0;
         int[] correctAtSize = new int[classSet.size()+1];
         int[] predictionAtSize = new int[classSet.size()+1];
 
-        for (int i = 0; i < pred.rows(); i++){
+        for (int i = 0; i < pValues.rows(); i++){
             int classIndex = classSet.headSet(testSet.y[i]).size();
             int predictionSize = 0;
             for (int c = 0; c < classes.length; c++) {
-                if ((Boolean)pred.get(i, c)) {
+                double pValue = pValues.get(i, c);
+                if (pValuesOutput != null) {
+                    pValuesOutput.write("" + pValue + " ");
+                }
+                if (pValue >= significanceLevel) {
+                    // This label cannot be excluded.
                     predictionSize++;
-                    if (output != null) {
-                        output.write("" + classes[c] + " ");
+                    if (labelsOutput != null) {
+                        labelsOutput.write("" + classes[c] + " ");
                     }
                 }
             }
-            if (output != null) {
-                output.newLine();
+            if (pValuesOutput != null) {
+                pValuesOutput.newLine();
+            }
+            if (labelsOutput != null) {
+                labelsOutput.newLine();
             }
 
             predictionAtSize[predictionSize]++;
 
-            if ((Boolean)pred.get(i, classIndex)) {
+            if (pValues.get(i, classIndex) >= significanceLevel) {
                 correct++;
                 correctAtSize[predictionSize]++;
             }
         }
         long t3 = System.currentTimeMillis();
 
-        if (output != null) {
-            output.close();
+        if (pValuesOutput != null) {
+            pValuesOutput.close();
+        }
+        if (labelsOutput != null) {
+            labelsOutput.close();
         }
 
         System.out.println("Accuracy " + ((double)correct / testSet.y.length));

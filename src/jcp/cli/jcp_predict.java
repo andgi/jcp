@@ -3,12 +3,6 @@
 package jcp.cli;
 
 import java.io.*;
-import java.util.SortedSet;
-import java.util.Random;
-
-import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.ObjectMatrix2D;
 
 import jcp.cp.*;
 import jcp.nc.*;
@@ -23,7 +17,8 @@ import jcp.io.*;
 public class jcp_predict
 {
     private String  _testSetFileName;
-    private String  _outputFileName;
+    private String  _labelsOutputFileName;
+    private String  _pValuesOutputFileName;
     private String  _modelFileName;
     private double  _significanceLevel = 0.10;
 
@@ -37,7 +32,8 @@ public class jcp_predict
     {
         processArguments(args);
 
-        CCTools.runTest(_modelFileName, _testSetFileName, _outputFileName,
+        CCTools.runTest(_modelFileName, _testSetFileName,
+                        _pValuesOutputFileName, _labelsOutputFileName,
                         _significanceLevel);
     }
 
@@ -90,6 +86,26 @@ public class jcp_predict
                         printUsage();
                         System.exit(-1);
                     }
+                } else if (args[i].equals("-sl")) {
+                    if (++i < args.length) {
+                        _labelsOutputFileName = args[i];
+                    } else {
+                        System.err.println
+                            ("Error: No file name given to -sl.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
+                } else if (args[i].equals("-sp")) {
+                    if (++i < args.length) {
+                        _pValuesOutputFileName = args[i];
+                    } else {
+                        System.err.println
+                            ("Error: No file name given to -sp.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
                 } else if (args[i].startsWith("-")) {
                     System.err.println
                         ("Error: Unknown option '" + args[i] + "'.");
@@ -97,12 +113,9 @@ public class jcp_predict
                     printUsage();
                     System.exit(-1);
                 } else {
-                    // Any unrecognized arguments should
-                    // be the test set file and the optional output file.
+                    // Any unrecognized argument should be the test set file.
                     if (_testSetFileName == null) {
                         _testSetFileName = args[i];
-                    } else if (_outputFileName == null) {
-                        _outputFileName = args[i];
                     } else {
                         System.err.println
                             ("Error: Unexpected redundant argument found '" +
@@ -133,8 +146,7 @@ public class jcp_predict
     private void printUsage()
     {
         System.out.println
-            ("Usage: jcp_predict [options] <libsvm formatted data set>" +
-             " [<output file>]");
+            ("Usage: jcp_predict [options] <libsvm formatted data set>");
         System.out.println();
         System.out.println
             ("  -h                Print this message and exit.");
@@ -142,7 +154,11 @@ public class jcp_predict
             ("  -m <model file>   The model to test.");
         System.out.println
             ("  -s <significance> Set the conformal prediction " +
-             "significance level for the test phase (0.0-1.0).");
+             "significance level (0.0-1.0).");
+        System.out.println
+            ("  -sl <file>        Save the predicted labels in <file>.");
+        System.out.println
+            ("  -sp <file>        Save the predicted p-values in <file>.");
     }
 
     public static void main(String[] args)
