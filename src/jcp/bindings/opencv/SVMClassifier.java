@@ -141,23 +141,9 @@ public class SVMClassifier
             if (_jsonParameters.has("p")) {
                 parameters.set_p(_jsonParameters.getDouble("p"));
             }
-            if (_jsonParameters.has("termination_criteria")) {
-                JSONObject termination =
-                    _jsonParameters.getJSONObject("termination_criteria");
-                int criteria = 0;
-                int max_iter = 0;
-                double epsilon = 0.0;
-                if (termination.has("max_count")) {
-                    criteria += TermCriteria.MAX_ITER;
-                    max_iter = termination.getInt("max_iter");
-                }
-                if (termination.has("epsilon")) {
-                    criteria += TermCriteria.EPS;
-                    epsilon = termination.getDouble("epsilon");
-                }
-                parameters.set_term_crit(new TermCriteria(criteria,
-                                                          max_iter,
-                                                          epsilon));
+            TermCriteria criteria = readTerminationCriteria();
+            if (criteria != null) {
+                parameters.set_term_crit(criteria);
             }
         }
         return parameters;

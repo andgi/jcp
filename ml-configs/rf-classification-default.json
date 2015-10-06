@@ -1,0 +1,4 @@
+{
+    "max_depth": 10,
+    "max_num_of_trees": 100,
+}

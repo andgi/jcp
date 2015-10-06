@@ -8,6 +8,7 @@ import java.io.ObjectOutputStream;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
+import org.opencv.core.TermCriteria;
 import org.opencv.ml.CvStatModel;
 
 import org.json.JSONObject;
@@ -118,6 +119,30 @@ abstract class ClassifierBase
     }
 
     protected abstract CvStatModel getNewInstance();
+
+    protected TermCriteria readTerminationCriteria()
+    {
+        if (_jsonParameters.has("termination_criteria")) {
+            JSONObject termination =
+                _jsonParameters.getJSONObject("termination_criteria");
+            int criteria = 0;
+            int max_iter = 0;
+            double epsilon = 0.0;
+            if (termination.has("max_count")) {
+                criteria += TermCriteria.MAX_ITER;
+                max_iter = termination.getInt("max_iter");
+            }
+            if (termination.has("epsilon")) {
+                criteria += TermCriteria.EPS;
+                epsilon = termination.getDouble("epsilon");
+            }
+            return new TermCriteria(criteria,
+                                    max_iter,
+                                    epsilon);
+        } else {
+            return null;
+        }
+    }
 
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException

@@ -50,8 +50,7 @@ public final class ClassifierFactory
         case 3:
             return new jcp.bindings.opencv.SVMClassifier(config);
         case 4:
-            // FIXME: Configuration parameters need to be passed in.
-            return new jcp.bindings.opencv.RandomForestClassifier();
+            return new jcp.bindings.opencv.RandomForestClassifier(config);
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
         }

@@ -2,7 +2,6 @@ JCP - Java Conformal Predictors
 -------------------------------
 
 TODO
-* JSON configuration for all classifiers (OpenCV random forest is missing this).
 * Add class conditional conformal classification.
 * Add/integrate inductive conformal regression.
 * More non-conformity functions.
