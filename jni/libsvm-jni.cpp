@@ -1,12 +1,12 @@
 // Copyright (C) 2014  Anders Gidenstam
 // License: to be defined.
 
-#include "jcp_bindings_libsvm_svm.h"
-#include "jcp_bindings_libsvm_svm_node.h"
-#include "jcp_bindings_libsvm_svm_problem.h"
-#include "jcp_bindings_libsvm_svm_parameter.h"
-#include "jcp_bindings_libsvm_SparseDoubleMatrix1D.h"
-#include "jcp_bindings_libsvm_SparseDoubleMatrix2D.h"
+#include "se_hb_jcp_bindings_libsvm_svm.h"
+#include "se_hb_jcp_bindings_libsvm_svm_node.h"
+#include "se_hb_jcp_bindings_libsvm_svm_problem.h"
+#include "se_hb_jcp_bindings_libsvm_svm_parameter.h"
+#include "se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D.h"
+#include "se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D.h"
 #include <iostream>
 
 #include <cstdlib>
@@ -60,12 +60,12 @@ extern "C" {
 /* libsvm functions. */
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_load_model
  * Signature: (Ljava/lang/String;)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1load_1model
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1load_1model
     (JNIEnv* env,
      jclass  jsvm,
      jstring jfile_name)
@@ -80,12 +80,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1load_1model
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_save_model
  * Signature: (Ljava/lang/String;J)V
  */
 JNIEXPORT jint JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1save_1model
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1save_1model
     (JNIEnv* env,
      jclass  jsvm,
      jstring jfile_name,
@@ -102,20 +102,21 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1save_1model
 
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_train
  * Signature: (Ljcp/bindings/libsvm/svm_problem;Ljcp/bindings/libsvm/svm_parameter;)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1train(JNIEnv* env,
-                                                jclass  jsvm,
-                                                jobject jproblem,
-                                                jobject jparam)
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train
+    (JNIEnv* env,
+     jclass  jsvm,
+     jobject jproblem,
+     jobject jparam)
 {
     struct svm_problem* problem = svm_problem_from_java(env, jproblem);
     struct svm_parameter* param = svm_parameter_from_java(env, jparam);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1train(): "
+        std::cerr << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train(): "
                   << "Java exception at argument conversion."
                   << std::endl;
         return 0;
@@ -150,16 +151,17 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train(JNIEnv* env,
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_train_fast
  * Signature: (Ljcp/bindings/libsvm/svm_parameter;J[D)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(JNIEnv*      env,
-                                                      jclass       jsvm,
-                                                      jobject      jparam,
-                                                      jlong        jx_ptr,
-                                                      jdoubleArray jy)
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train_1fast
+   (JNIEnv*      env,
+    jclass       jsvm,
+    jobject      jparam,
+    jlong        jx_ptr,
+    jdoubleArray jy)
 {
     struct svm_parameter* param = svm_parameter_from_java(env, jparam);
     struct svm_problem problem;
@@ -173,9 +175,10 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(JNIEnv*      env,
     problem.y = env->GetDoubleArrayElements(jy, NULL);
 
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(): "
-                  << "Java exception at argument conversion."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(): "
+            << "Java exception at argument conversion."
+            << std::endl;
         return 0;
     }
 
@@ -183,8 +186,9 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(JNIEnv*      env,
 
     env->ReleaseDoubleArrayElements(jy, problem.y, JNI_ABORT);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(): "
-                  << "Java exception." << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(): "
+            << "Java exception." << std::endl;
         return 0;
     }
     problem.y = NULL;
@@ -194,12 +198,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1train_1fast(JNIEnv*      env,
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_cross_validation
  * Signature: (Ljcp/bindings/libsvm/svm_problem;Ljcp/bindings/libsvm/svm_parameter;I[D)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation
     (JNIEnv*      env,
      jclass       jsvm,
      jobject      jproblem,
@@ -211,9 +215,10 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation
     struct svm_parameter* param = svm_parameter_from_java(env, jparam);
     jdouble* jtarget_elems      = env->GetDoubleArrayElements(jtarget, NULL);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation(): "
-                  << "Java exception at argument conversion."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation(): "
+            << "Java exception at argument conversion."
+            << std::endl;
         return;
     }
 
@@ -226,12 +231,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_get_svm_type
  * Signature: (Ljcp/bindings/libsvm/svm_model;)I
  */
 JNIEXPORT jint JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1get_1svm_1type
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1svm_1type
     (JNIEnv* env,
      jclass  jsvm,
      jlong   jmodel_ptr)
@@ -240,12 +245,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1get_1svm_1type
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_get_nr_class
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1get_1nr_1class
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1nr_1class
     (JNIEnv* env,
      jclass  jsvm,
      jlong   jmodel_ptr)
@@ -254,12 +259,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1get_1nr_1class
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_get_labels
  * Signature: (J[I)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1get_1labels
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1labels
     (JNIEnv*   env,
      jclass    jsvm,
      jlong     jmodel_ptr,
@@ -273,12 +278,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1get_1labels
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_get_sv_indices
  * Signature: (J[I)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1get_1sv_1indices
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1sv_1indices
     (JNIEnv*   env,
      jclass    jsvm,
      jlong     jmodel_ptr,
@@ -292,12 +297,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1get_1sv_1indices
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_get_nr_sv
  * Signature: (J)I
  */
 JNIEXPORT jint JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1get_1nr_1sv
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1nr_1sv
     (JNIEnv* env,
      jclass  jsvm,
      jlong   jmodel_ptr)
@@ -306,12 +311,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1get_1nr_1sv
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_get_svr_probability
  * Signature: (J)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1get_1svr_1probability
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1svr_1probability
     (JNIEnv* env,
      jclass  jsvm,
      jlong   jmodel_ptr)
@@ -320,12 +325,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1get_1svr_1probability
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_predict_values
  * Signature: (J[Ljcp/bindings/libsvm/svm_node;[D)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1values
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1values
     (JNIEnv*       env,
      jclass        jsvm,
      jlong         jmodel_ptr,
@@ -336,9 +341,10 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1values
     struct svm_model* model = (struct svm_model*)jmodel_ptr;
     jdouble* jdec_values_elems = env->GetDoubleArrayElements(jdec_values, NULL);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1values(): "
-                  << "Java exception at argument conversion."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1values(): "
+            << "Java exception at argument conversion."
+            << std::endl;
         return 0.0;
     }
 
@@ -353,12 +359,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1values
 
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_predict
  * Signature: (Ljcp/bindings/libsvm/svm_model;[Ljcp/bindings/libsvm/svm_node;)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1predict
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict
     (JNIEnv*      env,
      jclass       jsvm,
      jlong        jmodel_ptr,
@@ -375,12 +381,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_predict_fast
  * Signature: (JJ)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast
     (JNIEnv* env,
      jclass  jsvm,
      jlong   jmodel_ptr,
@@ -389,9 +395,10 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast
     struct svm_model* model = (struct svm_model*)jmodel_ptr;
     struct svm_node * instance = *(struct svm_node **)jinstance_ptr;
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast():"
-                  << " Java exception at argument conversion."
-                  << std::endl;
+      std::cerr
+          << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast():"
+          << " Java exception at argument conversion."
+          << std::endl;
         return 0.0;
     }
     double result = svm_predict(model,
@@ -401,12 +408,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1fast
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_predict_probability
  * Signature: (J[Ljcp/bindings/libsvm/svm_node;[D)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability
     (JNIEnv*      env,
      jclass       jsvm,
      jlong        jmodel_ptr,
@@ -418,9 +425,10 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability
     jdouble* jprob_estimates_elems =
         env->GetDoubleArrayElements(jprob_estimates, NULL);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability():"
-                  << " Java exception at argument conversion."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability():"
+            << " Java exception at argument conversion."
+            << std::endl;
         return 0.0;
     }
 
@@ -437,12 +445,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_predict_probability_fast
  * Signature: (JJ[D)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
     (JNIEnv*      env,
      jclass       jsvm,
      jlong        jmodel_ptr,
@@ -454,9 +462,10 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
     jdouble* jprob_estimates_elems =
         env->GetDoubleArrayElements(jprob_estimates, NULL);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast():"
-                  << " Java exception at argument conversion."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast():"
+            << " Java exception at argument conversion."
+            << std::endl;
         return 0.0;
     }
     double result = svm_predict_probability(model,
@@ -470,12 +479,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability_1fast
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_check_parameter
  * Signature: (Ljcp/bindings/libsvm/svm_problem;Ljcp/bindings/libsvm/svm_parameter;)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter
     (JNIEnv* env,
      jclass  jsvm,
      jobject jproblem,
@@ -484,8 +493,9 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter
     struct svm_problem* problem = svm_problem_from_java(env, jproblem);
     struct svm_parameter* param = svm_parameter_from_java(env, jparam);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter(): Java exception."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter(): Java exception."
+            << std::endl;
         return NULL;
     }
 
@@ -497,12 +507,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_check_parameter_fast
  * Signature: (Ljcp/bindings/libsvm/svm_parameter;J[D)Ljava/lang/String;
  */
 JNIEXPORT jstring JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
     (JNIEnv*      env,
      jclass       jsvm,
      jobject      jparam,
@@ -516,7 +526,7 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
     problem.x = (struct svm_node **)jx_ptr;
     problem.y = env->GetDoubleArrayElements(jy, NULL);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_fast(): Java exception."
+        std::cerr << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_fast(): Java exception."
                   << std::endl;
         return NULL;
     }
@@ -525,8 +535,9 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
 
     env->ReleaseDoubleArrayElements(jy, problem.y, JNI_ABORT);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast(): "
-                  << "Java exception." << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast(): "
+            << "Java exception." << std::endl;
         return 0;
     }
     problem.y = NULL;
@@ -535,12 +546,12 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1parameter_1fast
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm
+ * Class:     se_hb_jcp_bindings_libsvm_svm
  * Method:    native_svm_check_probability_model
  * Signature: (Ljcp/bindings/libsvm/svm_model;)I
  */
 JNIEXPORT jint JNICALL
-Java_jcp_bindings_libsvm_svm_native_1svm_1check_1probability_1model
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1probability_1model
     (JNIEnv* env,
      jclass  jsvm,
      jlong   jmodel_ptr)
@@ -552,31 +563,31 @@ Java_jcp_bindings_libsvm_svm_native_1svm_1check_1probability_1model
 /* libsvm Java interface class initialization functions. */
 
 /*
- * Class:     jcp_bindings_libsvm_svm_node
+ * Class:     se_hb_jcp_bindings_libsvm_svm_node
  * Method:    native_init
  * Signature: ()V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_svm_1node_native_1init
+Java_se_hb_jcp_bindings_libsvm_svm_1node_native_1init
     (JNIEnv* env,
      jclass  jsvm_node)
 {
     svm_node__index_FID = env->GetFieldID(jsvm_node, "index", "I");
     svm_node__value_FID = env->GetFieldID(jsvm_node, "value", "D");
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_1node_native_1init(): "
+        std::cerr << "Java_se_hb_jcp_bindings_libsvm_svm_1node_native_1init(): "
                   << "Java exception when caching field IDs."
                   << std::endl;
     }
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm_problem
+ * Class:     se_hb_jcp_bindings_libsvm_svm_problem
  * Method:    native_init
  * Signature: ()V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_svm_1problem_native_1init
+Java_se_hb_jcp_bindings_libsvm_svm_1problem_native_1init
     (JNIEnv* env,
      jclass  jsvm_problem)
 {
@@ -585,19 +596,20 @@ Java_jcp_bindings_libsvm_svm_1problem_native_1init
     svm_problem__x_FID = env->GetFieldID(jsvm_problem,
                                          "x", "[[Ljcp/bindings/libsvm/svm_node;");
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_1problem_native_1init(): "
-                  << "Java exception when caching field IDs."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_1problem_native_1init(): "
+            << "Java exception when caching field IDs."
+            << std::endl;
     }
 }
 
 /*
- * Class:     jcp_bindings_libsvm_svm_parameter
+ * Class:     se_hb_jcp_bindings_libsvm_svm_parameter
  * Method:    native_init
  * Signature: ()V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_svm_1parameter_native_1init
+Java_se_hb_jcp_bindings_libsvm_svm_1parameter_native_1init
     (JNIEnv* env,
      jclass  jsvm_parameter)
 {
@@ -628,9 +640,10 @@ Java_jcp_bindings_libsvm_svm_1parameter_native_1init
     svm_set_print_string_function(print_func);
 
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_svm_1parameter_native_1init(): "
-                  << "Java exception when caching field IDs."
-                  << std::endl;
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_1parameter_native_1init(): "
+            << "Java exception when caching field IDs."
+            << std::endl;
     }
 }
 
@@ -638,12 +651,12 @@ Java_jcp_bindings_libsvm_svm_1parameter_native_1init
 /* libsvm storage functions. */
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_create
  * Signature: (I)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
     (JNIEnv* env,
      jclass  jSDM1D,
      jint    size)
@@ -657,12 +670,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_free
  * Signature: (J)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
     (JNIEnv* env,
      jclass  jSDM1D,
      jlong   jptr)
@@ -670,18 +683,18 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
     struct svm_node** vptr = (struct svm_node**)jptr;
     free(*vptr);
     free(vptr);
-    std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free(): "
+    std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free(): "
               << "Freed vector at " << (jlong)vptr << "." << std::endl;
 
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_create_from
  * Signature: (I[I[D)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
     (JNIEnv*      env,
      jclass       jSDM1D,
      jintArray    jindices,
@@ -706,7 +719,7 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
     env->ReleaseDoubleArrayElements(jvalues, values, JNI_ABORT);
     env->ReleaseIntArrayElements(jindices, indices, JNI_ABORT);
     if (env->ExceptionOccurred()) {
-        std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from(): "
+        std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from(): "
                   << "Java exception."
                   << std::endl;
         return 0;
@@ -715,12 +728,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_assign
  * Signature: (JJ)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1assign
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1assign
     (JNIEnv* env,
      jclass  jSDM1D,
      jlong   dest_jptr,
@@ -738,12 +751,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1assign
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_get
  * Signature: (JI)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1get
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1get
     (JNIEnv* env,
      jclass  jSDM1D,
      jlong   jptr,
@@ -759,12 +772,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1get
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix1D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_set
  * Signature: (JID)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
     (JNIEnv* env,
      jclass  jSDM1D,
      jlong   jptr,
@@ -805,12 +818,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D
  * Method:    native_matrix_create
  * Signature: (II)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create
     (JNIEnv* env,
      jclass  jSDM2D,
      jint    rows,
@@ -824,19 +837,19 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create
         // Mark it as EOL.
         m[i][0].index = -1;
     }
-    std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create(): "
+    std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create(): "
               << "Created " << rows << " x " << columns << " matrix at "
               << (jlong)m << "." << std::endl;
     return (jlong)m;
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D
  * Method:    native_matrix_free
  * Signature: (JI)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free
     (JNIEnv* env,
      jclass  jSDM2D,
      jlong   jptr,
@@ -848,17 +861,17 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free
         free(m[i]);
     }
     free(m);
-    std::cerr << "Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free(): "
+    std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free(): "
               << "Freed matrix at " << (jlong)m << "." << std::endl;
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D
  * Method:    native_matrix_get
  * Signature: (JII)D
  */
 JNIEXPORT jdouble JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get
     (JNIEnv* env,
      jclass  jSDM2D,
      jlong   jptr,
@@ -874,12 +887,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D
  * Method:    native_matrix_set
  * Signature: (JIID)V
  */
 JNIEXPORT void JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
     (JNIEnv* env,
      jclass  jSDM2D,
      jlong   jptr,
@@ -921,12 +934,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D
  * Method:    native_matrix_get_row
  * Signature: (JI)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get_1row
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get_1row
     (JNIEnv* env,
      jclass  jSDM2D,
      jlong   jptr,
@@ -936,12 +949,12 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get_1row
 }
 
 /*
- * Class:     jcp_bindings_libsvm_SparseDoubleMatrix2D
+ * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D
  * Method:    native_matrix_set_row
  * Signature: (JI[I[D)J
  */
 JNIEXPORT jlong JNICALL
-Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set_1row
+Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set_1row
     (JNIEnv*      env,
      jclass       jSDM2D,
      jlong        jptr,
@@ -953,7 +966,7 @@ Java_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set_1row
     // FIXME: Is it really safe to free the old row?
     free(m[row]);
     struct svm_node** v =
-        (struct svm_node**)Java_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
+        (struct svm_node**)Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
             (env, jSDM2D, jcolumns, jvalues);
     m[row] = *v;
     free(v);
