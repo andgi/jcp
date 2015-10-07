@@ -2,12 +2,17 @@ JCP - Java Conformal Predictors
 -------------------------------
 
 TODO
+* Verify the computation of p-values.
 * Add class conditional conformal classification.
 * Add/integrate inductive conformal regression.
 * More non-conformity functions.
 * Proper support for multi-class classification.
 * Framework for predictive performance metrics.
 * Add support for cross-validation.
+* Improve memory utilization for TCP
+  * Small pool of (n+1)-sized training sets for use by worker threads.
+  * Specialized matrix API to share training instances between training set
+    copies when that is possible.
 
 KNOWN BUGS
 * Most parts only marginally tested -> more bugs to come..
