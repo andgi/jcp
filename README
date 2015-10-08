@@ -1,0 +1,9 @@
+JCP - Java Conformal Prediction framework
+=========================================
+
+JCP is a Java framework for building and using conformal predictors.
+
+JCP is released under the GNU Lesser General Public License (LGPL)
+version 3 or later - see the LICENSE file for license details.
+
+See the INSTALL file for help on building JCP.
