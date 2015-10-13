@@ -17,13 +17,17 @@ Install instruction
      The OpenCV Core and ML modules and the Java bindings (jni) are required.
      To build the JNI binding the option 'build shared libs' MUST be set to NO.
      Use a recent Cmake.
-     Set up OCVJARDIR to point to the directory with the OpenCV Java binding.
+     Set up OCVJARDIR to point to the directory with the OpenCV Java jar archive.
+     Set up OCVLIBDIR to point to the directory with the OpenCV JNI library.
      E.g.
-     % export OCVJARDIR=/usr/share/OpenCV/java/
+     % export OCVJARDIR=/usr/share/java/
+     % export OCVLIBDIR=/usr/lib/jni/
    * Install the C/C++ version of libsvm. Copy libsvm.so into jcp/lib.
 
-3. Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library directory
-   and the directory where its Java binding (jni) reside.
+3. (Optional) Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library
+   directory and the directory where its Java binding (jni) reside.
+   The script wrappers jcp_train.sh and jcp_predict.sh do this based on
+   the default directory layout and $OCVLIBDIR.
    E.g.
    % export LD_LIBRARY_PATH=$HOME/projects/BOEL-KK-2013-2015/src/jcp/lib/:/usr/lib/jni
 
