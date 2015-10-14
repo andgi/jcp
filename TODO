@@ -3,6 +3,7 @@ JCP - Java Conformal Predictors
 
 TODO
 * Verify the computation of p-values.
+* Add an option to print the data set labels in the used order to the CLI tools.
 * Add class conditional conformal classification.
 * Add/integrate inductive conformal regression.
 * More non-conformity functions.
