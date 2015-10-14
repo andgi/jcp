@@ -66,7 +66,7 @@ public class jcp_train
         _training    = new DataSet();
         _calibration = new DataSet();
         _test        = new DataSet();
-        _classifier  = new se.hb.jcp.bindings.libsvm.SVMClassifier();
+        _classifier  = new se.hb.jcp.bindings.jlibsvm.SVMClassifier();
     }
 
     public void run(String[] args)

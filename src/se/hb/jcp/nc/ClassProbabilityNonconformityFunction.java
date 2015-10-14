@@ -39,7 +39,7 @@ public class ClassProbabilityNonconformityFunction
 
     public ClassProbabilityNonconformityFunction(double[] classes)
     {
-        this(classes, new se.hb.jcp.bindings.libsvm.SVMClassifier());
+        this(classes, new se.hb.jcp.bindings.jlibsvm.SVMClassifier());
     }
 
     public ClassProbabilityNonconformityFunction(double[] classes,
