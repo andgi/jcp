@@ -23,7 +23,7 @@ import java.util.Date;
 import java.util.Random;
 import se.hb.jcp.cp.InductiveConformalClassifier;
 import se.hb.jcp.nc.*;
-import se.hb.jcp.bindings.libsvm.SparseDoubleMatrix2D;
+import se.hb.jcp.bindings.jlibsvm.SparseDoubleMatrix2D;
 
 public class TestICC {
     public TestICC() {
@@ -41,13 +41,13 @@ public class TestICC {
         
         DoubleMatrix2D xtr =
             //new DenseDoubleMatrix2D(ytr.length, 1);
-            new se.hb.jcp.bindings.libsvm.SparseDoubleMatrix2D(ytr.length, 1);
+            new se.hb.jcp.bindings.jlibsvm.SparseDoubleMatrix2D(ytr.length, 1);
         DoubleMatrix2D xcal =
             //new DenseDoubleMatrix2D(ycal.length, 1);
-            new se.hb.jcp.bindings.libsvm.SparseDoubleMatrix2D(ycal.length, 1);
+            new se.hb.jcp.bindings.jlibsvm.SparseDoubleMatrix2D(ycal.length, 1);
         DoubleMatrix2D xtest =
             //new DenseDoubleMatrix2D(ytest.length, 1);
-            new se.hb.jcp.bindings.libsvm.SparseDoubleMatrix2D(ytest.length, 1);
+            new se.hb.jcp.bindings.jlibsvm.SparseDoubleMatrix2D(ytest.length, 1);
            
         for (int k = 0; k < 1000; k++) {
     
