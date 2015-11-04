@@ -27,10 +27,13 @@ import java.util.concurrent.RecursiveAction;
 public abstract class ParallelizedAction
     extends RecursiveAction
 {
+    private static final int MIN_WORK = 1;
+    private static final int MAX_DEPTH = 6;
     private static final ForkJoinPool taskPool = new ForkJoinPool();
 
     private int _first;
     private int _last;
+    private int _depth;
 
     /**
      * Constructs a set of actions for the interval [first, last).
@@ -41,7 +44,8 @@ public abstract class ParallelizedAction
     public ParallelizedAction(int first, int last)
     {
         _first = first;
-        _last = last;
+        _last  = last;
+        _depth = 0;
     }
 
     /**
@@ -87,11 +91,25 @@ public abstract class ParallelizedAction
     protected abstract ParallelizedAction createSubtask(int first, int last);
 
     /**
+     * Creates a ParallelizedAction for the sub-interval.
+     *
+     * @param first  the first index in the sub-interval
+     * @param last   the index after the last index in the sub-interval
+     * @param depth  the current depth of task subdivision.
+     */
+    private ParallelizedAction createSubtask(int first, int last, int depth)
+    {
+        ParallelizedAction a = createSubtask(first, last);
+        _depth = depth;
+        return a;
+    }
+
+    /**
      * Inherited from RecursiveAction. Do not overrride.
      */
     protected final void compute()
     {
-        if (_last - _first < 100) {
+        if ((_depth >= MAX_DEPTH) || (_last - _first <= MIN_WORK)) {
             initialize(_first, _last);
             for (int i = _first; i < _last; i++) {
                 compute(i);
@@ -99,8 +117,8 @@ public abstract class ParallelizedAction
             finalize(_first, _last);
         } else {
             int split = (_last - _first)/2;
-            invokeAll(createSubtask(_first, _first + split),
-                      createSubtask(_first + split, _last));
+            invokeAll(createSubtask(_first, _first + split, _depth + 1),
+                      createSubtask(_first + split, _last, _depth + 1));
         }
     }
 }
