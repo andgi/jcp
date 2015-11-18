@@ -103,7 +103,8 @@ public class DataSetTools
         int i = 0;
         for (Double c : classSet.toArray(new Double[0])) {
             classes[i] = c;
-            System.out.println("   " + classes[i]);
+            System.out.println("   Class " + i + " with label '" + classes[i] +
+                               "'.");
             i++;
         }
         return new SimpleEntry<double[],SortedSet<Double>>(classes, classSet);
