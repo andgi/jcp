@@ -192,9 +192,29 @@ public class SVMClassifier
             tmp_instance.assign(instance);
         }
 
-        return svm.svm_predict_probability(_model,
-                                           tmp_instance.nodes,
-                                           probabilityEstimates);
+        double prediction = svm.svm_predict_probability(_model,
+                                                        tmp_instance.nodes,
+                                                        probabilityEstimates);
+        // FIXME: Remove this probability hack, introduced since jlibsvm
+        //        seems to always return the same probabilities.
+        if (false) {
+            // jlibsvm seem to use the reverse order of labels, so reverse
+            // the array of probability estimates before returning them.
+            // FIXME: Verify for more data sets.
+            int i = 0;
+            int j = probabilityEstimates.length-1;
+            for (; i < j; i++, j--) {
+                double tmp = probabilityEstimates[i];
+                probabilityEstimates[i] = probabilityEstimates[j];
+                probabilityEstimates[j] = tmp;
+            }
+        } else {
+            // FIXME: Probability hack. Assumes 2 classes labelled -1.0 and 1.0.
+            probabilityEstimates[0] = 0.5 - 0.5*prediction;
+            probabilityEstimates[1] = 0.5 + 0.5*prediction;
+        }
+
+        return prediction;
     }
 
     public int getAttributeCount()

@@ -88,8 +88,6 @@ public class LinearClassifier
             tmp_instance.assign(instance);
         }
 
-        System.err.println("Linear.predictProbability() ... " + _model);
-
         return Linear.predict(_model, tmp_instance.nodes);
     }
 

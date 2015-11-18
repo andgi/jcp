@@ -185,9 +185,21 @@ public class SVMClassifier
             tmp_instance.assign(instance);
         }
 
-        return svm.svm_predict_probability(_model,
-                                           tmp_instance,
-                                           probabilityEstimates);
+        double prediction = svm.svm_predict_probability(_model,
+                                                        tmp_instance,
+                                                        probabilityEstimates);
+        // libsvm seems to use the opposite order of labels, so reverse
+        // the array of probability estimates before returning them.
+        // FIXME: Verify for more data sets.
+        int i = 0;
+        int j = probabilityEstimates.length-1;
+        for (; i < j; i++, j--) {
+            double tmp = probabilityEstimates[i];
+            probabilityEstimates[i] = probabilityEstimates[j];
+            probabilityEstimates[j] = tmp;
+        }
+
+        return prediction;
     }
 
     public int getAttributeCount()

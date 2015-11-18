@@ -58,7 +58,7 @@ public interface IClassifier
      * Predicts the target probabilities for the supplied instance.
      *
      * @param instance      the instance
-     * @returns a <tt>double[]</tt> array with the predicted probabilities for each of target values.
+     * @returns a <tt>double[]</tt> array with the predicted probabilities for each of target values in the order assumed by JCP.
      */
     public double predict(DoubleMatrix1D instance,
                           double[] probabilityEstimates);

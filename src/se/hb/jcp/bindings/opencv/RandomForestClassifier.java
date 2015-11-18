@@ -87,8 +87,8 @@ public class RandomForestClassifier
         //        for {-1, 1} two-class problems.
         double prediction =
             ((CvRTrees)_model).predict(asDDM1D(instance).asMat());
-        probabilityEstimates[0] = 0.5 + 0.5*prediction;
-        probabilityEstimates[1] = 0.5 - 0.5*prediction;
+        probabilityEstimates[0] = 0.5 - 0.5*prediction;
+        probabilityEstimates[1] = 0.5 + 0.5*prediction;
         return prediction;
     }
 
