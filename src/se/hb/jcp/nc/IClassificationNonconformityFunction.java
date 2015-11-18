@@ -31,22 +31,61 @@ import cern.colt.matrix.DoubleMatrix2D;
 public interface IClassificationNonconformityFunction
     extends java.io.Serializable
 {
+    /**
+     * Initializes this non-conformity function with the supplied data.
+     *
+     * @param x    the instances.
+     * @param y    the targets/classes/labels of the instances.
+     */
     public void fit(DoubleMatrix2D x, double[] y);
+
+    /**
+     * Returns a new non-conformity function based on the same
+     * parameters as the current one initialized with the supplied
+     * data.
+     *
+     * @param x    the instances.
+     * @param y    the targets or classes of the instances.
+     * @returns a new non-conformity function.
+     */
     public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
                                                        double[] y);
 
-    // FIXME: This method is inefficient if the underlying classifier
-    //        still needs everything in one X and Y structure.
+    /**
+     * Returns a new non-conformity function based on the same
+     * parameters as the current one initialized with the supplied
+     * data.
+     *
+     * @param xtr    the training instances.
+     * @param ytr    the training targets or classes of the instances.
+     * @param xtest  the test instances.
+     * @param ytest  the test targets/classes/labels of the instances.
+     * @returns a new non-conformity function.
+     */
     public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
                DoubleMatrix1D xtest, double ytest);
+    // FIXME: The above method is inefficient if the underlying classifier
+    //        still needs everything in one X and Y structure.
 
     @Deprecated
     public double[] calc_nc(DoubleMatrix2D x, double[] y);
     public double[] calc_nc(DoubleMatrix2D xtrain, double[] ytrain,
                             DoubleMatrix1D xtest, double ytest);
 
+    /**
+     * Computes the non-conformity score for the instance x with the target y.
+     *
+     * @param x    the instance.
+     * @param y    the target/class/label.
+     * @returns the non-conformity score. Large means less conforming.
+     */
     public double calculateNonConformityScore(DoubleMatrix1D x, double y);
 
+    /**
+     * Returns the classifier used by this non-conformity function.
+     *
+     * @returns the classifier used by this non-conformity function; or null if there isn't one.
+     */
     public se.hb.jcp.ml.IClassifier getClassifier();
 }

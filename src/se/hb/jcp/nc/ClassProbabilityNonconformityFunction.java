@@ -99,7 +99,6 @@ public class ClassProbabilityNonconformityFunction
     public double[] calc_nc(DoubleMatrix2D x, double[] y)
     {
         double[] nc = new double[y.length];
-        double[] probability = new double[_n_classes];
 
         if (DEBUG) {
             System.out.println("fastCalc_nc()");
@@ -108,9 +107,8 @@ public class ClassProbabilityNonconformityFunction
         if (!PARALLEL) {
             for (int i = 0; i < nc.length; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
-                _model.predict(instance, probability);
-                
-                nc[i] = probability[_class_index.get(y[i])];
+                nc[i] = calculateNonConformityScore(instance, y[i]);
+
                 if (DEBUG) {
                     System.out.println("  instance " + i + " target " + y[i] +
                                        ": " + nc[i]);
@@ -142,11 +140,20 @@ public class ClassProbabilityNonconformityFunction
         double[] probability = new double[_n_classes];
         _model.predict(x, probability);
 
-        double nc = probability[_class_index.get(y)];
+        double nc = 1.0 - probability[_class_index.get(y)];
         if (DEBUG) {
             System.out.println("  instance (" + x + ") target " + y +
                                ": " + nc);
         }
+        double label = _model.predict(x);
+        if (probability[_class_index.get(label)] <
+            probability[_classes.length - 1 - _class_index.get(label)]) {
+            System.out.println("Warning! Poor model prediction (" +
+                               label + ") - model label probability (" +
+                               probability[_class_index.get(label)] +
+                               ") match!");
+        }
+
         return nc;
     }
 
@@ -160,6 +167,7 @@ public class ClassProbabilityNonconformityFunction
         DoubleMatrix2D _x;
         double[] _y;
         double[] _nc;
+        double[] _probability;
 
         public CalcNCAction(DoubleMatrix2D x,
                             double[] y,
@@ -172,13 +180,21 @@ public class ClassProbabilityNonconformityFunction
             _nc = nc;
         }
 
+        protected void initialize(int first, int last)
+        {
+            _probability = new double[_n_classes];
+        }
+
+        protected void finalize(int first, int last)
+        {
+            _probability = null;
+        }
+
         protected void compute(int i)
         {
-            double[] probability = new double[_n_classes];
-
             DoubleMatrix1D instance = _x.viewRow(i);
-            _model.predict(instance, probability);
-            _nc[i] = probability[_class_index.get(_y[i])];
+            _model.predict(instance, _probability);
+            _nc[i] = 1.0 - _probability[_class_index.get(_y[i])];
         }
 
         protected ParallelizedAction createSubtask(int first, int last)
