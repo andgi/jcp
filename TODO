@@ -2,7 +2,9 @@ JCP - Java Conformal Predictors
 -------------------------------
 
 TODO
-* Verify the computation of p-values.
+* Verify the computation of p-values. Seems ok, or nearly so.
+  But why do jlibsvm and jliblinear return the same p-values for all instances
+  without smoothing?
 * Add class conditional conformal classification.
 * Add/integrate inductive conformal regression.
 * More non-conformity functions.
