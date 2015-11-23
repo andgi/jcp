@@ -23,6 +23,7 @@ import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IClassProbabilityClassifier;
 import se.hb.jcp.util.ParallelizedAction;
 
 public class ClassProbabilityNonconformityFunction
@@ -32,18 +33,19 @@ public class ClassProbabilityNonconformityFunction
     private static final boolean DEBUG = false;
     private static final boolean PARALLEL = true;
 
-    IClassifier _model;
+    IClassProbabilityClassifier _model;
     int _n_classes;
     double[] _classes;
     Map<Double, Integer> _class_index = new TreeMap<Double, Integer>();
 
     public ClassProbabilityNonconformityFunction(double[] classes)
     {
-        this(classes, new se.hb.jcp.bindings.jlibsvm.SVMClassifier());
+        this(classes, new se.hb.jcp.bindings.libsvm.SVMClassifier());
     }
 
-    public ClassProbabilityNonconformityFunction(double[] classes,
-                                                 IClassifier classifier)
+    public ClassProbabilityNonconformityFunction
+               (double[] classes,
+                IClassProbabilityClassifier classifier)
     {
         _n_classes = classes.length;
         _classes = classes;
@@ -66,12 +68,12 @@ public class ClassProbabilityNonconformityFunction
     {
         ClassProbabilityNonconformityFunction ncf =
             new ClassProbabilityNonconformityFunction
-                (_classes,
-                 (IClassifier)_model.fitNew(x, y));
+                    (_classes,
+                     (IClassProbabilityClassifier)_model.fitNew(x, y));
         return ncf;
     }
 
-     public IClassificationNonconformityFunction
+    public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
                DoubleMatrix1D xtest, double ytest)
     {
@@ -90,8 +92,9 @@ public class ClassProbabilityNonconformityFunction
 
         ClassProbabilityNonconformityFunction ncf =
             new ClassProbabilityNonconformityFunction
-                (_classes,
-                 (IClassifier)_model.fitNew(trainingX, trainingY));
+                    (_classes,
+                     (IClassProbabilityClassifier)_model.fitNew(trainingX,
+                                                                trainingY));
         return ncf;
     }
 

@@ -22,9 +22,10 @@ import cern.colt.matrix.DoubleMatrix2D;
 import org.json.JSONObject;
 
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IClassProbabilityClassifier;
 
 public class SVMClassifier
-    implements IClassifier,
+    implements IClassProbabilityClassifier,
                java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =

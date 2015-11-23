@@ -91,22 +91,6 @@ public class LinearClassifier
         return Linear.predict(_model, tmp_instance.nodes);
     }
 
-    public double predict(DoubleMatrix1D instance,
-                          double[] probabilityEstimates)
-    {
-        SparseDoubleMatrix1D tmp_instance;
-        if (instance instanceof SparseDoubleMatrix1D) {
-            tmp_instance = (SparseDoubleMatrix1D)instance;
-        } else {
-            tmp_instance = new SparseDoubleMatrix1D(instance.size());
-            tmp_instance.assign(instance);
-        }
-
-        return Linear.predictProbability(_model,
-                                         tmp_instance.nodes,
-                                         probabilityEstimates);
-    }
-
     public int getAttributeCount()
     {
         return _attributeCount;

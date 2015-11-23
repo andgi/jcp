@@ -80,18 +80,6 @@ public class RandomForestClassifier
         return ((CvRTrees)_model).predict(asDDM1D(instance).asMat());
     }
 
-    public double predict(DoubleMatrix1D instance,
-                          double[] probabilityEstimates)
-    {
-        // FIXME: This method is not properly implemented yet. It might work
-        //        for {-1, 1} two-class problems.
-        double prediction =
-            ((CvRTrees)_model).predict(asDDM1D(instance).asMat());
-        probabilityEstimates[0] = 0.5 - 0.5*prediction;
-        probabilityEstimates[1] = 0.5 + 0.5*prediction;
-        return prediction;
-    }
-
     protected CvStatModel getNewInstance()
     {
         return new CvRTrees();

@@ -27,9 +27,10 @@ import org.json.JSONObject;
 import libsvm.*;
 
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IClassProbabilityClassifier;
 
 public class SVMClassifier
-    implements IClassifier,
+    implements IClassifier, //IClassProbabilityClassifier // FIXME: disabled.
                java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
@@ -195,25 +196,19 @@ public class SVMClassifier
         double prediction = svm.svm_predict_probability(_model,
                                                         tmp_instance.nodes,
                                                         probabilityEstimates);
-        // FIXME: Remove this probability hack, introduced since jlibsvm
-        //        seems to always return the same probabilities.
-        if (false) {
-            // jlibsvm seem to use the reverse order of labels, so reverse
-            // the array of probability estimates before returning them.
-            // FIXME: Verify for more data sets.
-            int i = 0;
-            int j = probabilityEstimates.length-1;
-            for (; i < j; i++, j--) {
-                double tmp = probabilityEstimates[i];
-                probabilityEstimates[i] = probabilityEstimates[j];
-                probabilityEstimates[j] = tmp;
-            }
-        } else {
-            // FIXME: Probability hack. Assumes 2 classes labelled -1.0 and 1.0.
-            probabilityEstimates[0] = 0.5 - 0.5*prediction;
-            probabilityEstimates[1] = 0.5 + 0.5*prediction;
+        // jlibsvm seem to use the reverse order of labels, so reverse
+        // the array of probability estimates before returning them.
+        // FIXME: Verify for more data sets.
+        // FIXME: Disabled for the time being as it seems jlibsvm
+        //        always return the same probabilities for all instances.
+        //        An issue in the default configuration?
+        int i = 0;
+        int j = probabilityEstimates.length-1;
+        for (; i < j; i++, j--) {
+            double tmp = probabilityEstimates[i];
+            probabilityEstimates[i] = probabilityEstimates[j];
+            probabilityEstimates[j] = tmp;
         }
-
         return prediction;
     }
 

@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2015  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -20,22 +20,32 @@ import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
 /**
- * Represents an instance of a specific machine learning classification
- * algorithm.
- *
- * Contract for JCP use:
- * 1. The Classifier must be serializable, both as untrained and as trained.
+ * Adds a bogus class probability estimate to the underlying machine
+ * learning classification algorithm.
  */
-public interface IClassifier
-    extends java.io.Serializable
+public class BogusClassProbabilityClassifier
+    implements IClassProbabilityClassifier
 {
+    private IClassifier _classifier;
+    private double[]    _classes;
+
+    public BogusClassProbabilityClassifier(IClassifier classifier,
+                                           double[]    classes)
+    {
+        _classifier = classifier;
+        _classes    = classes;
+    }
+
     /**
      * Trains this classifier using the supplied data.
      *
      * @param x             the attributes of the instances.
      * @param y             the targets of the instances.
      */
-    public void fit(DoubleMatrix2D x, double[] y);
+    public void fit(DoubleMatrix2D x, double[] y)
+    {
+        _classifier.fit(x, y);
+    }
 
     /**
      * Trains and returns a copy of this classifier using the supplied data.
@@ -44,7 +54,11 @@ public interface IClassifier
      * @param y             the targets of the instances.
      * @returns a new <tt>IClassifier</tt> instance trained with the supplied data and using the same algorithm and parameter settings as the parent instance.
      */
-    public IClassifier fitNew(DoubleMatrix2D x, double[] y);
+    public IClassifier fitNew(DoubleMatrix2D x, double[] y)
+    {
+        return new BogusClassProbabilityClassifier(_classifier.fitNew(x, y),
+                                                   _classes);
+    }
 
     /**
      * Predicts the target for the supplied instance.
@@ -52,20 +66,45 @@ public interface IClassifier
      * @param instance      the instance
      * @returns the predicted target of the instance.
      */
-    public double predict(DoubleMatrix1D instance);
+    public double predict(DoubleMatrix1D instance)
+    {
+        return _classifier.predict(instance);
+    }
 
     /**
+     * Predicts the target probabilities for the supplied instance.
+     *
+     * @param instance      the instance
+     * @returns a <tt>double[]</tt> array with the predicted probabilities for each of target values in the order assumed by JCP.
+     */
+    public double predict(DoubleMatrix1D instance,
+                          double[] probabilityEstimates)
+    {
+        double prediction = _classifier.predict(instance);
+        // FIXME: Probability hack. Assumes 2 classes labelled -1.0 and 1.0.
+        probabilityEstimates[0] = 0.5 - 0.5*prediction;
+        probabilityEstimates[1] = 0.5 + 0.5*prediction;
+        return prediction;
+    }
+
+   /**
      * Returns the number of attributes the classifier has been trained on.
      *
      * @returns Returns the number of attributes the classifier has been trained on or <tt>-1</tt> if the classifier has not been trained.
-     */    
-    public int getAttributeCount();
+     */
+    public int getAttributeCount()
+    {
+        return _classifier.getAttributeCount();
+    }
 
     /**
-     * Returns a value of the <tt>DoubleMatrix1D</tt> derived class that is 
+     * Returns a value of the <tt>DoubleMatrix1D</tt> derived class that is
      * the native storage format for the classifier.
      *
      * @returns a value of the <tt>DoubleMatrix1D</tt> derived class of the native storage format for the classifier.
-     */    
-    public DoubleMatrix1D nativeStorageTemplate();
+     */
+    public DoubleMatrix1D nativeStorageTemplate()
+    {
+        return _classifier.nativeStorageTemplate();
+    }
 }

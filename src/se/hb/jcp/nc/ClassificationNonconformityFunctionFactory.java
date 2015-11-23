@@ -16,6 +16,9 @@
 //
 package se.hb.jcp.nc;
 
+import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IClassProbabilityClassifier;
+
 /**
  * Singleton factory for JCP classification nonconformity functions.
  *
@@ -45,12 +48,17 @@ public final class ClassificationNonconformityFunctionFactory
     public IClassificationNonconformityFunction
         createNonconformityFunction(int type,
                                     double[] classes,
-                                    se.hb.jcp.ml.IClassifier classifier)
+                                    IClassifier classifier)
     {
         switch (type) {
         case 0:
-            return new ClassProbabilityNonconformityFunction(classes,
-                                                             classifier);
+            if (!(classifier instanceof IClassProbabilityClassifier)) {
+                classifier = new se.hb.jcp.ml.BogusClassProbabilityClassifier
+                                     (classifier, classes);
+            }
+            return new ClassProbabilityNonconformityFunction
+                           (classes,
+                            (IClassProbabilityClassifier)classifier);
         case 1:
             return new AverageClassificationNonconformityFunction(classes);
         default:
