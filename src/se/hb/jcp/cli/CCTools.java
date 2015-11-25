@@ -93,7 +93,7 @@ public class CCTools
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
-        System.out.println("Testing accuracy on " + testSet.x.rows() +
+        System.out.println("Testing on " + testSet.x.rows() +
                            " instances at a significance level of " +
                            significanceLevel + ".");
 
@@ -102,7 +102,7 @@ public class CCTools
 
         int correct = 0;
         int[] correctAtSize = new int[classSet.size()+1];
-        int[] predictionAtSize = new int[classSet.size()+1];
+        int[] predictionsAtSize = new int[classSet.size()+1];
 
         for (int i = 0; i < pValues.rows(); i++){
             int classIndex = classSet.headSet(testSet.y[i]).size();
@@ -127,7 +127,7 @@ public class CCTools
                 labelsOutput.newLine();
             }
 
-            predictionAtSize[predictionSize]++;
+            predictionsAtSize[predictionSize]++;
 
             if (pValues.get(i, classIndex) >= significanceLevel) {
                 correct++;
@@ -143,11 +143,15 @@ public class CCTools
             labelsOutput.close();
         }
 
-        System.out.println("Accuracy " + ((double)correct / testSet.y.length));
-        for (int s = 0; s < predictionAtSize.length; s++) {
-            System.out.println("  #Predictions with " + s + " classes: " +
-                               predictionAtSize[s] + ". Accuracy: " +
-                               (double)correctAtSize[s]/(double)predictionAtSize[s]);
+        System.out.println("Accuracy " +
+                           ((double)correct / testSet.y.length) +
+                           ", Single label prediction accuracy " +
+                           ((double)correctAtSize[1] / testSet.y.length));
+        for (int s = 0; s < predictionsAtSize.length; s++) {
+            System.out.println
+                ("  #Predictions with " + s + " classes: " +
+                 predictionsAtSize[s] + ". Accuracy: " +
+                 (double)correctAtSize[s]/(double)predictionsAtSize[s]);
         }
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
     }
