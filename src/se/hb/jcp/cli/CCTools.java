@@ -85,7 +85,7 @@ public class CCTools
         }
 
         long t1 = System.currentTimeMillis();
-        System.out.println("Extracting the classes from the test set.");
+        System.out.println("Extracting the labels/classes from the test set.");
         SimpleEntry<double[],SortedSet<Double>> pair =
             DataSetTools.extractClasses(testSet);
         double[] classes = pair.getKey();
@@ -100,10 +100,18 @@ public class CCTools
         // Evaluation on the test set.
         DoubleMatrix2D pValues = cc.predictPValues(testSet.x);
 
+        int predictions = testSet.y.length;
         int correct = 0;
-        int[] correctAtSize = new int[classSet.size()+1];
         int[] predictionsAtSize = new int[classSet.size()+1];
+        int[] correctAtSize = new int[classSet.size()+1];
+        int[] predictionsForClass = new int[classSet.size()];
+        int[] correctForClass = new int[classSet.size()];
+        int[][] predictionsForClassAtSize =
+            new int[classSet.size()][classSet.size()+1];
+        int[][] correctForClassAtSize =
+            new int[classSet.size()][classSet.size()+1];
 
+        // FIXME: Parallelize the computation of the performance measures.
         for (int i = 0; i < pValues.rows(); i++){
             int classIndex = classSet.headSet(testSet.y[i]).size();
             int predictionSize = 0;
@@ -128,10 +136,14 @@ public class CCTools
             }
 
             predictionsAtSize[predictionSize]++;
+            predictionsForClass[classIndex]++;
+            predictionsForClassAtSize[classIndex][predictionSize]++;
 
             if (pValues.get(i, classIndex) >= significanceLevel) {
                 correct++;
                 correctAtSize[predictionSize]++;
+                correctForClass[classIndex]++;
+                correctForClassAtSize[classIndex][predictionSize]++;
             }
         }
         long t3 = System.currentTimeMillis();
@@ -144,15 +156,32 @@ public class CCTools
         }
 
         System.out.println("Accuracy " +
-                           ((double)correct / testSet.y.length) +
+                           ((double)correct / predictions) +
                            ", Single label prediction accuracy " +
-                           ((double)correctAtSize[1] / testSet.y.length));
+                           ((double)correctAtSize[1] / predictions));
+        System.out.println("Per prediction set size:");
         for (int s = 0; s < predictionsAtSize.length; s++) {
             System.out.println
-                ("  #Predictions with " + s + " classes: " +
+                ("  #predictions with " + s + " classes: " +
                  predictionsAtSize[s] + ". Accuracy: " +
-                 (double)correctAtSize[s]/(double)predictionsAtSize[s]);
+                 ((double)correctAtSize[s] / predictionsAtSize[s]));
         }
+        System.out.println("Per true class/label:");
+        for (int i = 0; i < predictionsForClass.length; i++) {
+            System.out.println
+                ("  #instances with true class " + i +
+                 " (label '" + classes[i] + "'): " + predictionsForClass[i] +
+                 ". Accuracy: " +
+                 ((double)correctForClass[i] / predictionsForClass[i]));
+            for (int s = 0; s < predictionsAtSize.length; s++) {
+                System.out.println
+                    ("    #predictions with " + s + " classes: " +
+                     predictionsForClassAtSize[i][s] + ". Accuracy: " +
+                     ((double)correctForClassAtSize[i][s] /
+                      predictionsForClassAtSize[i][s]));
+            }
+        }
+
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
     }
 
