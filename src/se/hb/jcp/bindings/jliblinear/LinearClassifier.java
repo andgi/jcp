@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016  Anders Gidenstam
+// Copyright (C) 2015  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -88,10 +88,7 @@ public class LinearClassifier
             tmp_instance.assign(instance);
         }
 
-        // FIXME: Why is the liblinear prediction the opposite of the target??!!
-        //        Tested on the 2-class ({-1.0, 1.0}) mnist_*_576_rbf_8vr
-        //        data set. Will only work on this type of data sets.
-        return -Linear.predict(_model, tmp_instance.nodes);
+        return Linear.predict(_model, tmp_instance.nodes);
     }
 
     public int getAttributeCount()
@@ -109,7 +106,7 @@ public class LinearClassifier
         // Default parameters.
         Parameter parameters = new Parameter(SolverType.L2R_LR,
                                              1.0,
-                                             0.001);
+                                             0.01);
 
         if (_jsonParameters != null) {
             if (_jsonParameters.has("solver_type")) {
