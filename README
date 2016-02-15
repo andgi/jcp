@@ -8,6 +8,8 @@ version 3 or later - see the LICENSE file for license details.
 
 The development of JCP is partially funded by
 the Swedish Knowledge Foundation (KK-stiftelsen) through the project
-Big Data Analytics by Online Ensemble Learning (20120192).
+Big Data Analytics by Online Ensemble Learning (20120192); and
+the European Union 7th Framework Programme (FP7/2013-2017) project
+PERICLES under grant agreement no 601138.
 
 See the INSTALL file for help on building JCP.
