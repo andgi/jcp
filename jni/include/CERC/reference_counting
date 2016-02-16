@@ -1,0 +1,173 @@
+// CERC - Concurrent Explicit Reference Counting for raw "C" pointers.
+// Copyright (C) 2015 - 2016  Anders Gidenstam
+//
+// This library is free software: you can redistribute it and/or modify
+// it under the terms of the GNU Lesser General Public License as published
+// by the Free Software Foundation, either version 3 of the License, or
+// (at your option) any later version.
+//
+// This library is distributed in the hope that it will be useful,
+// but WITHOUT ANY WARRANTY; without even the implied warranty of
+// MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+// GNU Lesser General Public License for more details.
+//
+// You should have received a copy of the GNU Lesser General Public License
+// along with this program.  If not, see <http://www.gnu.org/licenses/>.
+//
+
+#ifndef __CONCURRENT_EXPLICIT_REFERENCE_COUNTING_H
+#define __CONCURRENT_EXPLICIT_REFERENCE_COUNTING_H
+
+#include <iostream>
+#include <map>
+
+#include <cstdlib>
+
+#include <pthread.h>
+
+namespace cerc {
+
+// Concurrent explicit reference counting for raw "C" T* pointers.
+// Requirements:
+// 1. T objects are allocated from the C allocator (malloc() or calloc()).
+//    For other alternatives the free() method must be overriden.
+// 2. A T* pointer MUST NEVER be read while there may be concurrent updates
+//    to it. I.e., the object pointed to must never disappear (be freed) while
+//    being dereferenced by a reader.
+//
+// NOTE:
+//   As can be seen from requirement 2. above this module currently does not
+//   provide fully concurrent safe memory reclamation as, e.g., modules based on
+//   [Herlih et al., "Nonblocking memory management support for dynamic-sized
+//   data structures", 2005] or [Gidenstam et al., "Efficient and Reliable
+//   Lock-Free Memory Reclamation Based on Reference Counting", 2009] would.
+template < class T >
+class reference_counting
+{
+private:
+  typedef std::map<T*,int> rc_map_t;
+  typedef typename rc_map_t::iterator rc_t;
+  rc_map_t rc_map;
+  pthread_mutex_t mutex;
+  int rc_created;
+  int rc_reclaimed;
+
+public:
+  reference_counting()
+  {
+    pthread_mutex_init(&mutex, 0);
+    rc_created = 0;
+    rc_reclaimed = 0;
+  }
+
+  virtual ~reference_counting()
+  {
+#ifdef DEBUG
+    std::cerr << "cerc::reference_counting<T>::~(): "
+              << rc_created << " RC:ed objects created." << std::endl;
+    std::cerr << "cerc::reference_counting<T>::~(): "
+              << rc_reclaimed << " RC:ed objects reclaimed." << std::endl;
+    std::cerr << "cerc::reference_counting<T>::~(): "
+              << rc_map.size() << " objects left unreclaimed." << std::endl;
+    rc_t it   = rc_map.begin();
+    rc_t end = rc_map.end();
+    int highest_rc = 0;
+    int tot_rc = 0;
+    for (; it != end; ++it) {
+      highest_rc = std::max(it->second, highest_rc);
+      tot_rc += it->second;
+    }
+    std::cerr << "cerc::reference_counting<T>::~(): "
+              << "The mean remaining RC is " << tot_rc/(double)rc_map.size()
+              << " and the maximum is " << highest_rc
+              << "." << std::endl;
+#endif
+    pthread_mutex_destroy(&mutex);
+  }
+
+public:
+  void inc(T* ptr)
+  {
+    if (!ptr) {
+      return;
+    }
+    pthread_mutex_lock(&mutex);
+    rc_t rc = rc_map.find(ptr);
+    if (rc != rc_map.end()) {
+#ifdef DEBUG
+      if (rc->second <= 0) {
+        std::cerr << "cerc::reference_counting<T>::dec(): ERROR: "
+                  << "RC increase on pointer (" << (unsigned long)ptr
+                  << ") with existing RC " << rc->second << " <= 0!"
+                  << std::endl;
+      }
+#endif
+      // Increase RC.
+      (rc->second)++;
+    } else {
+      // Create a new RC.
+      rc_map.insert(std::pair<T*,int>(ptr,1));
+      rc_created++;
+    }
+    pthread_mutex_unlock(&mutex);
+  }
+
+  void dec(T* ptr)
+  {
+    if (!ptr) {
+      return;
+    }
+    pthread_mutex_lock(&mutex);
+    rc_t rc = rc_map.find(ptr);
+    if (rc != rc_map.end()) {
+#ifdef DEBUG
+      if (rc->second <= 0) {
+        std::cerr << "cerc::reference_counting<T>::dec(): ERROR: "
+                  << "RC decrease on pointer (" << (unsigned long)ptr
+                  << ") with RC " << rc->second << " <= 0!" << std::endl;
+      }
+#endif
+      // Decrease RC.
+      if (rc->second && !--(rc->second)) {
+        // This was the last reference.
+        // FIXME: Add fully concurrent safe reclamation (advanced
+        //        thread-safety)?
+        //        There could still be concurrent threads holding a local copy
+        //        of this pointer if the pointer can be treated arbitrarily
+        //        during concurrency.
+#ifndef DEBUG
+        rc_map.erase(rc);
+#endif
+        free(ptr);
+        rc_reclaimed++;
+      }
+    } else {
+      std::cerr << "cerc::reference_counting<T>::dec(): ERROR: "
+                << "RC decrease on pointer (" << (unsigned long)ptr
+                << ") without RC!" << std::endl;
+#ifdef PICKY_DEBUG
+      // FIXME: Is this wise? The alternative is to just leave a memory leak.
+      exit(-1);
+#endif
+    }
+    pthread_mutex_unlock(&mutex);
+  }
+
+protected:
+  virtual void free(T* ptr)
+  {
+#ifdef DEBUG
+    std::cerr << "cerc::reference_counting<T>::free(): "
+              << "Freeing block at " << (unsigned long)ptr
+              << "." << std::endl;
+    // Don't actually free the block as this prevents detection of accesses to
+    // deallocated blocks.
+#else
+    std::free(ptr);
+#endif
+  }
+};
+
+}
+
+#endif

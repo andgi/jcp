@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -27,10 +27,11 @@
 #include <cstring>
 #include <svm.h>
 
+#include <CERC/reference_counting>
+
 /* Internal functions. */
 static struct svm_node* svm_node_array_from_java(JNIEnv* env,
                                                  jobjectArray jnodes);
-static void free_svm_node_array(struct svm_node* nodes);
 
 static struct svm_problem* svm_problem_from_java(JNIEnv* env,
                                                  jobject jproblem);
@@ -43,28 +44,31 @@ static void print_func(const char* str);
 
 /* Internal shared data. */
 /*   svm_node field IDs. */
-jfieldID svm_node__index_FID;
-jfieldID svm_node__value_FID;
+static jfieldID svm_node__index_FID;
+static jfieldID svm_node__value_FID;
 /*   svm_problem field IDs. */
-jfieldID svm_problem__l_FID;
-jfieldID svm_problem__y_FID;
-jfieldID svm_problem__x_FID;
+static jfieldID svm_problem__l_FID;
+static jfieldID svm_problem__y_FID;
+static jfieldID svm_problem__x_FID;
 /*   svm_parameter field IDs. */
-jfieldID svm_parameter__svm_type_FID;
-jfieldID svm_parameter__kernel_type_FID;
-jfieldID svm_parameter__degree_FID;
-jfieldID svm_parameter__gamma_FID;
-jfieldID svm_parameter__coef0_FID;
-jfieldID svm_parameter__cache_size_FID;
-jfieldID svm_parameter__eps_FID;
-jfieldID svm_parameter__C_FID;
-jfieldID svm_parameter__nr_weight_FID;
-jfieldID svm_parameter__weight_label_FID;
-jfieldID svm_parameter__weight_FID;
-jfieldID svm_parameter__nu_FID;
-jfieldID svm_parameter__p_FID;
-jfieldID svm_parameter__shrinking_FID;
-jfieldID svm_parameter__probability_FID;
+static jfieldID svm_parameter__svm_type_FID;
+static jfieldID svm_parameter__kernel_type_FID;
+static jfieldID svm_parameter__degree_FID;
+static jfieldID svm_parameter__gamma_FID;
+static jfieldID svm_parameter__coef0_FID;
+static jfieldID svm_parameter__cache_size_FID;
+static jfieldID svm_parameter__eps_FID;
+static jfieldID svm_parameter__C_FID;
+static jfieldID svm_parameter__nr_weight_FID;
+static jfieldID svm_parameter__weight_label_FID;
+static jfieldID svm_parameter__weight_FID;
+static jfieldID svm_parameter__nu_FID;
+static jfieldID svm_parameter__p_FID;
+static jfieldID svm_parameter__shrinking_FID;
+static jfieldID svm_parameter__probability_FID;
+
+/* Reference counters for svm_node arrays. */
+static cerc::reference_counting<svm_node> instance_rc;
 
 #ifdef __cplusplus
 extern "C" {
@@ -139,25 +143,12 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train
     struct svm_model* model = svm_train(problem, param);
 
     // The new svm_model reuses the support vector instance attributes
-    // from the svm_problem struct.  Hence, these need to be copied
-    // to a new memory area and the model set to free them,
-    // eventually, if the svm_problem struct is to be freed now and
-    // not leaked.
-    // Copy the SV instances from the svm problem.
+    // from the svm_problem struct.  Hence, the reference count of these need
+    // to be increased.
+    // Increase the RC of the supporting SV instances from the svm problem.
     for (int i = 0; i < model->l; i++) {
-        struct svm_node* oldSV = model->SV[i];
-        // Measure the length of the oldSV array.
-        int len = 0;
-        while (oldSV[len].index != -1) {
-            len++;
-        }
-        len++;
-        model->SV[i] =
-            (struct svm_node*)malloc(len * sizeof(struct svm_node));
-        memcpy(model->SV[i], oldSV, len * sizeof(struct svm_node));
+        instance_rc.inc(model->SV[i]);
     }
-    model->free_sv = 1;
-
     free_svm_parameter(param);
     free_svm_problem(problem);
 
@@ -197,6 +188,10 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1train_1fast
     }
 
     struct svm_model* model = svm_train(&problem, param);
+    // Increase the RC of the supporting SV instances from the svm problem.
+    for (int i = 0; i < model->l; i++) {
+        instance_rc.inc(model->SV[i]);
+    }
 
     env->ReleaseDoubleArrayElements(jy, problem.y, JNI_ABORT);
     if (env->ExceptionOccurred()) {
@@ -366,7 +361,7 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1values
 
     // FIXME: Verify that jdec_values really is updated!
     env->ReleaseDoubleArrayElements(jdec_values, jdec_values_elems, JNI_COMMIT);
-    free_svm_node_array(instance);
+    instance_rc.dec(instance);
 
     return result;
 }
@@ -389,7 +384,7 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict
 
     double result = svm_predict(model, instance);
 
-    free_svm_node_array(instance);
+    instance_rc.dec(instance);
 
     return result;
 }
@@ -453,7 +448,7 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1predict_1probability
     env->ReleaseDoubleArrayElements(jprob_estimates,
                                     jprob_estimates_elems,
                                     JNI_COMMIT);
-    free_svm_node_array(instance);
+    instance_rc.dec(instance);
 
     return result; 
 }
@@ -679,6 +674,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
     struct svm_node** vptr =
         (struct svm_node**)malloc(sizeof(struct svm_node*));
     *vptr = (struct svm_node*)malloc(1 * sizeof(struct svm_node));
+    instance_rc.inc(*vptr);
     (*vptr)[0].index = -1;
     return (jlong)vptr;
 }
@@ -686,20 +682,26 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create
 /*
  * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_free
- * Signature: (J)V
+ * Signature: (JZ)V
  */
 JNIEXPORT void JNICALL
 Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
-    (JNIEnv* env,
-     jclass  jSDM1D,
-     jlong   jptr)
+    (JNIEnv*  env,
+     jclass   jSDM1D,
+     jlong    jptr,
+     jboolean jis_view)
 {
     struct svm_node** vptr = (struct svm_node**)jptr;
-    free(*vptr);
-    free(vptr);
+    instance_rc.dec(*vptr);
+    if (!jis_view) {
+        free(vptr);
+    }
+#ifdef DEBUG
     std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free(): "
-              << "Freed vector at " << (jlong)vptr << "." << std::endl;
-
+              << "Freed vector at " << (jlong)vptr << " -> "
+              << (jlong)*(struct svm_node**)jptr
+              << "." << std::endl;
+#endif
 }
 
 /*
@@ -721,6 +723,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
     struct svm_node** vptr =
         (struct svm_node**)malloc(sizeof(struct svm_node*));
     *vptr = (struct svm_node*)malloc((length + 1) * sizeof(struct svm_node));
+    instance_rc.inc(*vptr);
 
     for (i = 0; i < length; i++) {
         (*vptr)[i].index = indices[i];
@@ -733,6 +736,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
     env->ReleaseDoubleArrayElements(jvalues, values, JNI_ABORT);
     env->ReleaseIntArrayElements(jindices, indices, JNI_ABORT);
     if (env->ExceptionOccurred()) {
+        // FIXME: May leak the svm_node array.
         std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from(): "
                   << "Java exception."
                   << std::endl;
@@ -757,10 +761,9 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1assign
     struct svm_node** src_vptr  = (struct svm_node**)src_jptr;
 
     if (*dest_vptr != *src_vptr) {
-        // FIXME: There is no guarantee that this is the only pointer to
-        //        *dest_vptr. Currently the storage is leaked.
-        //free(*dest_vptr);
+        instance_rc.dec(*dest_vptr);
         *dest_vptr = *src_vptr;
+        instance_rc.inc(*dest_vptr);
     }
 }
 
@@ -814,6 +817,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
     //        will be slow.
     struct svm_node* old = *vptr;
     *vptr = (struct svm_node*)malloc((i+2) * sizeof(struct svm_node));
+    instance_rc.inc(*vptr);
     i = 0;
     while (old[i].index != -1 && old[i].index < index) {
         (*vptr)[i].index = old[i].index;
@@ -828,7 +832,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
         i++;
     }
     (*vptr)[i+1].index = -1;
-    free(old);
+    instance_rc.dec(old);
 }
 
 /*
@@ -848,6 +852,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create
     for (int i = 0; i < rows; i++) {
         // Allocate one svm_node for each row.
         m[i] = (struct svm_node*)malloc(1 * sizeof(struct svm_node));
+        instance_rc.inc(m[i]);
         // Mark it as EOL.
         m[i][0].index = -1;
     }
@@ -872,11 +877,13 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free
     struct svm_node** m = (struct svm_node**)jptr;
 
     for (int i = 0; i < rows; i++) {
-        free(m[i]);
+        instance_rc.dec(m[i]);
     }
     free(m);
+#ifdef DEBUG
     std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1free(): "
               << "Freed matrix at " << (jlong)m << "." << std::endl;
+#endif
 }
 
 /*
@@ -925,11 +932,11 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
     }
     // The requested element was not found.
     // Allocate a new larger array and copy the contents and the new element.
-    // FIXME: Beware: any old views of this row will now reference freed memory.
     // FIXME: Using set() to initialize a matrix row element by element
     //        will be slow.
     struct svm_node* old = m[row];
     m[row] = (struct svm_node*)malloc((i+2) * sizeof(struct svm_node));
+    instance_rc.inc(m[row]);
     i = 0;
     while (old[i].index != -1 && old[i].index < column) {
         m[row][i].index = old[i].index;
@@ -944,7 +951,7 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set
         i++;
     }
     m[row][i+1].index = -1;
-    free(old);
+    instance_rc.dec(old);
 }
 
 /*
@@ -959,7 +966,9 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1get_1row
      jlong   jptr,
      jint    row)
 {
-    return (jlong)&((struct svm_node**)jptr)[row];
+    struct svm_node** vptr = &((struct svm_node**)jptr)[row];
+    instance_rc.inc(*vptr);
+    return (jlong)vptr;
 }
 
 /*
@@ -977,12 +986,11 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1set_1row
      jdoubleArray jvalues)
 {
     struct svm_node** m = (struct svm_node**)jptr;
-    // FIXME: Is it really safe to free the old row?
-    free(m[row]);
+    instance_rc.dec(m[row]);
     struct svm_node** v =
         (struct svm_node**)Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1create_1from
             (env, jSDM2D, jcolumns, jvalues);
-    m[row] = *v;
+    m[row] = *v; // Note: the RC of the new m[row] is already 1.
     free(v);
 
     return (jlong)&m[row];
@@ -1005,6 +1013,7 @@ static struct svm_node* svm_node_array_from_java(JNIEnv* env,
     if (length > 0) {
         result =
             (struct svm_node*)malloc((length + 1) * sizeof(struct svm_node));
+        instance_rc.inc(result);
 
         for (i = 0; i < length; i++) {
             jobject elem = env->GetObjectArrayElement(jnodes, i);
@@ -1019,6 +1028,7 @@ static struct svm_node* svm_node_array_from_java(JNIEnv* env,
         result[i].value = 0.0;
 
         if (env->ExceptionOccurred()) {
+            // FIXME: Might leak the svm_node array.
             std::cerr << "svm_node_array_from_java(): Java exception."
                       << std::endl;
             return NULL;
@@ -1026,11 +1036,6 @@ static struct svm_node* svm_node_array_from_java(JNIEnv* env,
     }
 
     return result;
-}
-
-static void free_svm_node_array(struct svm_node* nodes)
-{
-    free(nodes);
 }
 
 static struct svm_problem* svm_problem_from_java(JNIEnv* env,
@@ -1102,7 +1107,7 @@ static void free_svm_problem(struct svm_problem* problem)
 {
     free(problem->y);
     for (int i = 0; i < problem->l; i++) {
-        free_svm_node_array(problem->x[i]);
+        instance_rc.dec(problem->x[i]);
     }
     free(problem->x);
     free(problem);

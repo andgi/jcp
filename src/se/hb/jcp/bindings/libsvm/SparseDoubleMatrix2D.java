@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -76,7 +76,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param columns the number of columns the matrix shall have.
      * @return  a new empty matrix of the same dynamic type.
      */
-    public DoubleMatrix2D like(int rows, int columns) {
+    public DoubleMatrix2D like(int rows, int columns)
+    {
         return new SparseDoubleMatrix2D(rows, columns);
     }
 
@@ -92,7 +93,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param  size the number of cells the matrix shall have.
      * @return  a new matrix of the corresponding dynamic type.
      */
-    public DoubleMatrix1D like1D(int size) {
+    public DoubleMatrix1D like1D(int size)
+    {
         return new SparseDoubleMatrix1D(size);
     }
 
@@ -111,7 +113,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      *        <tt>index(i+1)-index(i)</tt>.
      * @return  a new matrix of the corresponding dynamic type.
      */
-    protected DoubleMatrix1D like1D(int size, int zero, int stride) {
+    protected DoubleMatrix1D like1D(int size, int zero, int stride)
+    {
         // FIXME: If needed.
         throw new UnsupportedOperationException("Not implemented");
     }
@@ -130,7 +133,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param column  the index of the column-coordinate.
      * @return the value at the specified coordinate.
      */
-    public double getQuick(int row, int column) {
+    public double getQuick(int row, int column)
+    {
         return native_matrix_get(Cptr, row, column);
     }
 
@@ -149,24 +153,25 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param column  the index of the column-coordinate.
      * @param value   the value to be filled into the specified cell.
      */
-    public void setQuick(int row, int column, double value) {
+    public void setQuick(int row, int column, double value)
+    {
         native_matrix_set(Cptr, row, column, value);
     }
 
     /**
      * Returns one row of the matrix as a SparseDoubleMatrix1D.
-     *
-     * FIXME: The resulting matrix will share storage with this instance.
-     *        Must handle freeing eventually.
+     * The resulting matrix will share storage with this instance.
      *
      * @param row     the row to return.
      * @returns a <tt>SparseDoubleMatrix1D</tt> representing a view of the row.
      */
-    public SparseDoubleMatrix1D getRow(int row) {
+    public SparseDoubleMatrix1D getRow(int row)
+    {
         checkRow(row);
         if (rowViews[row] == null) {
             rowViews[row] =
                 new SparseDoubleMatrix1D(columns,
+                                         this,
                                          native_matrix_get_row(Cptr, row));
         }
         return rowViews[row];
@@ -191,15 +196,17 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
        @throws IndexOutOfBoundsException if <tt>row < 0 || row >= rows()</tt>.
        @see #viewColumn(int)
     */
-    public DoubleMatrix1D viewRow(int row) {
+    public DoubleMatrix1D viewRow(int row)
+    {
         return getRow(row);
     }
 
     /**
      * Replaces one row of the matrix.
      *
-     * FIXME: The old row will be freed. If there are other views of it
-     *        they will now reference freed memory. Beware!
+     * FIXME: Verify the RC handling - is the old row RC decreased enough?
+     *        Should the SparseDoubleMatrix1D row object be replaced instead
+     *        of updated, i.e. should old row views see the new state?
      *
      * @param row      the row to replace.
      * @param indices  the indices to be filled in the new row.
@@ -207,7 +214,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      */
     public void setRow(int      row,
                        int[]    indices,
-                       double[] values) {
+                       double[] values)
+    {
         // FIXME: Verify row index and indices.
         long newRow = native_matrix_set_row(Cptr, row, indices, values);
         if (rowViews[row] != null) {
@@ -223,7 +231,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @return a new view.
      */
     protected DoubleMatrix2D viewSelectionLike(int[] rowOffsets,
-                                               int[] columnOffsets) {
+                                               int[] columnOffsets)
+    {
         // FIXME: If needed.
         throw new UnsupportedOperationException("Not implemented");
     }
@@ -235,12 +244,14 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @throws IllegalArgumentException if <tt>rows<0 || columns<0 ||
      *         (double)columns*rows > Integer.MAX_VALUE</tt>.
      */
-    protected void setUp(int rows, int columns) {
+    protected void setUp(int rows, int columns)
+    {
         super.setUp(rows,columns);
         rowViews = new SparseDoubleMatrix1D[rows];
     }
 
-    protected void finalize() throws Throwable {
+    protected void finalize() throws Throwable
+    {
         if (Cptr != 0 && isNoView) {
             native_matrix_free(Cptr, rows);
             Cptr = 0;

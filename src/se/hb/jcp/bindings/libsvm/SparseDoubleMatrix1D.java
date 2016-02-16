@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -41,6 +41,11 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * contents.
      */
     long Cptr;
+    /**
+     * To protect the parent's data from reclamation for
+     * SparseDoubleMatrix2D row views.
+     */
+    protected SparseDoubleMatrix2D parent;
 
     /**
      * Constructs a matrix with a copy of the given values.
@@ -49,7 +54,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      *
      * @param values the values to be filled into the new matrix.
      */
-    public SparseDoubleMatrix1D(double[] values) {
+    public SparseDoubleMatrix1D(double[] values)
+    {
         int[] indices = new int[values.length];
         for (int i = 0; i < indices.length; i++) {
             indices[i] = i;
@@ -70,7 +76,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      */
     public SparseDoubleMatrix1D(int      columns,
                                 int[]    indices,
-                                double[] values) {
+                                double[] values)
+    {
         setUp(columns);
         Cptr = native_vector_create_from(indices, values);
     }
@@ -81,15 +88,30 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param columns the number of columns the matrix shall have.
      * @throws IllegalArgumentException if
                <tt>columns<0 || columns > Integer.MAX_VALUE</tt>.
-    */
-    public SparseDoubleMatrix1D(int columns) {
+     */
+    public SparseDoubleMatrix1D(int columns)
+    {
         setUp(columns);
         Cptr = native_vector_create(columns);
     }
 
-    SparseDoubleMatrix1D(int columns, long Cptr) {
+    /**
+     * Constructs a matrix with a given number of columns from the
+     * supplied C-side pointer to a pointer to a svm_node array.
+     * The reference count for the svm_node array MUST have been
+     * increased already.
+     *
+     * @param columns  the number of columns the matrix shall have.
+     * @param parent   the SparseDoubleMatrix2D that owns the data.
+     * @param Cptr     C-side pointer to a pointer to a svm_node array.
+     * @throws IllegalArgumentException if
+               <tt>columns<0 || columns > Integer.MAX_VALUE</tt>.
+     */
+    SparseDoubleMatrix1D(int columns, SparseDoubleMatrix2D parent, long Cptr)
+    {
         setUp(columns);
         isNoView = false;
+        this.parent = parent;
         this.Cptr = Cptr;
     }
 
@@ -105,7 +127,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @return <tt>this</tt> (for convenience only).
      * @throws      IllegalArgumentException if <tt>size() != other.size()</tt>.
      */
-    public DoubleMatrix1D assign(DoubleMatrix1D other) {
+    public DoubleMatrix1D assign(DoubleMatrix1D other)
+    {
         if (other==this) {
             return this;
         }
@@ -140,7 +163,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param size  the number of cell the matrix shall have.
      * @return  a new empty matrix of the same dynamic type.
      */
-    public DoubleMatrix1D like(int size) {
+    public DoubleMatrix1D like(int size)
+    {
         return new SparseDoubleMatrix1D(size);
     }
 
@@ -157,7 +181,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param columns the number of columns the matrix shall have.
      * @return  a new matrix of the corresponding dynamic type.
      */
-    public DoubleMatrix2D like2D(int rows, int columns) {
+    public DoubleMatrix2D like2D(int rows, int columns)
+    {
         return new SparseDoubleMatrix2D(rows, columns);
     }
 
@@ -173,7 +198,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param column  the index of the column-coordinate.
      * @return the value at the specified coordinate.
      */
-    public double getQuick(int column) {
+    public double getQuick(int column)
+    {
         return native_vector_get(Cptr, column);
     }
 
@@ -190,7 +216,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param index  the index of the cell.
      * @param value  the value to be filled into the specified cell.
      */
-    public void setQuick(int index, double value) {
+    public void setQuick(int index, double value)
+    {
         native_vector_set(Cptr, index, value);
     }
 
@@ -200,14 +227,16 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param offsets  the offsets of the visible elements.
      * @return a new view.
      */
-    protected DoubleMatrix1D viewSelectionLike(int[] offsets) {
+    protected DoubleMatrix1D viewSelectionLike(int[] offsets)
+    {
         // FIXME: If needed.
         throw new UnsupportedOperationException("Not implemented");
     }
 
-    protected void finalize() throws Throwable {
-        if (Cptr != 0 && isNoView) {
-            native_vector_free(Cptr);
+    protected void finalize() throws Throwable
+    {
+        if (Cptr != 0) {
+            native_vector_free(Cptr, !isNoView);
             Cptr = 0;
         }
     }
@@ -228,7 +257,8 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
 
     // Internal native functions.
     private static native long native_vector_create(int size);
-    private static native void native_vector_free(long ptr);
+    private static native void native_vector_free(long    ptr,
+                                                  boolean is_view);
     private static native long native_vector_create_from(int[]    columns,
                                                          double[] values);
     private static native void native_vector_assign(long this_ptr,

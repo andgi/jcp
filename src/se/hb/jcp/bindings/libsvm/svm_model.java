@@ -32,6 +32,8 @@ public class svm_model
     {
         if (Cptr != 0) {
             // FIXME: The C-side svm_model struct should be freed here.
+            //        In particular, the SV instances should have their RC
+            //        decreased.
             Cptr = 0;
         }
     }
