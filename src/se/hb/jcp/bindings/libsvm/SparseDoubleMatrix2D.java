@@ -51,7 +51,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param rows the number of rows the matrix shall have.
      * @param columns the number of columns the matrix shall have.
      * @throws IllegalArgumentException if
-               <tt>rows<0 || columns<0 || (double)columns*rows >
+               <tt>rows&lt;0 || columns&lt;0 || (double)columns*rows &gt;
                Integer.MAX_VALUE</tt>.
     */
     public SparseDoubleMatrix2D(int rows, int columns)
@@ -126,7 +126,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * objects without throwing any exception.
      * <b>You should only use this method when you are absolutely sure that
      * the coordinate is within bounds.</b>
-     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &&
+     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &amp;&amp;
      * 0 &lt;= row &lt; rows()</tt>.
      *
      * @param row     the index of the row-coordinate.
@@ -146,7 +146,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * indexes without throwing any exception.
      * <b>You should only use this method when you are absolutely sure that
      * the coordinate is within bounds.</b>
-     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &&
+     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &amp;&amp;
      *                               0 &lt;= row &lt; rows()</tt>.
      *
      * @param row     the index of the row-coordinate.
@@ -169,6 +169,9 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     {
         checkRow(row);
         if (rowViews[row] == null) {
+            // NOTE: This is a view, it should not increase the RC as its
+            //       content is shared with the matrix. The parent pointer
+            //       keeps the matrix alive.
             rowViews[row] =
                 new SparseDoubleMatrix1D(columns,
                                          this,

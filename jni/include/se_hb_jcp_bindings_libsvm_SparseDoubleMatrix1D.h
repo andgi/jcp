@@ -20,10 +20,10 @@ JNIEXPORT jlong JNICALL Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_nati
 /*
  * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D
  * Method:    native_vector_free
- * Signature: (JZ)V
+ * Signature: (J)V
  */
 JNIEXPORT void JNICALL Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1free
-  (JNIEnv *, jclass, jlong, jboolean);
+  (JNIEnv *, jclass, jlong);
 
 /*
  * Class:     se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D

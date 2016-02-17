@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -22,6 +22,9 @@ import java.io.ObjectOutputStream;
 public class svm_model
     implements java.io.Serializable
 {
+    // C-side pointer to a svm_model.
+    long Cptr;
+
     svm_model(long Cptr)
     {
         this.Cptr = Cptr;
@@ -31,9 +34,9 @@ public class svm_model
         throws Throwable
     {
         if (Cptr != 0) {
-            // FIXME: The C-side svm_model struct should be freed here.
-            //        In particular, the SV instances should have their RC
-            //        decreased.
+            // This decreases the RCs of the SV instances and
+            // frees the C-side svm_model struct.
+            native_free_svm_model(Cptr);
             Cptr = 0;
         }
     }
@@ -63,6 +66,5 @@ public class svm_model
         this.Cptr = svm.svm_load_model(fileName).Cptr;
     }
 
-    // C-side pointer to a svm_model.
-    long Cptr;
+    private static native void native_free_svm_model(long model_ptr);
 }

@@ -87,7 +87,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * All entries are initially <tt>0</tt>.
      * @param columns the number of columns the matrix shall have.
      * @throws IllegalArgumentException if
-               <tt>columns<0 || columns > Integer.MAX_VALUE</tt>.
+               <tt>columns&lt;0 || columns &gt; Integer.MAX_VALUE</tt>.
      */
     public SparseDoubleMatrix1D(int columns)
     {
@@ -105,10 +105,12 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param parent   the SparseDoubleMatrix2D that owns the data.
      * @param Cptr     C-side pointer to a pointer to a svm_node array.
      * @throws IllegalArgumentException if
-               <tt>columns<0 || columns > Integer.MAX_VALUE</tt>.
+               <tt>columns&lt;0 || columns &gt; Integer.MAX_VALUE</tt>.
      */
     SparseDoubleMatrix1D(int columns, SparseDoubleMatrix2D parent, long Cptr)
     {
+        // NOTE: This is a view. It has not increased the RC.
+        //       The parent pointer ensures that the storage remains.
         setUp(columns);
         isNoView = false;
         this.parent = parent;
@@ -235,10 +237,10 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
 
     protected void finalize() throws Throwable
     {
-        if (Cptr != 0) {
-            native_vector_free(Cptr, !isNoView);
-            Cptr = 0;
+        if (Cptr != 0 && isNoView) {
+            native_vector_free(Cptr);
         }
+        Cptr = 0;
     }
 
     private void writeObject(ObjectOutputStream oos)
@@ -257,16 +259,15 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
 
     // Internal native functions.
     private static native long native_vector_create(int size);
-    private static native void native_vector_free(long    ptr,
-                                                  boolean is_view);
+    private static native void native_vector_free(long ptr);
     private static native long native_vector_create_from(int[]    columns,
                                                          double[] values);
     private static native void native_vector_assign(long this_ptr,
                                                     long source_ptr);
     private static native double native_vector_get(long ptr,
-                                                   int column);
-    private static native void native_vector_set(long ptr,
-                                                 int column,
+                                                   int  column);
+    private static native void native_vector_set(long   ptr,
+                                                 int    column,
                                                  double value);
 
     static {

@@ -71,14 +71,19 @@ public:
               << rc_map.size() << " objects left unreclaimed." << std::endl;
     rc_t it   = rc_map.begin();
     rc_t end = rc_map.end();
+    int nonzero = 0;
     int highest_rc = 0;
     int tot_rc = 0;
     for (; it != end; ++it) {
-      highest_rc = std::max(it->second, highest_rc);
-      tot_rc += it->second;
+      if (it->second) {
+        nonzero++;
+        highest_rc = std::max(it->second, highest_rc);
+        tot_rc += it->second;
+      }
     }
     std::cerr << "cerc::reference_counting<T>::~(): "
-              << "The mean remaining RC is " << tot_rc/(double)rc_map.size()
+              << "The number of remaining non-zero RCs is " << nonzero << ". "
+              << "The mean remaining RC is " << tot_rc/(double)nonzero
               << " and the maximum is " << highest_rc
               << "." << std::endl;
 #endif
