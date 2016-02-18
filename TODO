@@ -2,9 +2,10 @@ JCP - Java Conformal Predictors
 -------------------------------
 
 TODO
-* Verify the computation of p-values. Seems ok, or nearly so.
-  But why do jlibsvm and jliblinear return the same p-values for all instances
-  without smoothing?
+* Verify the computation of p-values.
+  -> Seems ok, or nearly so.
+     But why do jlibsvm and jliblinear return the same p-values for all
+     instances without smoothing?
 * Add class conditional conformal classification.
 * Add/integrate inductive conformal regression.
 * More non-conformity functions.
@@ -15,11 +16,13 @@ TODO
   * Small pool of (n+1)-sized training sets for use by worker threads.
   * Specialized matrix API to share training instances between training set
     copies when that is possible.
+* Use OpenMP and http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f432
+  to parallelize libsvm internally too.
 
 KNOWN BUGS
 * Most parts only marginally tested -> more bugs to come..
 * Memory leaks in the JCP code for matrix manipulation in the libsvm binding.
-  -> TCC, in particular, might run out of memory.
+  -> Should be fixed now, but needs further testing.
 * Memory leaks in OpenCV code for matrix manipulation in the OpenCV bindings.
   -> TCC, in particular, might run out of memory.
 * Saved TCC models include the training set in a rather space inefficient

@@ -95,10 +95,13 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1load_1model
     model = svm_load_model(file_name);
     // Increase the RC of the support vector instance attributes and set
     // the model to not automatically free these.
-    for (int i = 0; i < model->l; i++) {
+    // FIXME: This seems to cause segmentation faults and, besides,
+    //        there is currently no mechanism for gaining Java-side
+    //        access to the SVs.
+    /*for (int i = 0; i < model->l; i++) {
         instance_rc.inc(model->SV[i]);
     }
-    model->free_sv = 0;
+    model->free_sv = 0;*/
 
     env->ReleaseStringUTFChars(jfile_name, file_name);
     return (long)model;
@@ -238,7 +241,7 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1cross_1validation
         return;
     }
 
-    // FIXME: What happens with the RC of the instances?
+    // FIXME: What happens with the RC of the instances? Should be no problem.
     svm_cross_validation(problem, param, jnr_fold, jtarget_elems);
 
     // FIXME: Verify that jtarget really is updated!
@@ -595,11 +598,19 @@ Java_se_hb_jcp_bindings_libsvm_svm_1model_native_1free_1svm_1model
         << "Freeing svm_model at " << model << "." << std::endl;
 #endif
     if (model) {
-        // Decrease the RC of the supporting SV instances from the svm problem.
-        for (int i = 0; i < model->l; i++) {
-            instance_rc.dec(model->SV[i]);
+        if (!model->free_sv) {
+            // Decrease the RC of the shared supporting SV instances from the
+            // svm problem.
+            for (int i = 0; i < model->l; i++) {
+                instance_rc.dec(model->SV[i]);
+            }
+            svm_free_and_destroy_model(&model);
+        } else {
+            // FIXME: This seems to cause segmentation faults for models
+            //        loaded via svm_load_model(), even without any tampering
+            //        here in libsvm-jni. For now, the model is leaked.
+            //svm_free_and_destroy_model(&model);
         }
-        svm_free_and_destroy_model(&model);
     }
 }
 
