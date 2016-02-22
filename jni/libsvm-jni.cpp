@@ -900,9 +900,11 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create
         // Mark it as EOL.
         m[i][0].index = -1;
     }
+#ifdef DEBUG
     std::cerr << "Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix2D_native_1matrix_1create(): "
               << "Created " << rows << " x " << columns << " matrix at "
               << (jlong)m << "." << std::endl;
+#endif
     return (jlong)m;
 }
 
