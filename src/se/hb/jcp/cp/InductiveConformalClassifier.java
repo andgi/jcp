@@ -1,6 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2014  Henrik Linusson
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -30,6 +30,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import java.util.Arrays;
+import java.util.Map;
+import java.util.TreeMap;
 
 import se.hb.jcp.nc.IClassificationNonconformityFunction;
 import se.hb.jcp.util.ParallelizedAction;
@@ -40,8 +42,13 @@ public class InductiveConformalClassifier
     private static final boolean PARALLEL = true;
 
     public IClassificationNonconformityFunction _nc;
+    private double[] _classes;
+    private Map<Double, Integer> _classIndex;
+    // For normal conformal prediction.
     private double[] _calibrationScores;
-    private double[] _targets;
+    // For label/class-conditional conformal prediction.
+    private boolean    _useLabelConditionalCP;
+    private double[][] _classCalibrationScores;
 
     private DoubleMatrix2D _xtr;
     private DoubleMatrix2D _xcal;
@@ -51,7 +58,18 @@ public class InductiveConformalClassifier
 
     public InductiveConformalClassifier(double[] targets)
     {
-        _targets = targets;
+        this(targets, false);
+    }
+
+    public InductiveConformalClassifier(double[] targets,
+                                        boolean  useLabelConditionalCP)
+    {
+        _useLabelConditionalCP = useLabelConditionalCP;
+        _classes = targets;
+        _classIndex = new TreeMap<Double, Integer>();
+        for (int c = 0; c < _classes.length; c++) {
+            _classIndex.put(_classes[c], c);
+        }
     }
 
     public void fit(DoubleMatrix2D xtr, double[] ytr,
@@ -61,24 +79,59 @@ public class InductiveConformalClassifier
         _ytr = ytr;
         _xcal = xcal;
         _ycal = ycal;
-        
+
         _nc.fit(_xtr, _ytr);
 
         int n = _xcal.rows();
         _calibrationScores = new double[n];
+        if (_useLabelConditionalCP) {
+            _classCalibrationScores = new double[_classes.length][];
+            for (int c = 0; c < _classes.length; c++) {
+                _classCalibrationScores[c] = new double[n];
+                Arrays.fill(_classCalibrationScores[c], Double.MIN_VALUE);
+            }
+        }
         if (!PARALLEL) {
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = _xcal.viewRow(i);
                 _calibrationScores[i] =
                     _nc.calculateNonConformityScore(instance, _ycal[i]);
+                if (_useLabelConditionalCP) {
+                    _classCalibrationScores[_classIndex.get(_ycal[i])][i] =
+                        _calibrationScores[i];
+                }
             }
         } else {
             CalculateNCScoresAction all =
                 new CalculateNCScoresAction(_xcal, _ycal, _calibrationScores,
+                                            _classCalibrationScores,
                                             0, n);
             all.start();
         }
         Arrays.sort(_calibrationScores);
+        if (_useLabelConditionalCP) {
+            // FIXME: This is ugly.
+            for (int c = 0; c < _classes.length; c++) {
+                Arrays.sort(_classCalibrationScores[c]);
+                int i = 0;
+                while(i < _classCalibrationScores[c].length &&
+                      _classCalibrationScores[c][i] == Double.MIN_VALUE) {
+                    i++;
+                }
+                if (i < _classCalibrationScores[c].length) {
+                    _classCalibrationScores[c] =
+                        Arrays.copyOfRange(_classCalibrationScores[c],
+                                           i,
+                                           _classCalibrationScores[c].length);
+                } else {
+                    // There were no examples with this class/label.
+                    _classCalibrationScores[c] = new double[0];
+                }
+                System.out.println("Calibration set size for class " + c +
+                                   " label " + _classes[c] + " is " +
+                                   _classCalibrationScores[c].length);
+            }
+        }
     }
 
     /**
@@ -93,7 +146,7 @@ public class InductiveConformalClassifier
     public ObjectMatrix2D predict(DoubleMatrix2D x, double significance)
     {
         int n = x.rows();
-        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _targets.length);
+        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _classes.length);
         if (!PARALLEL) {
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
@@ -118,7 +171,7 @@ public class InductiveConformalClassifier
      */
     public ObjectMatrix1D predict(DoubleMatrix1D x, double significance)
     {
-        ObjectMatrix1D response = new DenseObjectMatrix1D(_targets.length);
+        ObjectMatrix1D response = new DenseObjectMatrix1D(_classes.length);
         predict(x, significance, response);
         return response;
     }
@@ -134,12 +187,19 @@ public class InductiveConformalClassifier
     public void predict(DoubleMatrix1D x, double significance,
                         ObjectMatrix1D labels)
     {
-        for (int i = 0; i < _targets.length; i++) {
-            // TODO: Underlying model should really only have to predict once.
-            double  nc_pred = _nc.calculateNonConformityScore(x, _targets[i]);
-            boolean include = Util.calculateInclusion(nc_pred,
-                                                      _calibrationScores,
-                                                      significance);
+        for (int i = 0; i < _classes.length; i++) {
+            // FIXME: Underlying model should really only have to predict once.
+            double  nc_pred = _nc.calculateNonConformityScore(x, _classes[i]);
+            boolean include;
+            if (_useLabelConditionalCP) {
+                include = Util.calculateInclusion(nc_pred,
+                                                  _classCalibrationScores[i],
+                                                  significance);
+            } else {
+                include = Util.calculateInclusion(nc_pred,
+                                                  _calibrationScores,
+                                                  significance);
+            }
             labels.set(i, include);
         }
     }
@@ -154,7 +214,7 @@ public class InductiveConformalClassifier
     public DoubleMatrix2D predictPValues(DoubleMatrix2D x)
     {
         int n = x.rows();
-        DoubleMatrix2D response = new DenseDoubleMatrix2D(n, _targets.length);
+        DoubleMatrix2D response = new DenseDoubleMatrix2D(n, _classes.length);
         if (!PARALLEL) {
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
@@ -177,7 +237,7 @@ public class InductiveConformalClassifier
      */
     public DoubleMatrix1D predictPValues(DoubleMatrix1D x)
     {
-        DoubleMatrix1D response = new DenseDoubleMatrix1D(_targets.length);
+        DoubleMatrix1D response = new DenseDoubleMatrix1D(_classes.length);
         predictPValues(x, response);
         return response;
     }
@@ -190,12 +250,18 @@ public class InductiveConformalClassifier
      */
     public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues)
     {
-        for (int i = 0; i < _targets.length; i++) {
+        for (int i = 0; i < _classes.length; i++) {
             // TODO: The underlying model should really only have to predict
             //       once per instance.
-            double ncScore = _nc.calculateNonConformityScore(x, _targets[i]);
-            double pValue  = Util.calculatePValue(ncScore,
-                                                  _calibrationScores);
+            double ncScore = _nc.calculateNonConformityScore(x, _classes[i]);
+            double pValue;
+            if (_useLabelConditionalCP) {
+                pValue = Util.calculatePValue(ncScore,
+                                              _classCalibrationScores[i]);
+            } else {
+                pValue = Util.calculatePValue(ncScore,
+                                              _calibrationScores);
+            }
             pValues.set(i, pValue);
         }
     }
@@ -209,16 +275,24 @@ public class InductiveConformalClassifier
         throws java.io.IOException
     {
         oos.writeObject(_nc);
+        oos.writeObject(_classes);
+        oos.writeObject(_classIndex);
         oos.writeObject(_calibrationScores);
-        oos.writeObject(_targets);
+        oos.writeObject(_useLabelConditionalCP);
+        oos.writeObject(_classCalibrationScores);
     }
 
+    @SuppressWarnings("unchecked") // There is not much to do if the saved
+                                   // value doesn't match the expected type.
     private void readObject(ObjectInputStream ois)
         throws ClassNotFoundException, java.io.IOException
     {
         _nc = (IClassificationNonconformityFunction)ois.readObject();
+        _classes = (double[])ois.readObject();
+        _classIndex = (Map<Double, Integer>)ois.readObject();
         _calibrationScores = (double[])ois.readObject();
-        _targets = (double[])ois.readObject();
+        _useLabelConditionalCP = (boolean)ois.readObject();
+        _classCalibrationScores = (double[][])ois.readObject();
     }
 
     class ClassifyLabelsAction extends se.hb.jcp.util.ParallelizedAction
@@ -285,16 +359,19 @@ public class InductiveConformalClassifier
         DoubleMatrix2D _x;
         double[] _y;
         double[] _nonConformityScores;
+        double[][] _classNonConformityScores;
 
         public CalculateNCScoresAction(DoubleMatrix2D x,
-                                       double[] y,
-                                       double[] nonConformityScores,
+                                       double[]       y,
+                                       double[]       nonConformityScores,
+                                       double[][]     classNonConformityScores,
                                        int first, int last)
         {
             super(first, last);
             _x = x;
             _y = y;
             _nonConformityScores = nonConformityScores;
+            _classNonConformityScores = classNonConformityScores;
         }
 
         protected void compute(int i)
@@ -302,11 +379,16 @@ public class InductiveConformalClassifier
             DoubleMatrix1D instance = _x.viewRow(i);
             _nonConformityScores[i] =
                 _nc.calculateNonConformityScore(instance, _y[i]);
+            if (_classNonConformityScores != null) {
+                _classNonConformityScores[_classIndex.get(_y[i])][i] =
+                    _nonConformityScores[i];
+            }
         }
 
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return new CalculateNCScoresAction(_x, _y, _nonConformityScores,
+                                               _classNonConformityScores,
                                                first, last);
         }
     }

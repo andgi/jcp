@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -54,6 +54,7 @@ public class jcp_train
     private DataSet _training;
     private DataSet _calibration;
     private DataSet _test;
+    private boolean _useLCCC = false;
     private boolean _useTCC = false;
     private boolean _useCP = true;
     private boolean _validate = false;
@@ -208,6 +209,8 @@ public class jcp_train
                     _validate = true;
                 } else if (args[i].equals("-tcc")) {
                     _useTCC = true;
+                } else if (args[i].equals("-lccc")) {
+                    _useLCCC = true;
                 } else if (args[i].equals("-nocp")) {
                     _useCP = false;
                 } else if (args[i].equals("-vf")) {
@@ -340,6 +343,9 @@ public class jcp_train
         System.out.println
             ("  -tcc              Use transductive conformal classification.");
         System.out.println
+            ("  -lccc             Use the label conditional extension to " +
+             "conformal classification.");
+        System.out.println
             ("  -nocp             Use classification without " +
              "conformal prediction.");
         System.out.println
@@ -383,7 +389,7 @@ public class jcp_train
                            " instances.");
 
         InductiveConformalClassifier icc =
-            new InductiveConformalClassifier(classes);
+            new InductiveConformalClassifier(classes, _useLCCC);
         icc._nc =
             ClassificationNonconformityFunctionFactory.getInstance().
                 createNonconformityFunction(_ncFunctionType,
