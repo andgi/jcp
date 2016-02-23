@@ -1,6 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2014  Henrik Linusson
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -29,6 +29,7 @@ import cern.colt.matrix.impl.DenseObjectMatrix2D;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
+import java.util.AbstractMap.SimpleImmutableEntry;
 
 import se.hb.jcp.nc.IClassificationNonconformityFunction;
 import se.hb.jcp.util.ParallelizedAction;
@@ -70,10 +71,17 @@ public class TransductiveConformalClassifier
         ObjectMatrix2D response = new DenseObjectMatrix2D(n, _targets.length);
 
         if (!PARALLEL) {
+            // Create a local copy of the training set with one free slot
+            // for the instance to be predicted.
+            SimpleImmutableEntry<DoubleMatrix2D, double[]> mytr =
+                 createLocalTrainingSet();
+            DoubleMatrix2D myXtr = mytr.getKey();
+            double[] myYtr = mytr.getValue();
+
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
                 ObjectMatrix1D labels   = response.viewRow(i);
-                predict(instance, significance, labels);
+                predict(instance, significance, labels, myXtr, myYtr);
             }
         } else {
             ClassifyLabelsAction all =
@@ -109,18 +117,19 @@ public class TransductiveConformalClassifier
     public void predict(DoubleMatrix1D x, double significance,
                         ObjectMatrix1D labels)
     {
-        for (int i = 0; i < _targets.length; i++) {
-            // FIXME: Parallelize over targets and/or calc_nc too?
-            IClassificationNonconformityFunction ncf =
-                _nc.fitNew(_xtr, _ytr, x, _targets[i]);
-            double[] nc = ncf.calc_nc(_xtr, _ytr, x, _targets[i]);
-            double[] nc_cal = Arrays.copyOf(nc, nc.length - 1);
-            Arrays.sort(nc_cal);
-            double ncScore = nc[nc.length - 1];
-            boolean include =
-                Util.calculateInclusion(ncScore, nc_cal, significance);
-            labels.set(i, include);
-        }
+        // FIXME: This creates a whole new (n+1)-sized copy of the training
+        //        set which is rather inefficient for a single prediction.
+        // FIXME: Add special handling for nonconformity functions that
+        //        can be trained incrementally, i.e. without retraining from
+        //        the whole (n+1)-sized training set.
+
+        // Create a local copy of the training set with one free slot
+        // for the instance to be predicted.
+        SimpleImmutableEntry<DoubleMatrix2D, double[]> mytr =
+            createLocalTrainingSet();
+        DoubleMatrix2D myXtr = mytr.getKey();
+        double[] myYtr = mytr.getValue();
+        predict(x, significance, labels, myXtr, myYtr);
     }
 
     /**
@@ -137,10 +146,12 @@ public class TransductiveConformalClassifier
                          ObjectMatrix1D labels,
                          DoubleMatrix2D xtr, double[] ytr)
     {
+        // FIXME: Parallelize over targets and/or calc_nc too?
+        // Set up the training set for this prediction.
+        int last = xtr.rows() - 1;
+        xtr.viewRow(last).assign(x);
         for (int i = 0; i < _targets.length; i++) {
-            // Set up the training set for this prediction.
-            int last = xtr.rows() - 1;
-            xtr.viewRow(last).assign(x);
+            // Set up the target for this prediction.
             ytr[last] = _targets[i];
 
             // Create a nonconformity function instance and predict.
@@ -168,10 +179,17 @@ public class TransductiveConformalClassifier
         int n = x.rows();
         DoubleMatrix2D response = new DenseDoubleMatrix2D(n, _targets.length);
         if (!PARALLEL) {
+            // Create a local copy of the training set with one free slot
+            // for the instance to be predicted.
+            SimpleImmutableEntry<DoubleMatrix2D, double[]> mytr =
+                 createLocalTrainingSet();
+            DoubleMatrix2D myXtr = mytr.getKey();
+            double[] myYtr = mytr.getValue();
+
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
                 DoubleMatrix1D pValues  = response.viewRow(i);
-                predictPValues(instance, pValues);
+                predictPValues(instance, pValues, myXtr, myYtr);
             }
         } else {
             ClassifyPValuesAction all =
@@ -202,17 +220,19 @@ public class TransductiveConformalClassifier
      */
     public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues)
     {
-        for (int i = 0; i < _targets.length; i++) {
-            // FIXME: Parallelize over targets and/or calc_nc too?
-            IClassificationNonconformityFunction ncf =
-                _nc.fitNew(_xtr, _ytr, x, _targets[i]);
-            double[] nc = ncf.calc_nc(_xtr, _ytr, x, _targets[i]);
-            double[] nc_cal = Arrays.copyOf(nc, nc.length - 1);
-            Arrays.sort(nc_cal);
-            double ncScore = nc[nc.length - 1];
-            double pValue  = Util.calculatePValue(ncScore, nc_cal);
-            pValues.set(i, pValue);
-        }
+        // FIXME: This creates a whole new (n+1)-sized copy of the training
+        //        set which is rather inefficient for a single prediction.
+        // FIXME: Add special handling for nonconformity functions that
+        //        can be trained incrementally, i.e. without retraining from
+        //        the whole (n+1)-sized training set.
+
+        // Create a local copy of the training set with one free slot
+        // for the instance to be predicted.
+        SimpleImmutableEntry<DoubleMatrix2D, double[]> mytr =
+            createLocalTrainingSet();
+        DoubleMatrix2D myXtr = mytr.getKey();
+        double[] myYtr = mytr.getValue();
+        predictPValues(x, pValues, myXtr, myYtr);
     }
 
     /**
@@ -228,10 +248,12 @@ public class TransductiveConformalClassifier
                                 DoubleMatrix1D pValues,
                                 DoubleMatrix2D xtr, double[] ytr)
     {
+        // FIXME: Parallelize over targets and/or calc_nc too?
+        // Set up the training set for this prediction.
+        int last = xtr.rows() - 1;
+        xtr.viewRow(last).assign(x);
         for (int i = 0; i < _targets.length; i++) {
-            // Set up the training set for this prediction.
-            int last = xtr.rows() - 1;
-            xtr.viewRow(last).assign(x);
+            // Set up the target for this prediction.
             ytr[last] = _targets[i];
 
             // Create a nonconformity function instance and predict.
@@ -249,6 +271,25 @@ public class TransductiveConformalClassifier
     public IClassificationNonconformityFunction getNonconformityFunction()
     {
         return _nc;
+    }
+
+    private
+        SimpleImmutableEntry<DoubleMatrix2D, double[]> createLocalTrainingSet()
+    {
+        // Create a local copy of the training set with one free slot
+        // for the instance to be predicted.
+        int n = _xtr.rows();
+        DoubleMatrix2D myXtr = _xtr.like(n + 1, _xtr.columns());
+        double[] myYtr = new double[n + 1];
+        // FIXME: This way to copy the data is probably very inefficient.
+        //        Most of the underlying data-structures are row-oriented
+        //        and this should be used to share the row data.
+        // FIXED for: libsvm.
+        for (int r = 0; r < n; r++) {
+            myXtr.viewRow(r).assign(_xtr.viewRow(r));
+            myYtr[r] = _ytr[r];
+        }
+        return new SimpleImmutableEntry<DoubleMatrix2D, double[]>(myXtr, myYtr);
     }
 
     private void writeObject(ObjectOutputStream oos)
@@ -314,16 +355,10 @@ public class TransductiveConformalClassifier
             super.initialize(first, last);
             // Create a local copy of the training set with one free slot
             // for the instance to be predicted.
-            int n = _xtr.rows();
-            _myXtr = _xtr.like(n + 1, _x.columns());
-            _myYtr = new double[n + 1];
-            // FIXME: This way to copy the data is probably very inefficient.
-            //        Most of the underlying data-structures are row-oriented
-            //        and this should be used to share the row data.
-            for (int r = 0; r < n; r++) {
-                _myXtr.viewRow(r).assign(_xtr.viewRow(r));
-                _myYtr[r] = _ytr[r];
-            }
+            SimpleImmutableEntry<DoubleMatrix2D, double[]> mytr =
+                 createLocalTrainingSet();
+            _myXtr = mytr.getKey();
+            _myYtr = mytr.getValue();
         }
 
         protected void finalize(int first, int last)
