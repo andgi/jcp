@@ -440,7 +440,7 @@ public class jcp_train
                            " instances.");
 
         TransductiveConformalClassifier tcc =
-            new TransductiveConformalClassifier(classes);
+            new TransductiveConformalClassifier(classes, _useLCCC);
         tcc._nc =
             ClassificationNonconformityFunctionFactory.getInstance().
                 createNonconformityFunction(_ncFunctionType,

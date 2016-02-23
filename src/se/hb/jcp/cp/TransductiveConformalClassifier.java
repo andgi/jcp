@@ -30,6 +30,8 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.util.Arrays;
 import java.util.AbstractMap.SimpleImmutableEntry;
+import java.util.Map;
+import java.util.TreeMap;
 
 import se.hb.jcp.nc.IClassificationNonconformityFunction;
 import se.hb.jcp.util.ParallelizedAction;
@@ -40,14 +42,27 @@ public class TransductiveConformalClassifier
     private static final boolean PARALLEL = true;
 
     public IClassificationNonconformityFunction _nc;
-    private double[] _targets;
+    private double[] _classes;
+    private Map<Double, Integer> _classIndex;
+    private boolean _useLabelConditionalCP;
 
     private DoubleMatrix2D _xtr;   
     private double[] _ytr;
 
     public TransductiveConformalClassifier(double[] targets)
     {
-        _targets = targets;
+        this(targets, false);
+    }
+
+    public TransductiveConformalClassifier(double[] targets,
+                                           boolean  useLabelConditionalCP)
+    {
+        _useLabelConditionalCP = useLabelConditionalCP;
+        _classes = targets;
+        _classIndex = new TreeMap<Double, Integer>();
+        for (int c = 0; c < _classes.length; c++) {
+            _classIndex.put(_classes[c], c);
+        }
     }
 
     public void fit(DoubleMatrix2D xtr, double[] ytr)
@@ -68,7 +83,7 @@ public class TransductiveConformalClassifier
     public ObjectMatrix2D predict(DoubleMatrix2D x, double significance)
     {
         int n = x.rows();
-        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _targets.length);
+        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _classes.length);
 
         if (!PARALLEL) {
             // Create a local copy of the training set with one free slot
@@ -101,7 +116,7 @@ public class TransductiveConformalClassifier
      */
     public ObjectMatrix1D predict(DoubleMatrix1D x, double significance)
     {
-        ObjectMatrix1D response = new DenseObjectMatrix1D(_targets.length);
+        ObjectMatrix1D response = new DenseObjectMatrix1D(_classes.length);
         predict(x, significance, response);
         return response;
     }
@@ -150,19 +165,16 @@ public class TransductiveConformalClassifier
         // Set up the training set for this prediction.
         int last = xtr.rows() - 1;
         xtr.viewRow(last).assign(x);
-        for (int i = 0; i < _targets.length; i++) {
+        for (int i = 0; i < _classes.length; i++) {
             // Set up the target for this prediction.
-            ytr[last] = _targets[i];
+            ytr[last] = _classes[i];
 
             // Create a nonconformity function instance and predict.
-            IClassificationNonconformityFunction ncf =
-                _nc.fitNew(xtr, ytr);
-            double[] nc = ncf.calc_nc(xtr, ytr);
-            double[] nc_cal = Arrays.copyOf(nc, nc.length - 1);
-            Arrays.sort(nc_cal);
-            double ncScore = nc[nc.length - 1];
-            boolean include =
-                Util.calculateInclusion(ncScore, nc_cal, significance);
+            SimpleImmutableEntry<Double, double[]> ncScores =
+              calculateNonConformityScore(xtr, ytr, _useLabelConditionalCP);
+            boolean include  = Util.calculateInclusion(ncScores.getKey(),
+                                                       ncScores.getValue(),
+                                                       significance);
             labels.set(i, include);
         }
     }
@@ -177,7 +189,7 @@ public class TransductiveConformalClassifier
     public DoubleMatrix2D predictPValues(DoubleMatrix2D x)
     {
         int n = x.rows();
-        DoubleMatrix2D response = new DenseDoubleMatrix2D(n, _targets.length);
+        DoubleMatrix2D response = new DenseDoubleMatrix2D(n, _classes.length);
         if (!PARALLEL) {
             // Create a local copy of the training set with one free slot
             // for the instance to be predicted.
@@ -207,7 +219,7 @@ public class TransductiveConformalClassifier
      */
     public DoubleMatrix1D predictPValues(DoubleMatrix1D x)
     {
-        DoubleMatrix1D response = new DenseDoubleMatrix1D(_targets.length);
+        DoubleMatrix1D response = new DenseDoubleMatrix1D(_classes.length);
         predictPValues(x, response);
         return response;
     }
@@ -252,18 +264,15 @@ public class TransductiveConformalClassifier
         // Set up the training set for this prediction.
         int last = xtr.rows() - 1;
         xtr.viewRow(last).assign(x);
-        for (int i = 0; i < _targets.length; i++) {
+        for (int i = 0; i < _classes.length; i++) {
             // Set up the target for this prediction.
-            ytr[last] = _targets[i];
+            ytr[last] = _classes[i];
 
             // Create a nonconformity function instance and predict.
-            IClassificationNonconformityFunction ncf =
-                _nc.fitNew(xtr, ytr);
-            double[] nc = ncf.calc_nc(xtr, ytr);
-            double[] nc_cal = Arrays.copyOf(nc, nc.length - 1);
-            Arrays.sort(nc_cal);
-            double ncScore = nc[nc.length - 1];
-            double pValue  = Util.calculatePValue(ncScore, nc_cal);
+            SimpleImmutableEntry<Double, double[]> ncScores =
+                calculateNonConformityScore(xtr, ytr, _useLabelConditionalCP);
+            double pValue  = Util.calculatePValue(ncScores.getKey(),
+                                                  ncScores.getValue());
             pValues.set(i, pValue);
         }
     }
@@ -273,6 +282,51 @@ public class TransductiveConformalClassifier
         return _nc;
     }
 
+    /**
+     * Computes the non-conformity score of the last instance in xtr and ytr
+     * using the rest of xtr and ytr as the calibration set.
+     *
+     * @param xtr      an <tt>DoubleMatrix2D</tt> containing the training instances and, last, the test instance.
+     * @param ytr      an <tt>double[]</tt> array containing the training instances and, last, the assumed label of the test instance.
+     * @param useLabelConditionalCP a <tt>boolean</tt> indicating whether label conditional conformal classification should be used.
+     * @returns a pair of the test instance's nonconformity score and an <tt>double[]</tt> array containing the sorted nonconformity scores of the calibration set.
+     */
+    private SimpleImmutableEntry<Double, double[]>
+        calculateNonConformityScore(DoubleMatrix2D xtr,
+                                    double[]       ytr,
+                                    boolean        useLabelConditionalCP)
+    {
+        // Create a nonconformity function instance and compute the
+        // nonconformity scores for the instance and the calibration set.
+        IClassificationNonconformityFunction ncf =
+            _nc.fitNew(xtr, ytr);
+
+        double[] nc = ncf.calc_nc(xtr, ytr);
+        double ncScore = nc[nc.length - 1];
+        double[] ncCalibrationScores;
+        if (useLabelConditionalCP) {
+            ncCalibrationScores = new double[nc.length - 1];
+            int c = 0;
+            double target = ytr[ytr.length-1];
+            for (int i = 0; i < nc.length - 1; i++) {
+                if (ytr[i] == target) {
+                    ncCalibrationScores[c++] = nc[i];
+                }
+            }
+            ncCalibrationScores = Arrays.copyOf(ncCalibrationScores, c);
+        } else {
+            ncCalibrationScores = Arrays.copyOf(nc, nc.length - 1);
+        }
+        Arrays.sort(ncCalibrationScores);
+        return new SimpleImmutableEntry<Double, double[]>(ncScore,
+                                                          ncCalibrationScores);
+    }
+
+    /**
+     * Creates a local (n+1)-sized copy of the training set.
+     *
+     * @returns a pair containing a <tt>DoubleMatrix2D</tt> containing the training instances and, last, a single slot for the test instance; and a <tt>double[]</tt> array containing the labels of the training set and, last, a single slot for the test instance.
+     */
     private
         SimpleImmutableEntry<DoubleMatrix2D, double[]> createLocalTrainingSet()
     {
@@ -300,7 +354,9 @@ public class TransductiveConformalClassifier
         // It is assumed that the predictor saves its configuration parameters.
         oos.writeObject(_nc);
         // Save the targets.
-        oos.writeObject(_targets);
+        oos.writeObject(_classes);
+        oos.writeObject(_classIndex);
+        oos.writeObject(_useLabelConditionalCP);
         // Save the training set in a space efficient representation.
         // FIXME: What representation is space efficient?
         //        Colt SparseDoubleMatrix2D isn't.
@@ -320,11 +376,15 @@ public class TransductiveConformalClassifier
         oos.writeObject(_ytr);
     }
 
+    @SuppressWarnings("unchecked") // There is not much to do if the saved
+                                   // value doesn't match the expected type.
     private void readObject(ObjectInputStream ois)
         throws ClassNotFoundException, java.io.IOException
     {
         _nc = (IClassificationNonconformityFunction)ois.readObject();
-        _targets = (double[])ois.readObject();
+        _classes = (double[])ois.readObject();
+        _classIndex = (Map<Double, Integer>)ois.readObject();
+        _useLabelConditionalCP = (boolean)ois.readObject();
         DoubleMatrix2D tmp_xtr =
             (DoubleMatrix2D)ois.readObject();
         if(_nc != null && _nc.getClassifier() != null) {

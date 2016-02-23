@@ -7,7 +7,7 @@ TODO
      But why do jlibsvm and jliblinear return the same p-values for all
      instances without smoothing?
 * Add class conditional conformal classification.
-  -> Done for ICC.
+  -> Done for ICC and TCC now.
 * Add/integrate inductive conformal regression.
 * More non-conformity functions.
 * Proper support for multi-class classification.
