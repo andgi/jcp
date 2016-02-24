@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -33,7 +33,7 @@ public interface IClassProbabilityClassifier
      * Predicts the target probabilities for the supplied instance.
      *
      * @param instance      the instance
-     * @returns a <tt>double[]</tt> array with the predicted probabilities for each of target values in the order assumed by JCP.
+     * @return a <tt>double[]</tt> array with the predicted probabilities for each of target values in the order assumed by JCP.
      */
     public double predict(DoubleMatrix1D instance,
                           double[] probabilityEstimates);

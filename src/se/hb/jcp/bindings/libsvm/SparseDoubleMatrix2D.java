@@ -163,7 +163,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * The resulting matrix will share storage with this instance.
      *
      * @param row     the row to return.
-     * @returns a <tt>SparseDoubleMatrix1D</tt> representing a view of the row.
+     * @return a <tt>SparseDoubleMatrix1D</tt> representing a view of the row.
      */
     public SparseDoubleMatrix1D getRow(int row)
     {

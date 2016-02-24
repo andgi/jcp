@@ -289,7 +289,7 @@ public class TransductiveConformalClassifier
      * @param xtr      an <tt>DoubleMatrix2D</tt> containing the training instances and, last, the test instance.
      * @param ytr      an <tt>double[]</tt> array containing the training instances and, last, the assumed label of the test instance.
      * @param useLabelConditionalCP a <tt>boolean</tt> indicating whether label conditional conformal classification should be used.
-     * @returns a pair of the test instance's nonconformity score and an <tt>double[]</tt> array containing the sorted nonconformity scores of the calibration set.
+     * @return a pair of the test instance's nonconformity score and an <tt>double[]</tt> array containing the sorted nonconformity scores of the calibration set.
      */
     private SimpleImmutableEntry<Double, double[]>
         calculateNonConformityScore(DoubleMatrix2D xtr,
@@ -325,7 +325,7 @@ public class TransductiveConformalClassifier
     /**
      * Creates a local (n+1)-sized copy of the training set.
      *
-     * @returns a pair containing a <tt>DoubleMatrix2D</tt> containing the training instances and, last, a single slot for the test instance; and a <tt>double[]</tt> array containing the labels of the training set and, last, a single slot for the test instance.
+     * @return a pair containing a <tt>DoubleMatrix2D</tt> containing the training instances and, last, a single slot for the test instance; and a <tt>double[]</tt> array containing the labels of the training set and, last, a single slot for the test instance.
      */
     private
         SimpleImmutableEntry<DoubleMatrix2D, double[]> createLocalTrainingSet()

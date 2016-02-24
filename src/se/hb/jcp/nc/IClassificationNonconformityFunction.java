@@ -1,6 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2014  Henrik Linusson
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -46,7 +46,7 @@ public interface IClassificationNonconformityFunction
      *
      * @param x    the instances.
      * @param y    the targets or classes of the instances.
-     * @returns a new non-conformity function.
+     * @return a new non-conformity function.
      */
     public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
                                                        double[] y);
@@ -60,7 +60,7 @@ public interface IClassificationNonconformityFunction
      * @param ytr    the training targets or classes of the instances.
      * @param xtest  the test instances.
      * @param ytest  the test targets/classes/labels of the instances.
-     * @returns a new non-conformity function.
+     * @return a new non-conformity function.
      */
     public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
@@ -78,14 +78,14 @@ public interface IClassificationNonconformityFunction
      *
      * @param x    the instance.
      * @param y    the target/class/label.
-     * @returns the non-conformity score. Large means less conforming.
+     * @return the non-conformity score. Large means less conforming.
      */
     public double calculateNonConformityScore(DoubleMatrix1D x, double y);
 
     /**
      * Returns the classifier used by this non-conformity function.
      *
-     * @returns the classifier used by this non-conformity function; or null if there isn't one.
+     * @return the classifier used by this non-conformity function; or null if there isn't one.
      */
     public se.hb.jcp.ml.IClassifier getClassifier();
 }

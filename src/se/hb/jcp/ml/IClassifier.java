@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -42,7 +42,7 @@ public interface IClassifier
      *
      * @param x             the attributes of the instances.
      * @param y             the targets of the instances.
-     * @returns a new <tt>IClassifier</tt> instance trained with the supplied data and using the same algorithm and parameter settings as the parent instance.
+     * @return a new <tt>IClassifier</tt> instance trained with the supplied data and using the same algorithm and parameter settings as the parent instance.
      */
     public IClassifier fitNew(DoubleMatrix2D x, double[] y);
 
@@ -50,14 +50,14 @@ public interface IClassifier
      * Predicts the target for the supplied instance.
      *
      * @param instance      the instance
-     * @returns the predicted target of the instance.
+     * @return the predicted target of the instance.
      */
     public double predict(DoubleMatrix1D instance);
 
     /**
      * Returns the number of attributes the classifier has been trained on.
      *
-     * @returns Returns the number of attributes the classifier has been trained on or <tt>-1</tt> if the classifier has not been trained.
+     * @return Returns the number of attributes the classifier has been trained on or <tt>-1</tt> if the classifier has not been trained.
      */    
     public int getAttributeCount();
 
@@ -65,7 +65,7 @@ public interface IClassifier
      * Returns a value of the <tt>DoubleMatrix1D</tt> derived class that is 
      * the native storage format for the classifier.
      *
-     * @returns a value of the <tt>DoubleMatrix1D</tt> derived class of the native storage format for the classifier.
+     * @return a value of the <tt>DoubleMatrix1D</tt> derived class of the native storage format for the classifier.
      */    
     public DoubleMatrix1D nativeStorageTemplate();
 }
