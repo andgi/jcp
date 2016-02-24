@@ -99,6 +99,7 @@ public class CCTools
 
         // Evaluation on the test set.
         DoubleMatrix2D pValues = cc.predictPValues(testSet.x);
+        long t3 = System.currentTimeMillis();
 
         int predictions = testSet.y.length;
         int correct = 0;
@@ -146,7 +147,7 @@ public class CCTools
                 correctForClassAtSize[classIndex][predictionSize]++;
             }
         }
-        long t3 = System.currentTimeMillis();
+        long t4 = System.currentTimeMillis();
 
         if (pValuesOutput != null) {
             pValuesOutput.close();
@@ -155,6 +156,8 @@ public class CCTools
             labelsOutput.close();
         }
 
+        System.out.println("Test Duration " +
+                           (double)(t3 - t2)/1000.0 + " sec.");
         System.out.println("Accuracy " +
                            ((double)correct / predictions) +
                            ", Single label prediction accuracy " +
@@ -182,7 +185,8 @@ public class CCTools
             }
         }
 
-        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+        System.out.println("Evaluation Duration " +
+                           (double)(t4 - t3)/1000.0 + " sec.");
     }
 
     public static IConformalClassifier loadModel(String filename)
