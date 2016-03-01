@@ -63,7 +63,7 @@
 
       <doctitle><![CDATA[<h1>JCP - Java Conformal Prediction framework</h1>]]></doctitle>
       <bottom><![CDATA[<i>Copyright &#169; 2014 - 2016  Anders Gidenstam.</i>]]></bottom>
-      <group title="JCP core" packages="se.hb.jcp.cp:se.hb.jcp.ml:se.hb.jcp.nc:se.hb.jcp.util"/>
+      <group title="JCP core" packages="se.hb.jcp.cp:se.hb.jcp.ml:se.hb.jcp.nc"/>
       <group title="JCP bindings" packages="se.hb.jcp.bindings.*"/>
       <group title="JCP CLI" packages="se.hb.jcp.cli"/>
       <link offline="true" href="http://github.com/andgi/jcp.git/docs/api/" packagelistLoc="C:\tmp"/>

@@ -3,3 +3,5 @@ lib
 *.class
 *.iml
 .idea
+docs/jcp.wiki
+docs/api
