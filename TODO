@@ -12,6 +12,8 @@ TODO
 * More non-conformity functions.
 * Proper support for multi-class classification.
 * Framework for predictive performance metrics.
+* Add support for explicitly giving the training and calibration set for ICC,
+  rather than randomly partition the supplied set.
 * Add support for cross-validation.
 * Improve memory utilization for TCP
   * Small pool of (n+1)-sized training sets for use by worker threads.

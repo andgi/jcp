@@ -83,6 +83,7 @@ public class ClassProbabilityNonconformityFunction
         // FIXME: This way to copy the data is probably very inefficient.
         //        Most of the underlying data-structures are row-oriented
         //        and this should be used to share the row data.
+        // FIXED for: libsvm
         for (int r = 0; r < n; r++) {
             trainingX.viewRow(r).assign(xtr.viewRow(r));
             trainingY[r] = ytr[r];
