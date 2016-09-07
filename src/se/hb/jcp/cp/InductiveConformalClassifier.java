@@ -88,7 +88,7 @@ public class InductiveConformalClassifier
             _classCalibrationScores = new double[_classes.length][];
             for (int c = 0; c < _classes.length; c++) {
                 _classCalibrationScores[c] = new double[n];
-                Arrays.fill(_classCalibrationScores[c], Double.MIN_VALUE);
+                Arrays.fill(_classCalibrationScores[c], -Double.MAX_VALUE);
             }
         }
         if (!PARALLEL) {
@@ -115,7 +115,7 @@ public class InductiveConformalClassifier
                 Arrays.sort(_classCalibrationScores[c]);
                 int i = 0;
                 while(i < _classCalibrationScores[c].length &&
-                      _classCalibrationScores[c][i] == Double.MIN_VALUE) {
+                      _classCalibrationScores[c][i] == -Double.MAX_VALUE) {
                     i++;
                 }
                 if (i < _classCalibrationScores[c].length) {
