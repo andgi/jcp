@@ -1,6 +1,6 @@
 Install instruction
 
-1. Set up JAVA_HOME to point to the JDK installation.
+1. Set up JAVA_HOME to point to the JDK installation if it doesn't already.
    E.g.
    % export JAVA_HOME=/opt/jdk1.7.0_09
 
@@ -17,32 +17,32 @@ Install instruction
      The OpenCV Core and ML modules and the Java bindings (jni) are required.
      To build the JNI binding the option 'build shared libs' MUST be set to NO.
      Use a recent Cmake.
-     Set up OCVJARDIR to point to the directory with the OpenCV Java jar archive.
-     Set up OCVLIBDIR to point to the directory with the OpenCV JNI library.
+     Set up OCVJARDIR to point to the directory with the OpenCV Java jar
+     archive.
+     Set up OCVLIBDIR to point to the directories with the OpenCV JNI library
+     and, if required, the OpenCV libraries.
      E.g.
-     % export OCVJARDIR=/usr/share/java/
-     % export OCVLIBDIR=/usr/lib/jni/
-   * Install the C/C++ version of libsvm. Copy libsvm.so into jcp/lib.
+     % export OCVJARDIR=/opt/OpenCV/share/java/
+     % export OCVLIBDIR=/opt/OpenCV/share/OpenCV/java/:/opt/OpenCV/lib/
+   * Install the source of the C/C++ version of libsvm as "libsvm.git" next to
+     the jcp directory to support the preset include path in COMPILE.sh.
+     Build and copy libsvm.so into jcp/lib/.
+     The jcp/lib directory is created by the build system so it might not yet
+     exist. You can create it manually now to place libsvm.so into it.
 
-3. (Optional) Set up LD_LIBRARY_PATH to include jcp/lib and OpenCV's library
-   directory and the directory where its Java binding (jni) reside.
-   The script wrappers jcp_train.sh and jcp_predict.sh do this based on
-   the default directory layout and $OCVLIBDIR.
-   E.g.
-   % export LD_LIBRARY_PATH=$HOME/projects/BOEL-KK-2013-2015/src/jcp/lib/:/usr/lib/jni
-
-4. Build jcp.
+3. Build jcp.
    % ant -DocvJarDir=$OCVJARDIR all
 
-5. Include jcp/build/jar/jcp.jar and the colt, JSON, Java libsvm, liblinear
-   and the OpenCV jars in the Java class path.
+4. Include jcp/build/jar/jcp.jar and the colt, JSON, Java libsvm, Java liblinear
+   and the OpenCV jars in the Java class path and the JNI library directories in
+   the java.library.path.
    The jcp_train.sh and jcp_predict.sh scripts do this for the default
    directory layout.
    E.g.
    % ./jcp_train.sh -h
    % ./jcp_predict.sh -h
 
-6. Using the bash front-end scripts a model can be created and saved using
+5. Using the bash front-end scripts a model can be created and saved using
    % ./jcp_train.sh -m mnist_576_rbf_8vr.model ../pisvm-datasets/mnist_train_576_rbf_8vr.dat
 
    And tested using
@@ -51,3 +51,4 @@ Install instruction
    Or just created and tested on a split of one data set without saving
    the model:
    % ./jcp_train.sh -v ../pisvm-datasets/mnist_train_576_rbf_8vr.dat
+
