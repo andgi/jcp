@@ -31,7 +31,7 @@ Install instruction
      exist. You can create it manually now to place libsvm.so into it.
 
 3. Build jcp.
-   % ant -DocvJarDir=$OCVJARDIR all
+   % ant all
 
 4. Include jcp/build/jar/jcp.jar and the colt, JSON, Java libsvm, Java liblinear
    and the OpenCV jars in the Java class path and the JNI library directories in

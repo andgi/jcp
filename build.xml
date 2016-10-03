@@ -3,11 +3,12 @@
   <property name="src.dir"     value="src"/>
   <property name="jni.dir"     value="jni"/>
   <property name="lib.dir"     value="lib"/>
+  <property environment="env"/>
 
   <path id="classpath">
     <fileset dir="../colt/lib" includes="*.jar" />
     <fileset dir="../JSON" includes="json.jar" />
-    <fileset dir="${ocvJarDir}" includes="opencv.jar" />
+    <fileset dir="${env.OCVJARDIR}" includes="opencv.jar" />
     <fileset dir="../libsvm-java" includes="libsvm.jar" />
     <fileset dir="../liblinear-java" includes="liblinear-java.jar" />
   </path>
