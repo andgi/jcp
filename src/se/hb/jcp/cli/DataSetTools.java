@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -83,7 +83,7 @@ public class DataSetTools
         DataSet dataSet = new libsvmReader().read(file, template);
         file.close();
 
-        System.out.println("Loaded the dataset " + filename + " containing " +
+        System.err.println("Loaded the dataset " + filename + " containing " +
                            dataSet.x.rows() + " instances with " +
                            dataSet.x.columns() + " attributes.");
         return dataSet;
@@ -99,11 +99,11 @@ public class DataSetTools
             }
         }
         double[] classes = new double[classSet.size()];
-        System.out.println("Classes: ");
+        System.err.println("Classes: ");
         int i = 0;
         for (Double c : classSet.toArray(new Double[0])) {
             classes[i] = c;
-            System.out.println("   Class " + i + " with label '" + classes[i] +
+            System.err.println("   Class " + i + " with label '" + classes[i] +
                                "'.");
             i++;
         }
