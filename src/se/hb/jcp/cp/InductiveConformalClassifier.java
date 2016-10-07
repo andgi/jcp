@@ -30,7 +30,7 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 
 import java.util.Arrays;
-import java.util.Map;
+import java.util.SortedMap;
 import java.util.TreeMap;
 
 import se.hb.jcp.nc.IClassificationNonconformityFunction;
@@ -42,8 +42,9 @@ public class InductiveConformalClassifier
     private static final boolean PARALLEL = true;
 
     public IClassificationNonconformityFunction _nc;
-    private double[] _classes;
-    private Map<Double, Integer> _classIndex;
+    private Double[] _classes;
+    private SortedMap<Double, Integer> _classIndex;
+    private int _attributeCount = -1;
     // For normal conformal prediction.
     private double[] _calibrationScores;
     // For label/class-conditional conformal prediction.
@@ -65,11 +66,12 @@ public class InductiveConformalClassifier
                                         boolean  useLabelConditionalCP)
     {
         _useLabelConditionalCP = useLabelConditionalCP;
-        _classes = targets;
         _classIndex = new TreeMap<Double, Integer>();
-        for (int c = 0; c < _classes.length; c++) {
-            _classIndex.put(_classes[c], c);
+        for (int c = 0; c < targets.length; c++) {
+            _classIndex.put(targets[c], c);
         }
+        _classes = _classIndex.keySet().toArray(new Double[0]);
+        Arrays.sort(_classes); // FIXME: Redundant?
     }
 
     public void fit(DoubleMatrix2D xtr, double[] ytr,
@@ -132,6 +134,7 @@ public class InductiveConformalClassifier
                                    _classCalibrationScores[c].length);
             }
         }
+        _attributeCount = xtr.columns();
     }
 
     /**
@@ -271,12 +274,39 @@ public class InductiveConformalClassifier
         return _nc;
     }
 
+    public boolean isTrained()
+    {
+        return getAttributeCount() >= 0;
+    }
+
+    public int getAttributeCount()
+    {
+        return _attributeCount;
+    }
+
+    public Double[] getLabels()
+    {
+        return _classes;
+    }
+
+    public DoubleMatrix1D nativeStorageTemplate()
+    {
+        if (getNonconformityFunction() != null &&
+            getNonconformityFunction().getClassifier() != null) {
+            return getNonconformityFunction().getClassifier()
+                       .nativeStorageTemplate();
+        } else {
+            return new cern.colt.matrix.impl.SparseDoubleMatrix1D(0);
+        }
+    }
+
     private void writeObject(ObjectOutputStream oos)
         throws java.io.IOException
     {
         oos.writeObject(_nc);
         oos.writeObject(_classes);
         oos.writeObject(_classIndex);
+        oos.writeObject(_attributeCount);
         oos.writeObject(_calibrationScores);
         oos.writeObject(_useLabelConditionalCP);
         oos.writeObject(_classCalibrationScores);
@@ -288,8 +318,9 @@ public class InductiveConformalClassifier
         throws ClassNotFoundException, java.io.IOException
     {
         _nc = (IClassificationNonconformityFunction)ois.readObject();
-        _classes = (double[])ois.readObject();
-        _classIndex = (Map<Double, Integer>)ois.readObject();
+        _classes = (Double[])ois.readObject();
+        _classIndex = (SortedMap<Double, Integer>)ois.readObject();
+        _attributeCount = (int)ois.readObject();
         _calibrationScores = (double[])ois.readObject();
         _useLabelConditionalCP = (boolean)ois.readObject();
         _classCalibrationScores = (double[][])ois.readObject();

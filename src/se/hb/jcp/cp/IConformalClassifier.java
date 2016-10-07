@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -32,7 +32,7 @@ import se.hb.jcp.nc.IClassificationNonconformityFunction;
  *    trained.
  */
 public interface IConformalClassifier
-    extends java.io.Serializable
+    extends se.hb.jcp.ml.IClassifierInformation, java.io.Serializable
 {
     /**
      * Computes the set of labels predicted at the selected significance
