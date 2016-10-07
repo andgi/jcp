@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -45,7 +45,7 @@ public class RandomForestClassifier
         _jsonParameters = parameters;
     }
 
-    public void fit(DoubleMatrix2D x, double[] y)
+    protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         CvRTParams parameters = readParameters();
         if (_model == null) {
@@ -65,7 +65,6 @@ public class RandomForestClassifier
                                  varType,
                                  missingDataMask,
                                  parameters);
-        _attributeCount = x.columns();
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)

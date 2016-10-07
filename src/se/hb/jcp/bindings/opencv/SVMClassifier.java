@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -42,7 +42,7 @@ public class SVMClassifier
         _jsonParameters = parameters;
     }
 
-    public void fit(DoubleMatrix2D x, double[] y)
+    protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         CvSVMParams parameters = readParameters();
         if (_model == null) {
@@ -53,7 +53,6 @@ public class SVMClassifier
                               new org.opencv.core.Mat(),
                               new org.opencv.core.Mat(),
                               parameters);
-        _attributeCount = x.columns();
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)

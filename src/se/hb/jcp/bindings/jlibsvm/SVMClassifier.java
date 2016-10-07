@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -28,8 +28,10 @@ import libsvm.*;
 
 import se.hb.jcp.ml.IClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
+import se.hb.jcp.ml.ClassifierBase;
 
 public class SVMClassifier
+    extends ClassifierBase
     implements IClassifier, //IClassProbabilityClassifier // FIXME: disabled.
                java.io.Serializable
 {
@@ -37,7 +39,6 @@ public class SVMClassifier
         new SparseDoubleMatrix1D(0);
     protected svm_parameter _parameters;
     protected svm_model _model;
-    protected int _attributeCount = -1;
 
     public SVMClassifier()
     {
@@ -144,7 +145,7 @@ public class SVMClassifier
         }
     }
 
-    public void fit(DoubleMatrix2D x, double[] y)
+    protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         SparseDoubleMatrix2D tmp_x;
         if (x instanceof SparseDoubleMatrix2D) {
@@ -159,7 +160,6 @@ public class SVMClassifier
         problem.y = y;
 
         _model = svm.svm_train(problem, _parameters);
-        _attributeCount = tmp_x.columns();
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
@@ -212,11 +212,6 @@ public class SVMClassifier
         return prediction;
     }
 
-    public int getAttributeCount()
-    {
-        return _attributeCount;
-    }
-
     public DoubleMatrix1D nativeStorageTemplate()
     {
         return _storageTemplate;
@@ -227,8 +222,6 @@ public class SVMClassifier
     {
         // Save the classifier parameters.
         oos.writeObject(_parameters);
-        // Save the attribute count.
-        oos.writeObject(_attributeCount);
         // Save the model if it has been trained.
         if (_model != null) {
             // Create a (likely) unique file name for the Java libsvm model.
@@ -251,8 +244,6 @@ public class SVMClassifier
     {
         // Load the classifier parameters.
         _parameters = (svm_parameter)ois.readObject();
-        // Load the attribute count.
-        _attributeCount = (int)ois.readObject();
         // Load the model file name from the Java input stream.
         String fileName = (String)ois.readObject();
         if (fileName != null) {

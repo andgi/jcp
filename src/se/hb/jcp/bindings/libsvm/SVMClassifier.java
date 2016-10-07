@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -23,8 +23,10 @@ import org.json.JSONObject;
 
 import se.hb.jcp.ml.IClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
+import se.hb.jcp.ml.ClassifierBase;
 
 public class SVMClassifier
+    extends ClassifierBase
     implements IClassProbabilityClassifier,
                java.io.Serializable
 {
@@ -32,7 +34,6 @@ public class SVMClassifier
         new SparseDoubleMatrix1D(0);
     protected svm_parameter _parameters;
     protected svm_model _model;
-    protected int _attributeCount = -1;
 
     public SVMClassifier()
     {
@@ -139,7 +140,7 @@ public class SVMClassifier
         }
     }
 
-    public void fit(DoubleMatrix2D x, double[] y)
+    protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         SparseDoubleMatrix2D tmp_x;
         if (x instanceof se.hb.jcp.bindings.libsvm.SparseDoubleMatrix2D) {
@@ -150,7 +151,6 @@ public class SVMClassifier
         }
 
         _model = svm.svm_train(_parameters, tmp_x, y);
-        _attributeCount = tmp_x.columns();
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
@@ -201,11 +201,6 @@ public class SVMClassifier
         }
 
         return prediction;
-    }
-
-    public int getAttributeCount()
-    {
-        return _attributeCount;
     }
 
     public DoubleMatrix1D nativeStorageTemplate()

@@ -24,6 +24,7 @@ import cern.colt.matrix.DoubleMatrix2D;
  * learning classification algorithm.
  */
 public class BogusClassProbabilityClassifier
+    extends ClassifierBase
     implements IClassProbabilityClassifier
 {
     private IClassifier _classifier;
@@ -42,7 +43,7 @@ public class BogusClassProbabilityClassifier
      * @param x             the attributes of the instances.
      * @param y             the targets of the instances.
      */
-    public void fit(DoubleMatrix2D x, double[] y)
+    protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         _classifier.fit(x, y);
     }
@@ -85,16 +86,6 @@ public class BogusClassProbabilityClassifier
         probabilityEstimates[0] = 0.5 - 0.5*prediction;
         probabilityEstimates[1] = 0.5 + 0.5*prediction;
         return prediction;
-    }
-
-   /**
-     * Returns the number of attributes the classifier has been trained on.
-     *
-     * @return Returns the number of attributes the classifier has been trained on or <tt>-1</tt> if the classifier has not been trained.
-     */
-    public int getAttributeCount()
-    {
-        return _classifier.getAttributeCount();
     }
 
     /**

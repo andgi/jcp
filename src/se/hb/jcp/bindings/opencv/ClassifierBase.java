@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -30,6 +30,7 @@ import org.json.JSONObject;
 import se.hb.jcp.ml.IClassifier;
 
 abstract class ClassifierBase
+    extends se.hb.jcp.ml.ClassifierBase
     implements IClassifier,
                java.io.Serializable
 {
@@ -39,12 +40,11 @@ abstract class ClassifierBase
 
     protected CvStatModel _model;
     protected JSONObject _jsonParameters;
-    protected int _attributeCount = -1;
 
     protected DenseDoubleMatrix2D asDDM2D(DoubleMatrix2D x)
     {
         DenseDoubleMatrix2D tmp_x;
-        if ((_attributeCount < 0 || x.columns() == _attributeCount) &&
+        if ((!isTrained() || x.columns() == getAttributeCount()) &&
             x instanceof se.hb.jcp.bindings.opencv.DenseDoubleMatrix2D) {
             tmp_x = (DenseDoubleMatrix2D)x;
         } else {
@@ -53,20 +53,20 @@ abstract class ClassifierBase
                     ("se.hb.jcp.bindings.opencv.ClassifierBase.asDDM2D(): " +
                      "slow path.");
             }
-            if (0 <= _attributeCount && x.columns() != _attributeCount) {
+            if (isTrained() && x.columns() != getAttributeCount()) {
                 // Truncate/extend as needed. The mismatch isn't necessarily
                 // an error when sparse data is used.
                 if (DEBUG) {
                     System.out.println
                         ("se.hb.jcp.bindings.opencv.ClassifierBase.asDDM2D():" +
                          " The number of attributes does not match: " +
-                         "model " + _attributeCount +
+                         "model " + getAttributeCount() +
                          "; data " + x.columns() + ".");
                 }
-                tmp_x = new DenseDoubleMatrix2D(x.rows(), _attributeCount);
+                tmp_x = new DenseDoubleMatrix2D(x.rows(), getAttributeCount());
                 for (int r = 0; r < x.rows(); r++) {
                     for (int c = 0;
-                         c < Math.min(_attributeCount, x.columns());
+                         c < Math.min(getAttributeCount(), x.columns());
                          c++) {
                         tmp_x.setQuick(r, c, x.getQuick(r, c));
                     }
@@ -82,7 +82,7 @@ abstract class ClassifierBase
     protected DenseDoubleMatrix1D asDDM1D(DoubleMatrix1D x)
     {
         DenseDoubleMatrix1D tmp_x;
-        if ((_attributeCount < 0 || x.size() == _attributeCount) &&
+        if ((!isTrained() || x.size() == getAttributeCount()) &&
             x instanceof se.hb.jcp.bindings.opencv.DenseDoubleMatrix1D) {
             tmp_x = (DenseDoubleMatrix1D)x;
         } else {
@@ -91,19 +91,19 @@ abstract class ClassifierBase
                     ("se.hb.jcp.bindings.opencv.ClassifierBase.asDDM1D(): " +
                      "slow path.");
             }
-            if (0 <= _attributeCount && x.size() != _attributeCount) {
+            if (isTrained() && x.size() != getAttributeCount()) {
                 // Truncate/extend as needed. The mismatch isn't necessarily
                 // an error when sparse data is used.
                 if (DEBUG) {
                     System.out.println
                         ("se.hb.jcp.bindings.opencv.ClassifierBase.asDDM1D():" +
                          " The number of attributes does not match: " +
-                         "model " + _attributeCount +
+                         "model " + getAttributeCount() +
                          "; data " + x.size() + ".");
                 }
-                tmp_x = new DenseDoubleMatrix1D(_attributeCount);
+                tmp_x = new DenseDoubleMatrix1D(getAttributeCount());
                 for (int c = 0;
-                     c < Math.min(_attributeCount, x.size());
+                     c < Math.min(getAttributeCount(), x.size());
                      c++) {
                     tmp_x.setQuick(c, x.getQuick(c));
                 }
@@ -120,11 +120,6 @@ abstract class ClassifierBase
         DenseDoubleMatrix1D tmp_y = new DenseDoubleMatrix1D(y.length);
         tmp_y.assign(y);
         return tmp_y;
-    }
-
-    public int getAttributeCount()
-    {
-        return _attributeCount;
     }
 
     public DoubleMatrix1D nativeStorageTemplate()
@@ -167,10 +162,8 @@ abstract class ClassifierBase
         } else {
             oos.writeObject(null);
         }
-        // Save the attribute count.
-        oos.writeObject(_attributeCount);
         // Save the model if it has been trained.
-        if (_attributeCount > -1) {
+        if (isTrained()) {
             // Create a (likely) unique file name for the OpenCV model.
             String fileName =
                 Long.toHexString(Double.doubleToLongBits(Math.random())) +
@@ -194,8 +187,6 @@ abstract class ClassifierBase
         if (jsonText != null) {
             _jsonParameters = new JSONObject(jsonText);
         }
-        // Load the attribute count.
-        _attributeCount = (int)ois.readObject();
 
         // Load OpenCV model file name from the Java input stream.
         String fileName = (String)ois.readObject();

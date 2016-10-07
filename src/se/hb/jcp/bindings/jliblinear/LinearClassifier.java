@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -27,17 +27,17 @@ import org.json.JSONObject;
 
 import de.bwaldvogel.liblinear.*;
 
+import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassifier;
 
 public class LinearClassifier
-    implements IClassifier,
-               java.io.Serializable
+    extends ClassifierBase
+    implements java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected JSONObject _jsonParameters;
     protected Model _model;
-    protected int _attributeCount = -1;
 
     public LinearClassifier()
     {
@@ -49,7 +49,7 @@ public class LinearClassifier
         _jsonParameters = parameters;
     }
 
-    public void fit(DoubleMatrix2D x, double[] y)
+    protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         Parameter parameters = readParameters();
 
@@ -68,7 +68,7 @@ public class LinearClassifier
         problem.y = y;
 
         _model = Linear.train(problem, parameters);
-        _attributeCount = tmp_x.columns();
+
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
@@ -89,11 +89,6 @@ public class LinearClassifier
         }
 
         return Linear.predict(_model, tmp_instance.nodes);
-    }
-
-    public int getAttributeCount()
-    {
-        return _attributeCount;
     }
 
     public DoubleMatrix1D nativeStorageTemplate()
@@ -161,8 +156,6 @@ public class LinearClassifier
         } else {
             oos.writeObject(null);
         }
-        // Save the attribute count.
-        oos.writeObject(_attributeCount);
 
         // Save the model if it has been trained.
         if (_model != null) {
@@ -190,8 +183,6 @@ public class LinearClassifier
         if (jsonText != null) {
             _jsonParameters = new JSONObject(jsonText);
         }
-        // Load the attribute count.
-        _attributeCount = (int)ois.readObject();
 
         // Load model file name from the Java input stream.
         String fileName = (String)ois.readObject();
