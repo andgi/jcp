@@ -47,29 +47,15 @@ public class DataSetTools
                                       IConformalClassifier cc)
         throws IOException
     {
-        boolean hasClassifier =
-            cc != null && cc.getNonconformityFunction().getClassifier() != null;
-        DoubleMatrix1D template =
-            hasClassifier
-            ? cc.getNonconformityFunction().getClassifier().
-                  nativeStorageTemplate()
-            : new cern.colt.matrix.impl.SparseDoubleMatrix1D(0);
+        DataSet dataSet = loadDataSet(filename, cc.nativeStorageTemplate());
 
-        DataSet dataSet = loadDataSet(filename, template);
-
-        if (hasClassifier &&
-            cc.getNonconformityFunction().getClassifier().
-                getAttributeCount() > -1 &&
-            dataSet.x.columns() !=
-                cc.getNonconformityFunction().getClassifier().
-                    getAttributeCount()) {
+        if (cc.isTrained() && dataSet.x.columns() != cc.getAttributeCount()) {
             System.err.println
                 ("Warning: " +
                  "The number of attributes in the data set, " +
                  dataSet.x.columns() + ", " +
                  "does not match the number of attributes in the model, " +
-                 cc.getNonconformityFunction().getClassifier().
-                     getAttributeCount() + ".");
+                 cc.getAttributeCount() + ".");
         }
         return dataSet;
     }
@@ -94,9 +80,7 @@ public class DataSetTools
     {
         TreeSet<Double> classSet = new TreeSet<Double>();
         for (int r = 0; r < dataSet.x.rows(); r++) {
-            if (!classSet.contains(dataSet.y[r])) {
-                classSet.add(dataSet.y[r]);
-            }
+            classSet.add(dataSet.y[r]);
         }
         double[] classes = new double[classSet.size()];
         System.err.println("Classes: ");
