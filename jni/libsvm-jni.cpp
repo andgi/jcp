@@ -847,15 +847,19 @@ Java_se_hb_jcp_bindings_libsvm_SparseDoubleMatrix1D_native_1vector_1set
 {
     struct svm_node** vptr = (struct svm_node**)jptr;
     int i = 0;
-    while ((*vptr)[i].index != -1 && (*vptr)[i].index < index) {
+    while ((*vptr)[i].index != -1) {
+        if ((*vptr)[i].index == index) {
+            (*vptr)[i].value = value;
+            return;
+        }
         i++;
-    }
-    if ((*vptr)[i].index == index) {
-        (*vptr)[i].value = value;
-        return;
     }
 
     // The requested element was not found.
+    if (value == 0.0) {
+        // Done if the value to set is zero.
+        return;
+    }
     // Allocate a new larger array and copy the contents and the new element.
     // FIXME: Using set() to initialize a matrix row element by element
     //        will be slow.
