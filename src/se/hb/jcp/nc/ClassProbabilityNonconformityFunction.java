@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -105,7 +105,7 @@ public class ClassProbabilityNonconformityFunction
         double[] nc = new double[y.length];
 
         if (DEBUG) {
-            System.out.println("fastCalc_nc()");
+            System.err.println("fastCalc_nc()");
         }
 
         if (!PARALLEL) {
@@ -114,7 +114,7 @@ public class ClassProbabilityNonconformityFunction
                 nc[i] = calculateNonConformityScore(instance, y[i]);
 
                 if (DEBUG) {
-                    System.out.println("  instance " + i + " target " + y[i] +
+                    System.err.println("  instance " + i + " target " + y[i] +
                                        ": " + nc[i]);
                 }
             }
@@ -146,13 +146,13 @@ public class ClassProbabilityNonconformityFunction
 
         double nc = 1.0 - probability[_class_index.get(y)];
         if (DEBUG) {
-            System.out.println("  instance (" + x + ") target " + y +
+            System.err.println("  instance (" + x + ") target " + y +
                                ": " + nc);
         }
         double label = _model.predict(x);
         if (probability[_class_index.get(label)] <
             probability[_classes.length - 1 - _class_index.get(label)]) {
-            System.out.println("Warning! Poor model prediction (" +
+            System.err.println("Warning! Poor model prediction (" +
                                label + ") - model label probability (" +
                                probability[_class_index.get(label)] +
                                ") match!");
