@@ -48,6 +48,15 @@
     </jar>
   </target>
 
+  <target name="run">
+    <exec executable="bash" failonerror="true">
+      <arg line="scripts/run-all.sh"/>
+    </exec>
+    <exec executable="cat" failonerror="true">
+      <arg line="output.txt"/>
+    </exec>
+  </target>
+
   <target name="docs" depends="compile">
     <javadoc destdir="docs/api"
              author="true"
