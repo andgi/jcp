@@ -251,4 +251,12 @@ public class SVMClassifier
             _model = svm.svm_load_model(fileName);
         }
     }
+
+    static {
+        // Replace the svm print_string_function with a no-op.
+        svm.svm_set_print_string_function(new libsvm.svm_print_interface() {
+            public void print(String s) {
+            }
+        });
+    }
 }
