@@ -16,8 +16,6 @@
 //
 package se.hb.jcp.cp;
 
-import cern.colt.matrix.ObjectMatrix1D;
-import cern.colt.matrix.ObjectMatrix2D;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
@@ -35,36 +33,21 @@ public interface IConformalClassifier
     extends se.hb.jcp.ml.IClassifierInformation, java.io.Serializable
 {
     /**
-     * Computes the set of labels predicted at the selected significance
-     * level for each instance in x.
+     * Makes a prediction for each instance in x.
      * The method is parallellized over the instances.
      *
      * @param x             the instances.
-     * @param significance  the significance level [0-1].
-     * @return an <tt>ObjectMatrix2D</tt> containing the predicted labels for each instance.
+     * @return an array containing a <tt>ConformalClassification</tt> for each instance.
      */
-    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance);
+    public ConformalClassification[] predict(DoubleMatrix2D x);
 
     /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level.
+     * Makes a prediction for the instance x.
      *
      * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @return an <tt>ObjectMatrix1D</tt> containing the predicted labels.
+     * @return a prediction in the form of a <tt>ConformalClassification</tt>.
      */
-    public ObjectMatrix1D predict(DoubleMatrix1D x, double significance);
-
-    /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level.
-     *
-     * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
-     */
-    public void predict(DoubleMatrix1D x, double significance,
-                        ObjectMatrix1D labels);
+    public ConformalClassification predict(DoubleMatrix1D x);
 
     /**
      * Computes the predicted p-values for each target and instance in x.

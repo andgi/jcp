@@ -17,14 +17,10 @@
 //
 package se.hb.jcp.cp;
 
-import cern.colt.matrix.ObjectMatrix1D;
-import cern.colt.matrix.ObjectMatrix2D;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.impl.DenseDoubleMatrix2D;
-import cern.colt.matrix.impl.DenseObjectMatrix1D;
-import cern.colt.matrix.impl.DenseObjectMatrix2D;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -36,6 +32,10 @@ import java.util.TreeMap;
 import se.hb.jcp.nc.IClassificationNonconformityFunction;
 import se.hb.jcp.util.ParallelizedAction;
 
+/**
+ * Represents an instance of a specific inductive conformal classification
+ * algorithm.
+ */
 public class InductiveConformalClassifier
     implements IConformalClassifier, java.io.Serializable
 {
@@ -138,73 +138,38 @@ public class InductiveConformalClassifier
     }
 
     /**
-     * Computes the set of labels predicted at the selected significance
-     * level for each instance in x.
+     * Makes a prediction for each instance in x.
      * The method is parallellized over the instances.
      *
      * @param x             the instances.
-     * @param significance  the significance level [0-1].
-     * @return an <tt>ObjectMatrix2D</tt> containing the predicted labels for each instance.
+     * @return an array containing a <tt>ConformalClassification</tt> for each instance.
      */
-    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance)
+    public ConformalClassification[] predict(DoubleMatrix2D x)
     {
         int n = x.rows();
-        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _classes.length);
+        ConformalClassification[] predictions = new ConformalClassification[n];
         if (!PARALLEL) {
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
-                ObjectMatrix1D labels   = response.viewRow(i);
-                predict(instance, significance, labels);
+                predictions[i] = predict(instance);
             }
         } else {
-            ClassifyLabelsAction all =
-                new ClassifyLabelsAction(x, response, significance, 0, n);
+            ClassifyAction all =
+                new ClassifyAction(x, predictions, 0, n);
             all.start();
         }
-        return response;
+        return predictions;
     }
 
     /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level.
+     * Makes a prediction for the instance x.
      *
      * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @return an <tt>ObjectMatrix1D</tt> containing the predicted labels.
+     * @return a prediction in the form of a <tt>ConformalClassification</tt>.
      */
-    public ObjectMatrix1D predict(DoubleMatrix1D x, double significance)
+    public ConformalClassification predict(DoubleMatrix1D x)
     {
-        ObjectMatrix1D response = new DenseObjectMatrix1D(_classes.length);
-        predict(x, significance, response);
-        return response;
-    }
-
-    /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level.
-     *
-     * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
-     */
-    public void predict(DoubleMatrix1D x, double significance,
-                        ObjectMatrix1D labels)
-    {
-        for (int i = 0; i < _classes.length; i++) {
-            // FIXME: Underlying model should really only have to predict once.
-            double  nc_pred = _nc.calculateNonConformityScore(x, _classes[i]);
-            boolean include;
-            if (_useLabelConditionalCP) {
-                include = Util.calculateInclusion(nc_pred,
-                                                  _classCalibrationScores[i],
-                                                  significance);
-            } else {
-                include = Util.calculateInclusion(nc_pred,
-                                                  _calibrationScores,
-                                                  significance);
-            }
-            labels.set(i, include);
-        }
+        return new ConformalClassification(this, predictPValues(x));
     }
 
     /**
@@ -326,37 +291,6 @@ public class InductiveConformalClassifier
         _classCalibrationScores = (double[][])ois.readObject();
     }
 
-    class ClassifyLabelsAction extends se.hb.jcp.util.ParallelizedAction
-    {
-        DoubleMatrix2D _x;
-        ObjectMatrix2D _response;
-        double _significance;
-
-        public ClassifyLabelsAction(DoubleMatrix2D x,
-                                    ObjectMatrix2D response,
-                                    double significance,
-                                    int first, int last)
-        {
-            super(first, last);
-            _x = x;
-            _response = response;
-            _significance = significance;
-        }
-
-        protected void compute(int i)
-        {
-            DoubleMatrix1D instance = _x.viewRow(i);
-            ObjectMatrix1D labels   = _response.viewRow(i);
-            predict(instance, _significance, labels);
-        }
-
-        protected ParallelizedAction createSubtask(int first, int last)
-        {
-            return new ClassifyLabelsAction(_x, _response, _significance,
-                                            first, last);
-        }
-    }
-
     class ClassifyPValuesAction extends se.hb.jcp.util.ParallelizedAction
     {
         DoubleMatrix2D _x;
@@ -382,6 +316,35 @@ public class InductiveConformalClassifier
         {
             return new ClassifyPValuesAction(_x, _response,
                                              first, last);
+        }
+    }
+
+    class ClassifyAction extends se.hb.jcp.util.ParallelizedAction
+    {
+        DoubleMatrix2D _x;
+        ConformalClassification[] _response;
+
+        public ClassifyAction(DoubleMatrix2D x,
+                              ConformalClassification[] response,
+                              int first, int last)
+        {
+          super(first, last);
+            _x = x;
+            _response = response;
+        }
+
+        protected void compute(int i)
+        {
+            DoubleMatrix1D instance = _x.viewRow(i);
+            _response[i] =
+                new ConformalClassification(InductiveConformalClassifier.this,
+                                            predictPValues(instance));
+        }
+
+        protected ParallelizedAction createSubtask(int first, int last)
+        {
+            return new ClassifyAction(_x, _response,
+                                      first, last);
         }
     }
 

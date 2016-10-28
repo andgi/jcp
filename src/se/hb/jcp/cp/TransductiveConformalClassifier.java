@@ -19,12 +19,8 @@ package se.hb.jcp.cp;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.ObjectMatrix1D;
-import cern.colt.matrix.ObjectMatrix2D;
 import cern.colt.matrix.impl.DenseDoubleMatrix1D;
 import cern.colt.matrix.impl.DenseDoubleMatrix2D;
-import cern.colt.matrix.impl.DenseObjectMatrix1D;
-import cern.colt.matrix.impl.DenseObjectMatrix2D;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -73,18 +69,16 @@ public class TransductiveConformalClassifier
     }
 
     /**
-     * Computes the set of labels predicted at the selected significance
-     * level for each instance in x.
+     * Makes a prediction for each instance in x.
      * The method is parallellized over the instances.
      *
      * @param x             the instances.
-     * @param significance  the significance level [0-1].
-     * @return an <tt>ObjectMatrix2D</tt> containing the predicted labels for each instance.
+     * @return an array containing a <tt>ConformalClassification</tt> for each instance.
      */
-    public ObjectMatrix2D predict(DoubleMatrix2D x, double significance)
+    public ConformalClassification[] predict(DoubleMatrix2D x)
     {
         int n = x.rows();
-        ObjectMatrix2D response = new DenseObjectMatrix2D(n, _classes.length);
+        ConformalClassification[] predictions = new ConformalClassification[n];
 
         if (!PARALLEL) {
             // Create a local copy of the training set with one free slot
@@ -96,88 +90,41 @@ public class TransductiveConformalClassifier
 
             for (int i = 0; i < n; i++) {
                 DoubleMatrix1D instance = x.viewRow(i);
-                ObjectMatrix1D labels   = response.viewRow(i);
-                predict(instance, significance, labels, myXtr, myYtr);
+                predictions[i] = predict(instance, myXtr, myYtr);
             }
         } else {
-            ClassifyLabelsAction all =
-                new ClassifyLabelsAction(x, response, significance, 0, n);
+            ClassifyAllAction all =
+                new ClassifyAllAction(x, predictions, 0, n);
             all.start();
         }
-        return response;
+        return predictions;
     }
 
     /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level.
+     * Makes a prediction for the instance x.
      *
      * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @return an <tt>ObjectMatrix1D</tt> containing the predicted labels.
+     * @return a prediction in the form of a <tt>ConformalClassification</tt>.
      */
-    public ObjectMatrix1D predict(DoubleMatrix1D x, double significance)
+    public ConformalClassification predict(DoubleMatrix1D x)
     {
-        ObjectMatrix1D response = new DenseObjectMatrix1D(_classes.length);
-        predict(x, significance, response);
-        return response;
+        return new ConformalClassification(this, predictPValues(x));
     }
 
     /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level.
+     * Makes a prediction for the instance x at the using prepared buffers for
+     * the training set.
      *
      * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
-     */
-    public void predict(DoubleMatrix1D x, double significance,
-                        ObjectMatrix1D labels)
-    {
-        // FIXME: This creates a whole new (n+1)-sized copy of the training
-        //        set which is rather inefficient for a single prediction.
-        // FIXME: Add special handling for nonconformity functions that
-        //        can be trained incrementally, i.e. without retraining from
-        //        the whole (n+1)-sized training set.
-
-        // Create a local copy of the training set with one free slot
-        // for the instance to be predicted.
-        SimpleImmutableEntry<DoubleMatrix2D, double[]> mytr =
-            createLocalTrainingSet();
-        DoubleMatrix2D myXtr = mytr.getKey();
-        double[] myYtr = mytr.getValue();
-        predict(x, significance, labels, myXtr, myYtr);
-    }
-
-    /**
-     * Computes the set of labels predicted for the instance x at the
-     * selected significance level using prepared buffers for the training set.
-     *
-     * @param x             the instance.
-     * @param significance  the significance level [0-1].
-     * @param labels        an initialized <tt>ObjectMatrix1D</tt> to store the predicted labels.
      * @param xtr           an initialized <tt>DoubleMatrix2D</tt> containing the training instances and, last, one free slot.
      * @param ytr           an initialized <tt>double[]</tt> array containing the training instances and, last, one free slot.
      */
-    private void predict(DoubleMatrix1D x, double significance,
-                         ObjectMatrix1D labels,
-                         DoubleMatrix2D xtr, double[] ytr)
+    private ConformalClassification predict(DoubleMatrix1D x,
+                                            DoubleMatrix2D xtr, double[] ytr)
     {
-        // FIXME: Parallelize over targets and/or calc_nc too?
-        // Set up the training set for this prediction.
-        int last = xtr.rows() - 1;
-        xtr.viewRow(last).assign(x);
-        for (int i = 0; i < _classes.length; i++) {
-            // Set up the target for this prediction.
-            ytr[last] = _classes[i];
-
-            // Create a nonconformity function instance and predict.
-            SimpleImmutableEntry<Double, double[]> ncScores =
-              calculateNonConformityScore(xtr, ytr, _useLabelConditionalCP);
-            boolean include  = Util.calculateInclusion(ncScores.getKey(),
-                                                       ncScores.getValue(),
-                                                       significance);
-            labels.set(i, include);
-        }
+        DoubleMatrix1D pValues = new DenseDoubleMatrix1D(_classes.length);
+        predictPValues(x, pValues, xtr, ytr);
+        return new ConformalClassification(this, pValues);
     }
 
     /**
@@ -461,32 +408,27 @@ public class TransductiveConformalClassifier
         }
     }
 
-    class ClassifyLabelsAction extends ClassifyAction
+    class ClassifyAllAction extends ClassifyAction
     {
-        ObjectMatrix2D _response;
-        double _significance;
+        ConformalClassification[] _response;
 
-        public ClassifyLabelsAction(DoubleMatrix2D x,
-                                    ObjectMatrix2D response,
-                                    double significance,
-                                    int first, int last)
+        public ClassifyAllAction(DoubleMatrix2D x,
+                                 ConformalClassification[] response,
+                                 int first, int last)
         {
             super(x, first, last);
             _response = response;
-            _significance = significance;
         }
 
         protected void compute(int i)
         {
             DoubleMatrix1D instance = _x.viewRow(i);
-            ObjectMatrix1D labels   = _response.viewRow(i);
-            predict(instance, _significance, labels, _myXtr, _myYtr);
+            _response[i] = predict(instance, _myXtr, _myYtr);
         }
 
         protected ParallelizedAction createSubtask(int first, int last)
         {
-            return new ClassifyLabelsAction(_x, _response, _significance,
-                                            first, last);
+            return new ClassifyAllAction(_x, _response, first, last);
         }
     }
 

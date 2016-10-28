@@ -63,12 +63,4 @@ public class Util
         }
         return p_value;
     }
-
-    public static boolean calculateInclusion(double   nc_pred,
-                                             double[] nc_cal,
-                                             double   significance)
-    {
-        double p_value = calculatePValue(nc_pred, nc_cal);
-        return (p_value >= significance);
-    }
 }
