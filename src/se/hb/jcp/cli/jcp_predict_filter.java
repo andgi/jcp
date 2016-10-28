@@ -128,11 +128,6 @@ public class jcp_predict_filter
             JSONObject jsonInstance = new JSONObject(instanceReader);
 
             instance.assign(0);
-            // FIXME: The reallocation is needed due to incomplete handling of
-            //        reseting to 0.0 for libsvm. However, reallocation also
-            //        doesn't work.
-            //instance = instance.like(instance.size());
-
             for (Object o : jsonInstance.keySet()) {
                 String key = (String)o;
                 int index  = Integer.parseInt(key);
@@ -148,20 +143,38 @@ public class jcp_predict_filter
                                   DoubleMatrix1D       instance,
                                   JSONWriter           resultWriter)
     {
-        // Compute the predicted p-values.
-        DoubleMatrix1D pValues = cc.predictPValues(instance);
-        // Write them as a JSON object:
+        // Do the prediction.
+        ConformalClassification prediction =
+            new ConformalClassification(cc, cc.predictPValues(instance));
+        // Write the result as a JSON object:
         // {
-        //     "p-values":{[<label>:p-value]*},
+        //     "p-values":{[<label>:<p-value>]*},
+        //     "point-prediction":{"label":<label>,
+        //                         "confidence":<confidence>,
+        //                         "credibility":<credibility>}
         // }.
         resultWriter.object();
         // Write the p-values hash.
         resultWriter.key("p-values");
         resultWriter.object();
-        for (int i = 0; i < pValues.size(); i++) {
+        for (int i = 0; i < prediction.getPValues().size(); i++) {
             resultWriter.key("" + cc.getLabels()[i]);
-            resultWriter.value(pValues.get(i));
+            resultWriter.value(prediction.getPValues().get(i));
         }
+        resultWriter.endObject();
+        // Write the point-prediction hash.
+        resultWriter.key("point-prediction");
+        resultWriter.object();
+        resultWriter.key("label");
+        double label = prediction.getLabelPointPrediction();
+        if (label != Double.NaN) {
+            // Only show the label if it is unique.
+            resultWriter.value("" + label);
+        }
+        resultWriter.key("confidence");
+        resultWriter.value(prediction.getPointPredictionConfidence());
+        resultWriter.key("credibility");
+        resultWriter.value(prediction.getPointPredictionCredibility());
         resultWriter.endObject();
 
         resultWriter.endObject();
@@ -170,6 +183,6 @@ public class jcp_predict_filter
     public static void main(String[] args)
         throws IOException
     {
-         new jcp_predict_filter().run(args);
+        new jcp_predict_filter().run(args);
     }
 }
