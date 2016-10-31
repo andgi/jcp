@@ -20,6 +20,8 @@ import java.io.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.SortedSet;
 
+import org.json.JSONWriter;
+
 import se.hb.jcp.cp.*;
 import se.hb.jcp.nc.*;
 import se.hb.jcp.io.*;
@@ -34,6 +36,7 @@ public class CCTools
 {
     public static void runTest(String modelFileName,
                                String dataSetFileName,
+                               String jsonOutputFileName,
                                String pValuesOutputFileName,
                                String labelsOutputFileName,
                                double significanceLevel)
@@ -52,7 +55,7 @@ public class CCTools
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
-        runTest(cc, testSet, pValuesOutputFileName,
+        runTest(cc, testSet, jsonOutputFileName, pValuesOutputFileName,
                 labelsOutputFileName, significanceLevel);
 
         long t4 = System.currentTimeMillis();
@@ -62,11 +65,22 @@ public class CCTools
 
     public static void runTest(IConformalClassifier cc,
                                DataSet testSet,
+                               String jsonOutputFileName,
                                String pValuesOutputFileName,
                                String labelsOutputFileName,
                                double significanceLevel)
         throws IOException
     {
+        BufferedWriter jsonOutputBW = null;
+        JSONWriter jsonOutput = null;
+        if (jsonOutputFileName != null) {
+            jsonOutputBW =
+                new BufferedWriter
+                    (new OutputStreamWriter
+                        (new FileOutputStream(jsonOutputFileName), "utf-8"));
+            jsonOutput = new JSONWriter(jsonOutputBW);
+            jsonOutput.array();
+        }
         BufferedWriter pValuesOutput = null;
         if (pValuesOutputFileName != null) {
             pValuesOutput =
@@ -129,6 +143,9 @@ public class CCTools
                     }
                 }
             }
+            if (jsonOutput != null) {
+                IOTools.writeAsJSON(predictions[i], jsonOutput);
+            }
             if (pValuesOutput != null) {
                 pValuesOutput.newLine();
             }
@@ -150,6 +167,10 @@ public class CCTools
         }
         long t4 = System.currentTimeMillis();
 
+        if (jsonOutput != null) {
+            jsonOutput.endArray();
+            jsonOutputBW.close();
+        }
         if (pValuesOutput != null) {
             pValuesOutput.close();
         }

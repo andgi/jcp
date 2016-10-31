@@ -35,6 +35,7 @@ public class jcp_predict
     private String  _testSetFileName;
     private String  _labelsOutputFileName;
     private String  _pValuesOutputFileName;
+    private String  _jsonOutputFileName;
     private String  _modelFileName;
     private double  _significanceLevel = 0.10;
     private boolean _useCP = true;
@@ -51,6 +52,7 @@ public class jcp_predict
 
         if (_useCP) {
             CCTools.runTest(_modelFileName, _testSetFileName,
+                            _jsonOutputFileName,
                             _pValuesOutputFileName, _labelsOutputFileName,
                             _significanceLevel);
         } else {
@@ -104,6 +106,16 @@ public class jcp_predict
                     } else {
                         System.err.println
                             ("Error: No significance level given to -s.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
+                } else if (args[i].equals("-sj")) {
+                    if (++i < args.length) {
+                        _jsonOutputFileName = args[i];
+                    } else {
+                        System.err.println
+                            ("Error: No file name given to -sj.");
                         System.err.println();
                         printUsage();
                         System.exit(-1);
@@ -179,6 +191,8 @@ public class jcp_predict
         System.out.println
             ("  -s <significance> Set the conformal prediction " +
              "significance level (0.0-1.0).");
+        System.out.println
+            ("  -sj <file>        Save the predictions as JSON in <file>.");
         System.out.println
             ("  -sl <file>        Save the predicted labels in <file>.");
         System.out.println

@@ -402,7 +402,7 @@ public class jcp_train
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
 
         if (_validate) {
-            CCTools.runTest(icc, _test, null, null, _significanceLevel);
+            CCTools.runTest(icc, _test, null, null, null, _significanceLevel);
             long t5 = System.currentTimeMillis();
             System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
                                " sec.");
@@ -453,7 +453,7 @@ public class jcp_train
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
 
         if (_validate) {
-            CCTools.runTest(tcc, _test, null, null, _significanceLevel);
+            CCTools.runTest(tcc, _test, null, null, null, _significanceLevel);
             long t5 = System.currentTimeMillis();
             System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
                                " sec.");
