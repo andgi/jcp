@@ -167,4 +167,14 @@ public class ConformalClassification
         }
         return largestPValue;
     }
+
+    /**
+     * Returns the conformal classifier that made this prediction.
+     *
+     * @return the conformal classifier that made this prediction.
+     */
+    public IConformalClassifier getSource()
+    {
+        return _source;
+    }
 }

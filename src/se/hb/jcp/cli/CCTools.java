@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -19,8 +19,6 @@ package se.hb.jcp.cli;
 import java.io.*;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.SortedSet;
-
-import cern.colt.matrix.DoubleMatrix2D;
 
 import se.hb.jcp.cp.*;
 import se.hb.jcp.nc.*;
@@ -98,10 +96,12 @@ public class CCTools
                            significanceLevel + ".");
 
         // Evaluation on the test set.
-        DoubleMatrix2D pValues = cc.predictPValues(testSet.x);
+        // FIXME? Each ConformalClassification will keep its predictor
+        //        alive. This might be a problem for TCC (but not seen so far).
+        ConformalClassification[] predictions = cc.predict(testSet.x);
         long t3 = System.currentTimeMillis();
 
-        int predictions = testSet.y.length;
+        int noPredictions = testSet.y.length;
         int correct = 0;
         int[] predictionsAtSize = new int[classSet.size()+1];
         int[] correctAtSize = new int[classSet.size()+1];
@@ -113,11 +113,11 @@ public class CCTools
             new int[classSet.size()][classSet.size()+1];
 
         // FIXME: Parallelize the computation of the performance measures.
-        for (int i = 0; i < pValues.rows(); i++){
+        for (int i = 0; i < predictions.length; i++){
             int classIndex = classSet.headSet(testSet.y[i]).size();
             int predictionSize = 0;
             for (int c = 0; c < classes.length; c++) {
-                double pValue = pValues.get(i, c);
+                double pValue = predictions[i].getPValues().get(c);
                 if (pValuesOutput != null) {
                     pValuesOutput.write("" + pValue + " ");
                 }
@@ -140,7 +140,8 @@ public class CCTools
             predictionsForClass[classIndex]++;
             predictionsForClassAtSize[classIndex][predictionSize]++;
 
-            if (pValues.get(i, classIndex) >= significanceLevel) {
+            if (predictions[i].getPValues().get(classIndex) >=
+                significanceLevel) {
                 correct++;
                 correctAtSize[predictionSize]++;
                 correctForClass[classIndex]++;
@@ -159,9 +160,9 @@ public class CCTools
         System.out.println("Test Duration " +
                            (double)(t3 - t2)/1000.0 + " sec.");
         System.out.println("Accuracy " +
-                           ((double)correct / predictions) +
+                           ((double)correct / noPredictions) +
                            ", Single label prediction accuracy " +
-                           ((double)correctAtSize[1] / predictions));
+                           ((double)correctAtSize[1] / noPredictions));
         System.out.println("Per prediction set size:");
         for (int s = 0; s < predictionsAtSize.length; s++) {
             System.out.println

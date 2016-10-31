@@ -107,24 +107,10 @@ public class jcp_cat
         jsonWriter.array();
         for (int i = 0; i < _dataSet.x.rows(); i++) {
             DoubleMatrix1D instance = _dataSet.x.viewRow(i);
-            writeInstanceAsJSON(jsonWriter, instance);
+            IOTools.writeAsJSON(instance, jsonWriter);
         }
         jsonWriter.endArray();
         osw.flush();
-    }
-
-    private void writeInstanceAsJSON(JSONWriter     jsonWriter,
-                                     DoubleMatrix1D instance)
-    {
-        IntArrayList indices   = new IntArrayList();
-        DoubleArrayList values = new DoubleArrayList();
-        jsonWriter.object();
-        instance.getNonZeros(indices, values);
-        for (int i = 0; i < indices.size(); i++) {
-            jsonWriter.key("" + indices.get(i));
-            jsonWriter.value(values.get(i));
-        }
-        jsonWriter.endObject();
     }
 
     public static void main(String[] args)

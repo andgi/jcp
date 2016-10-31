@@ -103,7 +103,7 @@ public class jcp_predict_filter
         DoubleMatrix1D instance = allocateInstance(cc);
         try {
             while (!instanceReader.end()) {
-                if (readInstance(instanceReader, instance)) {
+                if (IOTools.readInstanceFromJSON(instanceReader, instance)) {
                     classifyInstance(cc, instance, resultWriter);
                     osw.flush();
                 }
@@ -121,63 +121,14 @@ public class jcp_predict_filter
         return instance;
     }
 
-    private boolean readInstance(JSONTokener instanceReader,
-                                 DoubleMatrix1D instance)
-    {
-        try {
-            JSONObject jsonInstance = new JSONObject(instanceReader);
-
-            instance.assign(0);
-            for (Object o : jsonInstance.keySet()) {
-                String key = (String)o;
-                int index  = Integer.parseInt(key);
-                instance.set(index, jsonInstance.getDouble(key));
-            }
-            return true;
-        } catch (JSONException e) {
-            return false;
-        }
-    }
-
     private void classifyInstance(IConformalClassifier cc,
                                   DoubleMatrix1D       instance,
                                   JSONWriter           resultWriter)
     {
         // Do the prediction.
-        ConformalClassification prediction =
-            new ConformalClassification(cc, cc.predictPValues(instance));
-        // Write the result as a JSON object:
-        // {
-        //     "p-values":{[<label>:<p-value>]*},
-        //     "point-prediction":{"label":<label>,
-        //                         "confidence":<confidence>,
-        //                         "credibility":<credibility>}
-        // }.
-        resultWriter.object();
-        // Write the p-values hash.
-        resultWriter.key("p-values");
-        resultWriter.object();
-        for (int i = 0; i < prediction.getPValues().size(); i++) {
-            resultWriter.key("" + cc.getLabels()[i]);
-            resultWriter.value(prediction.getPValues().get(i));
-        }
-        resultWriter.endObject();
-        // Write the point-prediction hash.
-        resultWriter.key("point-prediction");
-        resultWriter.object();
-        resultWriter.key("label");
-        double label = prediction.getLabelPointPrediction();
-        if (label != Double.NaN) {
-            // Only show the label if it is unique.
-            resultWriter.value("" + label);
-        }
-        resultWriter.key("confidence");
-        resultWriter.value(prediction.getPointPredictionConfidence());
-        resultWriter.key("credibility");
-        resultWriter.value(prediction.getPointPredictionCredibility());
-        resultWriter.endObject();
-
-        resultWriter.endObject();
+        ConformalClassification prediction = cc.predict(instance);
+        // Write the result as a JSON object.
+        IOTools.writeAsJSON(prediction, resultWriter);
     }
 
     public static void main(String[] args)
