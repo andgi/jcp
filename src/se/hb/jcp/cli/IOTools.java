@@ -49,15 +49,25 @@ public class IOTools
     public static void writeAsJSON(DoubleMatrix1D instance,
                                    JSONWriter     jsonWriter)
     {
-        IntArrayList indices   = new IntArrayList();
-        DoubleArrayList values = new DoubleArrayList();
-        jsonWriter.object();
-        instance.getNonZeros(indices, values);
-        for (int i = 0; i < indices.size(); i++) {
-            jsonWriter.key("" + indices.get(i));
-            jsonWriter.value(values.get(i));
-        }
-        jsonWriter.endObject();
+        writeAsJSON(instance, false, 0.0, jsonWriter);
+    }
+
+    /**
+     * Write an instance to a JSON writer.
+     *
+     * The sparse format is:
+     * { "&lt;attribute index&gt;":&lt;attribute value&gt;, ... }
+     * and indices are 0-based.
+     *
+     * @param instance        the instance to write.
+     * @param target          the instance target/label.
+     * @param jsonWriter      the JSON writer.
+     */
+    public static void writeAsJSON(DoubleMatrix1D instance,
+                                   double         target,
+                                   JSONWriter     jsonWriter)
+    {
+        writeAsJSON(instance, true, target, jsonWriter);
     }
 
     /**
@@ -131,6 +141,26 @@ public class IOTools
         resultWriter.endObject();
 
         resultWriter.endObject();
+    }
+
+    private static void writeAsJSON(DoubleMatrix1D instance,
+                                    boolean        includeTarget,
+                                    double         target,
+                                    JSONWriter     jsonWriter)
+    {
+        IntArrayList indices   = new IntArrayList();
+        DoubleArrayList values = new DoubleArrayList();
+        jsonWriter.object();
+        instance.getNonZeros(indices, values);
+        for (int i = 0; i < indices.size(); i++) {
+            jsonWriter.key("" + indices.get(i));
+            jsonWriter.value(values.get(i));
+        }
+        if (includeTarget) {
+            jsonWriter.key("" + instance.size());
+            jsonWriter.value(target);
+        }
+        jsonWriter.endObject();
     }
 
 }

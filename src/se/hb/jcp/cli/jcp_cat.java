@@ -41,6 +41,7 @@ public class jcp_cat
 {
     private String  _dataSetFileName;
     private DataSet _dataSet;
+    private boolean _includeTarget = false;
 
     public jcp_cat()
     {
@@ -66,6 +67,8 @@ public class jcp_cat
                 if (args[i].equals("-h")) {
                     printUsage();
                     System.exit(0);
+                } else if (args[i].equals("-t")) {
+                    _includeTarget = true;
                 } else {
                     // The last unknown argument should be the dataset file.
                     _dataSetFileName = args[i];
@@ -88,6 +91,8 @@ public class jcp_cat
         System.out.println();
         System.out.println
             ("  -h                Print this message and exit.");
+        System.out.println
+            ("  -t                Include the target as the very last column.");
     }
 
     private void loadDataSet()
@@ -107,7 +112,11 @@ public class jcp_cat
         jsonWriter.array();
         for (int i = 0; i < _dataSet.x.rows(); i++) {
             DoubleMatrix1D instance = _dataSet.x.viewRow(i);
-            IOTools.writeAsJSON(instance, jsonWriter);
+            if (_includeTarget) {
+                IOTools.writeAsJSON(instance, _dataSet.y[i], jsonWriter);
+            } else {
+                IOTools.writeAsJSON(instance, jsonWriter);
+            }
         }
         jsonWriter.endArray();
         osw.flush();
