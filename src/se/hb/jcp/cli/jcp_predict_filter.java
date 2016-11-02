@@ -18,9 +18,11 @@ package se.hb.jcp.cli;
 
 import java.io.IOException;
 import java.io.OutputStreamWriter;
-
-import java.util.Iterator;
-import java.util.Scanner;
+import java.util.concurrent.Callable;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.Executors;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Future;
 
 import cern.colt.list.DoubleArrayList;
 import cern.colt.list.IntArrayList;
@@ -32,7 +34,9 @@ import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.json.JSONWriter;
 
-import se.hb.jcp.cp.*;
+import se.hb.jcp.cp.ConformalClassification;
+import se.hb.jcp.cp.IConformalClassifier;
+import se.hb.jcp.util.FIFOParallelExecutor;
 
 /**
  * Command line filter for making predictions for JSON formatted instances
@@ -43,10 +47,15 @@ import se.hb.jcp.cp.*;
 
 public class jcp_predict_filter
 {
+    static final boolean PARALLEL = true;
+    ExecutorService _executor;
     String _modelFileName;
 
     public jcp_predict_filter()
     {
+        if (PARALLEL) {
+            _executor = Executors.newCachedThreadPool();
+        }
     }
 
     public void run(String[] args)
@@ -55,6 +64,10 @@ public class jcp_predict_filter
         processArguments(args);
 
         doClassification();
+
+        if (_executor != null) {
+            _executor.shutdown();
+        }
     }
 
     private void processArguments(String[] args)
@@ -100,12 +113,61 @@ public class jcp_predict_filter
         JSONWriter  resultWriter   = new JSONWriter(osw);
 
         resultWriter.array();
-        DoubleMatrix1D instance = allocateInstance(cc);
         try {
-            while (!instanceReader.end()) {
-                if (IOTools.readInstanceFromJSON(instanceReader, instance)) {
-                    classifyInstance(cc, instance, resultWriter);
-                    osw.flush();
+            if (!PARALLEL) {
+                DoubleMatrix1D instance = allocateInstance(cc);
+                while (!instanceReader.end()) {
+                    if (IOTools.readInstanceFromJSON(instanceReader,
+                                                     instance)) {
+                        // Do the prediction.
+                        ConformalClassification prediction =
+                            cc.predict(instance);
+                        // Write the result as a JSON object.
+                        IOTools.writeAsJSON(prediction, resultWriter);
+                        osw.flush();
+                    }
+                }
+            } else {
+                final FIFOParallelExecutor<ConformalClassification> queue =
+                    new FIFOParallelExecutor<>(_executor);
+
+                // Kick-off the consumer.
+                Future<Integer> consumer =
+                    _executor.submit(new ResultPrinterCallable(queue,
+                                                               osw,
+                                                               resultWriter));
+
+                // Read instances from stdin and put them in the executor queue.
+                while (!instanceReader.end()) {
+                    DoubleMatrix1D instance = allocateInstance(cc);
+                    if (IOTools.readInstanceFromJSON(instanceReader,
+                                                     instance)) {
+                        try {
+                            queue.submit(new PredictionCallable(cc, instance));
+                        } catch (InterruptedException e) {
+                            // FIXME: What to do?
+                            System.err.println("jcp_predict_filter: " + e);
+                        }
+                    }
+                }
+                try {
+                    // Tell the consumer to finish via a null object.
+                    queue.submit(new Callable<ConformalClassification>() {
+                            public ConformalClassification call()
+                            {
+                                return null;
+                            }
+                        });
+                    // Wait for the consumer to finish.
+                    int count = consumer.get();
+                    System.err.println("jcp_predict_filter: Finishing after " +
+                                       "classifying " + count + " instances.");
+                } catch (InterruptedException e) {
+                    // FIXME: What to do?
+                    System.err.println("jcp_predict_filter: " + e);
+                } catch (ExecutionException e) {
+                    // FIXME: What to do?
+                    System.err.println("jcp_predict_filter: " + e);
                 }
             }
         } finally {
@@ -121,14 +183,67 @@ public class jcp_predict_filter
         return instance;
     }
 
-    private void classifyInstance(IConformalClassifier cc,
-                                  DoubleMatrix1D       instance,
-                                  JSONWriter           resultWriter)
+    private static class PredictionCallable
+        implements Callable<ConformalClassification>
     {
-        // Do the prediction.
-        ConformalClassification prediction = cc.predict(instance);
-        // Write the result as a JSON object.
-        IOTools.writeAsJSON(prediction, resultWriter);
+        IConformalClassifier _cc;
+        private DoubleMatrix1D _instance;
+
+        public PredictionCallable(IConformalClassifier cc,
+                                  DoubleMatrix1D instance)
+        {
+            _cc = cc;
+            _instance = instance;
+        }
+
+        public ConformalClassification call()
+        {
+            return _cc.predict(_instance);
+        }
+    }
+
+    private static class ResultPrinterCallable implements Callable<Integer>
+    {
+        private FIFOParallelExecutor<ConformalClassification> _queue;
+        private OutputStreamWriter _osw;
+        private JSONWriter _resultWriter;
+
+        public ResultPrinterCallable
+                   (FIFOParallelExecutor<ConformalClassification> queue,
+                    OutputStreamWriter osw,
+                    JSONWriter resultWriter)
+        {
+            _queue = queue;
+            _osw = osw;
+            _resultWriter = resultWriter;
+        }
+
+        public Integer call()
+        {
+            int count = 0;
+
+            try {
+                ConformalClassification prediction;
+                // While there is a next prediction.
+                while ((prediction = _queue.take()) != null) {
+                    // Write the result as a JSON object.
+                    IOTools.writeAsJSON(prediction,
+                                        _resultWriter);
+                    _osw.flush();
+                    count++;
+                }
+            } catch (InterruptedException e) {
+                // FIXME: What to do?
+                System.err.println("ResultPrinterCallable: " + e);
+            } catch (ExecutionException e) {
+                // FIXME: What to do?
+                System.err.println("ResultPrinterCallable: " + e);
+            } catch (IOException e) {
+                // FIXME: What to do?
+                System.err.println("ResultPrinterCallable: " + e);
+            }
+            return count;
+        }
     }
 
     public static void main(String[] args)
