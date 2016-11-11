@@ -22,6 +22,9 @@ import cern.colt.matrix.DoubleMatrix1D;
  * Specifies a set of information that every classifier should be able to
  * provide.
  *
+ * Contract for JCP use:
+ * 1. The methods implemented for this interface must be reentrant.
+ *
  */
 public interface IClassifierInformation
     extends java.io.Serializable

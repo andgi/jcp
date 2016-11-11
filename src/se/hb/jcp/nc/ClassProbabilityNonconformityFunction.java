@@ -91,12 +91,7 @@ public class ClassProbabilityNonconformityFunction
         trainingX.viewRow(n).assign(xtest);
         trainingY[n] = ytest;
 
-        ClassProbabilityNonconformityFunction ncf =
-            new ClassProbabilityNonconformityFunction
-                    (_classes,
-                     (IClassProbabilityClassifier)_model.fitNew(trainingX,
-                                                                trainingY));
-        return ncf;
+        return fitNew(trainingX, trainingY);
     }
 
     @Deprecated
@@ -196,6 +191,8 @@ public class ClassProbabilityNonconformityFunction
 
         protected void compute(int i)
         {
+            // Inlined to avoid reallocating the _probability array for each
+            // instance.
             DoubleMatrix1D instance = _x.viewRow(i);
             _model.predict(instance, _probability);
             _nc[i] = 1.0 - _probability[_class_index.get(_y[i])];

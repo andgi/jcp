@@ -25,6 +25,7 @@ import cern.colt.matrix.DoubleMatrix2D;
  *
  * Contract for JCP use:
  * 1. The Classifier must be serializable, both as untrained and as trained.
+ * 2. The fitNew and predict methods of the Classifier must be reentrant.
  */
 public interface IClassifier
     extends IClassifierInformation, java.io.Serializable
