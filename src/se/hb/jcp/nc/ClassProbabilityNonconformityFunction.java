@@ -16,27 +16,21 @@
 //
 package se.hb.jcp.nc;
 
-import java.util.Map;
-import java.util.TreeMap;
-
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
-import se.hb.jcp.ml.IClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
-import se.hb.jcp.util.ParallelizedAction;
 
+/**
+ * A nonconformity function based on the predicted class probabilities given
+ * by a classifier.
+ *
+ * @author anders.gidenstam(at)hb.se
+ */
 public class ClassProbabilityNonconformityFunction
-    implements IClassificationNonconformityFunction,
-               java.io.Serializable
+    extends ClassifierNonconformityFunctionBase
+    implements java.io.Serializable
 {
-    private static final boolean DEBUG = false;
-    private static final boolean PARALLEL = true;
-
-    IClassProbabilityClassifier _model;
-    int _n_classes;
-    double[] _classes;
-    Map<Double, Integer> _class_index = new TreeMap<Double, Integer>();
 
     public ClassProbabilityNonconformityFunction(double[] classes)
     {
@@ -47,22 +41,10 @@ public class ClassProbabilityNonconformityFunction
                (double[] classes,
                 IClassProbabilityClassifier classifier)
     {
-        _n_classes = classes.length;
-        _classes = classes;
-
-        for (int i = 0; i < _n_classes; i++) {
-            _class_index.put(_classes[i], i);
-        }
-
-        _model = classifier;
+        super(classes, classifier);
     }
 
-    public void fit(DoubleMatrix2D x,
-                    double[] y)
-    {
-        _model.fit(x, y);
-    }
-
+    @Override
     public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
                                                        double[] y)
     {
@@ -73,71 +55,11 @@ public class ClassProbabilityNonconformityFunction
         return ncf;
     }
 
-    public IClassificationNonconformityFunction
-        fitNew(DoubleMatrix2D xtr, double[] ytr,
-               DoubleMatrix1D xtest, double ytest)
-    {
-        int n = xtr.rows();
-        DoubleMatrix2D trainingX = xtr.like(n + 1, xtr.columns());
-        double[]       trainingY = new double[n + 1];
-        // FIXME: This way to copy the data is probably very inefficient.
-        //        Most of the underlying data-structures are row-oriented
-        //        and this should be used to share the row data.
-        // FIXED for: libsvm
-        for (int r = 0; r < n; r++) {
-            trainingX.viewRow(r).assign(xtr.viewRow(r));
-            trainingY[r] = ytr[r];
-        }
-        trainingX.viewRow(n).assign(xtest);
-        trainingY[n] = ytest;
-
-        return fitNew(trainingX, trainingY);
-    }
-
-    @Deprecated
-    public double[] calc_nc(DoubleMatrix2D x, double[] y)
-    {
-        double[] nc = new double[y.length];
-
-        if (DEBUG) {
-            System.err.println("fastCalc_nc()");
-        }
-
-        if (!PARALLEL) {
-            for (int i = 0; i < nc.length; i++) {
-                DoubleMatrix1D instance = x.viewRow(i);
-                nc[i] = calculateNonConformityScore(instance, y[i]);
-
-                if (DEBUG) {
-                    System.err.println("  instance " + i + " target " + y[i] +
-                                       ": " + nc[i]);
-                }
-            }
-        } else {
-            CalcNCAction all = new CalcNCAction(x, y, nc, 0, y.length);
-            all.start();
-        }
-        return nc;
-    }
-
-    public double[] calc_nc(DoubleMatrix2D xtr,
-                            double[] ytr,
-                            DoubleMatrix1D xtest,
-                            double ytest)
-    {
-        double[] nc = new double[ytr.length + 1];
-        double[] nctr = calc_nc(xtr, ytr);
-        for (int i = 0; i < nctr.length; i++) {
-            nc[i] = nctr[i];
-        }
-        nc[nctr.length] = calculateNonConformityScore(xtest, ytest);
-        return nc;
-    }
-
+    @Override
     public double calculateNonConformityScore(DoubleMatrix1D x, double y)
     {
         double[] probability = new double[_n_classes];
-        _model.predict(x, probability);
+        ((IClassProbabilityClassifier)_model).predict(x, probability);
 
         double nc = 1.0 - probability[_class_index.get(y)];
         if (DEBUG) {
@@ -156,16 +78,17 @@ public class ClassProbabilityNonconformityFunction
         return nc;
     }
 
-    public se.hb.jcp.ml.IClassifier getClassifier()
+    @Override
+    protected CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
+                                                     double[] y,
+                                                     double[] nc,
+                                                     int first, int last)
     {
-        return _model;
+        return new CalcNCAction(x, y, nc, first, last);
     }
 
-    class CalcNCAction extends se.hb.jcp.util.ParallelizedAction
+    class CalcNCAction extends CalcNCActionBase
     {
-        DoubleMatrix2D _x;
-        double[] _y;
-        double[] _nc;
         double[] _probability;
 
         public CalcNCAction(DoubleMatrix2D x,
@@ -173,34 +96,30 @@ public class ClassProbabilityNonconformityFunction
                             double[] nc,
                             int first, int last)
         {
-            super(first, last);
-            _x = x;
-            _y = y;
-            _nc = nc;
+            super(x, y, nc, first, last);
         }
 
+        @Override
         protected void initialize(int first, int last)
         {
             _probability = new double[_n_classes];
         }
 
+        @Override
         protected void finalize(int first, int last)
         {
             _probability = null;
         }
 
+        @Override
         protected void compute(int i)
         {
-            // Inlined to avoid reallocating the _probability array for each
-            // instance.
+            // Overriden with inlined computation to avoid reallocating the
+            // _probability array for each instance.
             DoubleMatrix1D instance = _x.viewRow(i);
-            _model.predict(instance, _probability);
+            ((IClassProbabilityClassifier)_model).predict(instance,
+                                                          _probability);
             _nc[i] = 1.0 - _probability[_class_index.get(_y[i])];
-        }
-
-        protected ParallelizedAction createSubtask(int first, int last)
-        {
-            return new CalcNCAction(_x, _y, _nc, first, last);
         }
     }
 }
