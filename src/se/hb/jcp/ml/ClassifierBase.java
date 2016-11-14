@@ -52,17 +52,17 @@ public abstract class ClassifierBase
         _labels = uniqueLabels.toArray(new Double[0]);
     }
 
-    public boolean isTrained()
+    public final boolean isTrained()
     {
         return getAttributeCount() != -1;
     }
 
-    public int getAttributeCount()
+    public final int getAttributeCount()
     {
         return _attributeCount;
     }
 
-    public Double[] getLabels()
+    public final Double[] getLabels()
     {
         return _labels;
     }

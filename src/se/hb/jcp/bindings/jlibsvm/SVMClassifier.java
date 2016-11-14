@@ -18,6 +18,7 @@ package se.hb.jcp.bindings.jlibsvm;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.util.concurrent.atomic.AtomicReference;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -27,18 +28,20 @@ import org.json.JSONObject;
 import libsvm.*;
 
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.ISVMClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
 import se.hb.jcp.ml.ClassifierBase;
 
 public class SVMClassifier
     extends ClassifierBase
-    implements IClassifier, //IClassProbabilityClassifier // FIXME: disabled.
+    implements ISVMClassifier, //IClassProbabilityClassifier // FIXME: disabled.
                java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected svm_parameter _parameters;
     protected svm_model _model;
+    AtomicReference<double[]> _cachedW = new AtomicReference<double[]>();
 
     public SVMClassifier()
     {
@@ -198,7 +201,8 @@ public class SVMClassifier
                                                         probabilityEstimates);
         // jlibsvm seem to use the reverse order of labels, so reverse
         // the array of probability estimates before returning them.
-        // FIXME: Verify for more data sets.
+        // FIXME: Verify for more data sets. Use svm_model.label[c] and
+        //        this.getLabels() to ensure compatibility.
         // FIXME: Disabled for the time being as it seems jlibsvm
         //        always return the same probabilities for all instances.
         //        An issue in the default configuration?
@@ -212,9 +216,78 @@ public class SVMClassifier
         return prediction;
     }
 
+    /**
+     * Returns the signed distance between the separating hyperplane and the
+     * instance.
+     *
+     * @return the signed distance between the separating hyperplane and the instance.
+     */
+    public double distanceFromSeparatingPlane(DoubleMatrix1D instance)
+    {
+        // FIXME: This is only valid for 2-class SVM and classes -1.0 and 1.0.
+        double[] w = getW();
+        double   b = computeB();
+        if (_model.nr_class == 2) {
+            double distance = b;
+            for (int i = 0; i < instance.size(); i++) {
+                distance += w[i] * instance.get(i);
+            }
+            return distance;
+        } else {
+            throw new UnsupportedOperationException("Not implemented");
+        }
+    }
+
     public DoubleMatrix1D nativeStorageTemplate()
     {
         return _storageTemplate;
+    }
+
+    /**
+     * Returns the signed distance from the origin to the separating
+     * hyperplane. See the libSVM FAQ #804,
+     * http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f804 for the internal
+     * details.
+     *
+     * @return the signed distance from the origin to the separating hyperplane.
+     */
+    private double computeB()
+    {
+        // FIXME: This is only valid for 2-class SVM and classes -1.0 and 1.0.
+        double sign = _model.label[0] == -1.0 ? -1.0 : 1.0;
+        return sign * -_model.rho[0];
+    }
+
+    private double[] getW()
+    {
+        double[] w = _cachedW.get();
+        if (w == null) {
+            w = computeW();
+            _cachedW.compareAndSet(null, w);
+        }
+        return w;
+    }
+
+    /**
+     * Returns a normal vector of the separating hyperplane.
+     * See the libSVM FAQ #804,
+     * http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f804 for the internal
+     * details.
+     *
+     * @return a normal vector of the separating hyperplane.
+     */
+    private double[] computeW()
+    {
+        // FIXME: This is only valid for 2-class SVM and classes -1.0 and 1.0.
+        double sign = _model.label[0] == -1.0 ? -1.0 : 1.0;
+        double[] w = new double[getAttributeCount()];
+        for (int l = 0; l < _model.l; l++) {
+            for (int i = 0; i < _model.SV[l].length; i++) {
+                w[_model.SV[l][i].index] +=
+                    sign * _model.sv_coef[0][l] * _model.SV[l][i].value;
+            }
+        }
+        return w;
     }
 
     private void writeObject(ObjectOutputStream oos)
@@ -222,6 +295,7 @@ public class SVMClassifier
     {
         // Save the classifier parameters.
         oos.writeObject(_parameters);
+        oos.writeObject(_cachedW);
         // Save the model if it has been trained.
         if (_model != null) {
             // Create a (likely) unique file name for the Java libsvm model.
@@ -239,11 +313,13 @@ public class SVMClassifier
         }
     }
 
+    @SuppressWarnings("unchecked")
     private void readObject(ObjectInputStream ois)
         throws ClassNotFoundException, java.io.IOException
     {
         // Load the classifier parameters.
         _parameters = (svm_parameter)ois.readObject();
+        _cachedW = (AtomicReference<double[]>)ois.readObject();
         // Load the model file name from the Java input stream.
         String fileName = (String)ois.readObject();
         if (fileName != null) {

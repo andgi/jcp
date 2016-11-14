@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -18,6 +18,7 @@ package se.hb.jcp.nc;
 
 import se.hb.jcp.ml.IClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
+import se.hb.jcp.ml.ISVMClassifier;
 
 /**
  * Singleton factory for JCP classification nonconformity functions.
@@ -33,6 +34,7 @@ public final class ClassificationNonconformityFunctionFactory
     private static final String[] _ncfNames =
         {
             "class probability nonconformity function",
+            "SVM distance nonconformity function",
             "attribute average nonconformity function"
         };
 
@@ -60,6 +62,17 @@ public final class ClassificationNonconformityFunctionFactory
                            (classes,
                             (IClassProbabilityClassifier)classifier);
         case 1:
+            if (classifier instanceof ISVMClassifier) {
+                return new SVMDistanceNonconformityFunction
+                               (classes,
+                                (ISVMClassifier)classifier);
+            } else {
+                throw new UnsupportedOperationException
+                    ("The selected classifier does not implement the " +
+                     "ISVMClassifier interface and, thus, cannot be used " +
+                     "with the " + _ncfNames[1] + ".");
+            }
+        case 2:
             return new AverageClassificationNonconformityFunction(classes);
         default:
             throw new UnsupportedOperationException
