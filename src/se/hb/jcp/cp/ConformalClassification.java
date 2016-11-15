@@ -30,8 +30,8 @@ import cern.colt.matrix.DoubleMatrix1D;
  */
 public class ConformalClassification
 {
-    private IConformalClassifier _source;
-    private DoubleMatrix1D _pValues;
+    private final IConformalClassifier _source;
+    private final DoubleMatrix1D _pValues;
 
     public ConformalClassification(IConformalClassifier source,
                                    DoubleMatrix1D pValues)

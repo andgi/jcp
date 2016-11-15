@@ -22,18 +22,12 @@ import java.io.IOException;
 import java.io.ObjectOutputStream;
 import java.util.AbstractMap.SimpleEntry;
 import java.util.SortedSet;
-import java.util.Random;
-
-import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.ObjectMatrix2D;
 
 import org.json.JSONObject;
 import org.json.JSONTokener;
 
 import se.hb.jcp.cp.*;
 import se.hb.jcp.nc.*;
-import se.hb.jcp.io.*;
 
 import se.hb.jcp.ml.ClassifierFactory;
 import se.hb.jcp.ml.IClassifier;

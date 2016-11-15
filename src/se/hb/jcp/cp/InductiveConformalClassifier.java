@@ -144,6 +144,7 @@ public class InductiveConformalClassifier
      * @param x             the instances.
      * @return an array containing a <tt>ConformalClassification</tt> for each instance.
      */
+    @Override
     public ConformalClassification[] predict(DoubleMatrix2D x)
     {
         int n = x.rows();
@@ -167,6 +168,7 @@ public class InductiveConformalClassifier
      * @param x             the instance.
      * @return a prediction in the form of a <tt>ConformalClassification</tt>.
      */
+    @Override
     public ConformalClassification predict(DoubleMatrix1D x)
     {
         return new ConformalClassification(this, predictPValues(x));
@@ -179,6 +181,7 @@ public class InductiveConformalClassifier
      * @param x             the instances.
      * @return an <tt>DoubleMatrix2D</tt> containing the predicted p-values for each instance.
      */
+    @Override
     public DoubleMatrix2D predictPValues(DoubleMatrix2D x)
     {
         int n = x.rows();
@@ -203,6 +206,7 @@ public class InductiveConformalClassifier
      * @param x    the instance.
      * @return an <tt>DoubleMatrix1D</tt> containing the predicted p-values.
      */
+    @Override
     public DoubleMatrix1D predictPValues(DoubleMatrix1D x)
     {
         DoubleMatrix1D response = new DenseDoubleMatrix1D(_classes.length);
@@ -216,6 +220,7 @@ public class InductiveConformalClassifier
      * @param x          the instance.
      * @param pValues    an initialized <tt>DoubleMatrix1D</tt> to store the p-values.
      */
+    @Override
     public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues)
     {
         for (int i = 0; i < _classes.length; i++) {
@@ -234,26 +239,31 @@ public class InductiveConformalClassifier
         }
     }
 
+    @Override
     public IClassificationNonconformityFunction getNonconformityFunction()
     {
         return _nc;
     }
 
+    @Override
     public boolean isTrained()
     {
         return getAttributeCount() >= 0;
     }
 
+    @Override
     public int getAttributeCount()
     {
         return _attributeCount;
     }
 
+    @Override
     public Double[] getLabels()
     {
         return _classes;
     }
 
+    @Override
     public DoubleMatrix1D nativeStorageTemplate()
     {
         if (getNonconformityFunction() != null &&
@@ -305,6 +315,7 @@ public class InductiveConformalClassifier
             _response = response;
         }
 
+        @Override
         protected void compute(int i)
         {
             DoubleMatrix1D instance = _x.viewRow(i);
@@ -312,6 +323,7 @@ public class InductiveConformalClassifier
             predictPValues(instance, pValues);
         }
 
+        @Override
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return new ClassifyPValuesAction(_x, _response,
@@ -333,6 +345,7 @@ public class InductiveConformalClassifier
             _response = response;
         }
 
+        @Override
         protected void compute(int i)
         {
             DoubleMatrix1D instance = _x.viewRow(i);
@@ -341,6 +354,7 @@ public class InductiveConformalClassifier
                                             predictPValues(instance));
         }
 
+        @Override
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return new ClassifyAction(_x, _response,
@@ -368,6 +382,7 @@ public class InductiveConformalClassifier
             _classNonConformityScores = classNonConformityScores;
         }
 
+        @Override
         protected void compute(int i)
         {
             DoubleMatrix1D instance = _x.viewRow(i);
@@ -379,6 +394,7 @@ public class InductiveConformalClassifier
             }
         }
 
+        @Override
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return new CalculateNCScoresAction(_x, _y, _nonConformityScores,

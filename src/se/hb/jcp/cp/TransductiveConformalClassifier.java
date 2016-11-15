@@ -75,6 +75,7 @@ public class TransductiveConformalClassifier
      * @param x             the instances.
      * @return an array containing a <tt>ConformalClassification</tt> for each instance.
      */
+    @Override
     public ConformalClassification[] predict(DoubleMatrix2D x)
     {
         int n = x.rows();
@@ -106,6 +107,7 @@ public class TransductiveConformalClassifier
      * @param x             the instance.
      * @return a prediction in the form of a <tt>ConformalClassification</tt>.
      */
+    @Override
     public ConformalClassification predict(DoubleMatrix1D x)
     {
         return new ConformalClassification(this, predictPValues(x));
@@ -118,6 +120,7 @@ public class TransductiveConformalClassifier
      * @param x             the instance.
      * @param xtr           an initialized <tt>DoubleMatrix2D</tt> containing the training instances and, last, one free slot.
      * @param ytr           an initialized <tt>double[]</tt> array containing the training instances and, last, one free slot.
+     * @return a prediction in the form of a <tt>ConformalClassification</tt>.
      */
     private ConformalClassification predict(DoubleMatrix1D x,
                                             DoubleMatrix2D xtr, double[] ytr)
@@ -134,6 +137,7 @@ public class TransductiveConformalClassifier
      * @param x             the instances.
      * @return an <tt>DoubleMatrix2D</tt> containing the predicted p-values for each instance.
      */
+    @Override
     public DoubleMatrix2D predictPValues(DoubleMatrix2D x)
     {
         int n = x.rows();
@@ -165,6 +169,7 @@ public class TransductiveConformalClassifier
      * @param x    the instance.
      * @return an <tt>DoubleMatrix1D</tt> containing the predicted p-values.
      */
+    @Override
     public DoubleMatrix1D predictPValues(DoubleMatrix1D x)
     {
         DoubleMatrix1D response = new DenseDoubleMatrix1D(_classes.length);
@@ -178,6 +183,7 @@ public class TransductiveConformalClassifier
      * @param x          the instance.
      * @param pValues    an initialized <tt>DoubleMatrix1D</tt> to store the p-values.
      */
+    @Override
     public void predictPValues(DoubleMatrix1D x, DoubleMatrix1D pValues)
     {
         // FIXME: This creates a whole new (n+1)-sized copy of the training
@@ -225,16 +231,19 @@ public class TransductiveConformalClassifier
         }
     }
 
+    @Override
     public IClassificationNonconformityFunction getNonconformityFunction()
     {
         return _nc;
     }
 
+    @Override
     public boolean isTrained()
     {
         return _xtr != null;
     }
 
+    @Override
     public int getAttributeCount()
     {
         if (_xtr != null) {
@@ -244,11 +253,13 @@ public class TransductiveConformalClassifier
         }
     }
 
+    @Override
     public Double[] getLabels()
     {
         return _classes;
     }
 
+    @Override
     public DoubleMatrix1D nativeStorageTemplate()
     {
         if (getNonconformityFunction() != null &&
@@ -388,6 +399,7 @@ public class TransductiveConformalClassifier
             _x = x;
         }
 
+        @Override
         protected void initialize(int first, int last)
         {
             super.initialize(first, last);
@@ -399,6 +411,7 @@ public class TransductiveConformalClassifier
             _myYtr = mytr.getValue();
         }
 
+        @Override
         protected void finalize(int first, int last)
         {
             super.finalize(first, last);
@@ -420,12 +433,14 @@ public class TransductiveConformalClassifier
             _response = response;
         }
 
+        @Override
         protected void compute(int i)
         {
             DoubleMatrix1D instance = _x.viewRow(i);
             _response[i] = predict(instance, _myXtr, _myYtr);
         }
 
+        @Override
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return new ClassifyAllAction(_x, _response, first, last);
@@ -444,6 +459,7 @@ public class TransductiveConformalClassifier
             _response = response;
         }
 
+        @Override
         protected void compute(int i)
         {
             DoubleMatrix1D instance = _x.viewRow(i);
@@ -451,6 +467,7 @@ public class TransductiveConformalClassifier
             predictPValues(instance, pValues, _myXtr, _myYtr);
         }
 
+        @Override
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return new ClassifyPValuesAction(_x, _response,

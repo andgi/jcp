@@ -27,6 +27,8 @@ import cern.colt.matrix.DoubleMatrix2D;
  * Contract for JCP use:
  * 1. The non-conformity function must be serializable, both as untrained and
  *    as trained.
+ * 2. The fitNew, calculateNonConformityScore and calc_nc methods of the
+ *    non-conformity function must be reentrant.
  */
 public interface IClassificationNonconformityFunction
     extends java.io.Serializable

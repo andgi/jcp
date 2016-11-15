@@ -17,7 +17,6 @@
 package se.hb.jcp.ml;
 
 import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
 
 /**
  * Represents an instance of a specific machine learning classification
@@ -32,8 +31,9 @@ public interface IClassProbabilityClassifier
     /**
      * Predicts the target probabilities for the supplied instance.
      *
-     * @param instance      the instance
-     * @return a <tt>double[]</tt> array with the predicted probabilities for each of target values in the order assumed by JCP.
+     * @param instance               the instance
+     * @param probabilityEstimates   a <tt>double[]</tt> array for storing the predicted probabilities for each of target values in the order assumed by JCP.
+     * @return the predicted target of the instance.
      */
     public double predict(DoubleMatrix1D instance,
                           double[] probabilityEstimates);

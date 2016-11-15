@@ -33,6 +33,7 @@ public interface ISVMClassifier
      * Returns the signed distance between the separating hyperplane and the
      * instance.
      *
+     * @param instance  the instance.
      * @return the signed distance between the separating hyperplane and the instance.
      */
     public double distanceFromSeparatingPlane(DoubleMatrix1D instance);

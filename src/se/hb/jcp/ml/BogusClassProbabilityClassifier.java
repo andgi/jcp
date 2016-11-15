@@ -43,6 +43,7 @@ public class BogusClassProbabilityClassifier
      * @param x             the attributes of the instances.
      * @param y             the targets of the instances.
      */
+    @Override
     protected void internalFit(DoubleMatrix2D x, double[] y)
     {
         _classifier.fit(x, y);
@@ -55,6 +56,7 @@ public class BogusClassProbabilityClassifier
      * @param y             the targets of the instances.
      * @return a new <tt>IClassifier</tt> instance trained with the supplied data and using the same algorithm and parameter settings as the parent instance.
      */
+    @Override
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
     {
         return new BogusClassProbabilityClassifier(_classifier.fitNew(x, y),
@@ -67,6 +69,7 @@ public class BogusClassProbabilityClassifier
      * @param instance      the instance
      * @return the predicted target of the instance.
      */
+    @Override
     public double predict(DoubleMatrix1D instance)
     {
         return _classifier.predict(instance);
@@ -75,9 +78,11 @@ public class BogusClassProbabilityClassifier
     /**
      * Predicts the target probabilities for the supplied instance.
      *
-     * @param instance      the instance
-     * @return a <tt>double[]</tt> array with the predicted probabilities for each of target values in the order assumed by JCP.
+     * @param instance               the instance
+     * @param probabilityEstimates   a <tt>double[]</tt> array for storing the predicted probabilities for each of target values in the order assumed by JCP.
+     * @return the predicted target of the instance.
      */
+    @Override
     public double predict(DoubleMatrix1D instance,
                           double[] probabilityEstimates)
     {
@@ -94,6 +99,7 @@ public class BogusClassProbabilityClassifier
      *
      * @return a value of the <tt>DoubleMatrix1D</tt> derived class of the native storage format for the classifier.
      */
+    @Override
     public DoubleMatrix1D nativeStorageTemplate()
     {
         return _classifier.nativeStorageTemplate();

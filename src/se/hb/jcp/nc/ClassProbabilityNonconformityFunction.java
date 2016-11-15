@@ -79,10 +79,10 @@ public class ClassProbabilityNonconformityFunction
     }
 
     @Override
-    protected CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
-                                                     double[] y,
-                                                     double[] nc,
-                                                     int first, int last)
+    CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
+                                           double[] y,
+                                           double[] nc,
+                                           int first, int last)
     {
         return new CalcNCAction(x, y, nc, first, last);
     }

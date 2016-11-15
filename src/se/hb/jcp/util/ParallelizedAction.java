@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015 - 2016  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -87,6 +87,7 @@ public abstract class ParallelizedAction
      *
      * @param first  the first index in the sub-interval
      * @param last   the index after the last index in the sub-interval
+     * @return a new subtask in the form of a <tt>ParallelizedAction</tt>.
      */
     protected abstract ParallelizedAction createSubtask(int first, int last);
 
@@ -96,6 +97,7 @@ public abstract class ParallelizedAction
      * @param first  the first index in the sub-interval
      * @param last   the index after the last index in the sub-interval
      * @param depth  the current depth of task subdivision.
+     * @return a new subtask in the form of a <tt>ParallelizedAction</tt>.
      */
     private ParallelizedAction createSubtask(int first, int last, int depth)
     {
@@ -107,6 +109,7 @@ public abstract class ParallelizedAction
     /**
      * Inherited from RecursiveAction. Do not overrride.
      */
+    @Override
     protected final void compute()
     {
         if ((_depth >= MAX_DEPTH) || (_last - _first <= MIN_WORK)) {

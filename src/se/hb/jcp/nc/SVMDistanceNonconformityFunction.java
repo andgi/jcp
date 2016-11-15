@@ -20,7 +20,6 @@ import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
 import se.hb.jcp.ml.ISVMClassifier;
-import se.hb.jcp.nc.ClassifierNonconformityFunctionBase;
 
 /**
  * This class implements a nonconformity function based on the signed

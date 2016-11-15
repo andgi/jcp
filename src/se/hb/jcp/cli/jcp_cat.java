@@ -19,16 +19,10 @@ package se.hb.jcp.cli;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 
-import cern.colt.list.DoubleArrayList;
-import cern.colt.list.IntArrayList;
 import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
-
-import org.json.JSONObject;
 import org.json.JSONWriter;
 
 import se.hb.jcp.cp.DataSet;
-import se.hb.jcp.io.*;
 
 /**
  * Command line tool for converting a data set file to JSON format written

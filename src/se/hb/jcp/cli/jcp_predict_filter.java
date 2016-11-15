@@ -24,13 +24,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 
-import cern.colt.list.DoubleArrayList;
-import cern.colt.list.IntArrayList;
 import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
-
-import org.json.JSONException;
-import org.json.JSONObject;
 import org.json.JSONTokener;
 import org.json.JSONWriter;
 
@@ -187,7 +181,7 @@ public class jcp_predict_filter
         implements Callable<ConformalClassification>
     {
         IConformalClassifier _cc;
-        private DoubleMatrix1D _instance;
+        private final DoubleMatrix1D _instance;
 
         public PredictionCallable(IConformalClassifier cc,
                                   DoubleMatrix1D instance)
@@ -196,6 +190,7 @@ public class jcp_predict_filter
             _instance = instance;
         }
 
+        @Override
         public ConformalClassification call()
         {
             return _cc.predict(_instance);
@@ -204,9 +199,9 @@ public class jcp_predict_filter
 
     private static class ResultPrinterCallable implements Callable<Integer>
     {
-        private FIFOParallelExecutor<ConformalClassification> _queue;
-        private OutputStreamWriter _osw;
-        private JSONWriter _resultWriter;
+        private final FIFOParallelExecutor<ConformalClassification> _queue;
+        private final OutputStreamWriter _osw;
+        private final JSONWriter _resultWriter;
 
         public ResultPrinterCallable
                    (FIFOParallelExecutor<ConformalClassification> queue,
@@ -218,6 +213,7 @@ public class jcp_predict_filter
             _resultWriter = resultWriter;
         }
 
+        @Override
         public Integer call()
         {
             int count = 0;

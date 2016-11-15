@@ -23,8 +23,6 @@ import java.util.SortedSet;
 import org.json.JSONWriter;
 
 import se.hb.jcp.cp.*;
-import se.hb.jcp.nc.*;
-import se.hb.jcp.io.*;
 
 /**
  * Higher-level tools for Conformal Classification.

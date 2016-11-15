@@ -55,16 +55,19 @@ public abstract class ClassifierNonconformityFunctionBase
         _model = classifier;
     }
 
+    @Override
     public void fit(DoubleMatrix2D x,
                     double[] y)
     {
         _model.fit(x, y);
     }
 
+    @Override
     public abstract IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D x,
                double[] y);
 
+    @Override
     public IClassificationNonconformityFunction
         fitNew(DoubleMatrix2D xtr, double[] ytr,
                DoubleMatrix1D xtest, double ytest)
@@ -86,10 +89,12 @@ public abstract class ClassifierNonconformityFunctionBase
         return fitNew(trainingX, trainingY);
     }
 
+    @Override
     public abstract double calculateNonConformityScore(DoubleMatrix1D x,
                                                        double y);
 
     @Deprecated
+    @Override
     public double[] calc_nc(DoubleMatrix2D x, double[] y)
     {
         double[] nc = new double[y.length];
@@ -115,6 +120,7 @@ public abstract class ClassifierNonconformityFunctionBase
         return nc;
     }
 
+    @Override
     public double[] calc_nc(DoubleMatrix2D xtr,
                             double[] ytr,
                             DoubleMatrix1D xtest,
@@ -129,16 +135,17 @@ public abstract class ClassifierNonconformityFunctionBase
         return nc;
     }
 
+    @Override
     public se.hb.jcp.ml.IClassifier getClassifier()
     {
         return _model;
     }
 
-    protected CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
-                                                    double[] y,
-                                                    double[] nc,
-                                                    int first,
-                                                    int last)
+    CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
+                                           double[] y,
+                                           double[] nc,
+                                           int first,
+                                           int last)
     {
         return new CalcNCActionBase(x, y, nc, first, last);
     }
@@ -160,11 +167,13 @@ public abstract class ClassifierNonconformityFunctionBase
             _nc = nc;
         }
 
+        @Override
         protected void compute(int i)
         {
             _nc[i] = calculateNonConformityScore(_x.viewRow(i), _y[i]);
         }
 
+        @Override
         protected ParallelizedAction createSubtask(int first, int last)
         {
             return createNewCalcNCAction(_x, _y, _nc, first, last);

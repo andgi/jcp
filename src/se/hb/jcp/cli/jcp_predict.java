@@ -19,8 +19,6 @@ package se.hb.jcp.cli;
 import java.io.*;
 
 import se.hb.jcp.cp.*;
-import se.hb.jcp.nc.*;
-import se.hb.jcp.io.*;
 
 import se.hb.jcp.ml.IClassifier;
 

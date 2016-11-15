@@ -16,14 +16,10 @@
 //
 package se.hb.jcp.ml;
 
-import java.util.Arrays;
 import java.util.SortedSet;
 import java.util.TreeSet;
 
-import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
-
-import se.hb.jcp.ml.IClassifier;
 
 /**
  * Base class for classifiers that provide implementations of some of the
@@ -36,6 +32,7 @@ public abstract class ClassifierBase
     private int _attributeCount = -1;
     private Double[] _labels = null;
 
+    @Override
     public final void fit(DoubleMatrix2D x, double[] y)
     {
         internalFit(x, y);
@@ -52,16 +49,19 @@ public abstract class ClassifierBase
         _labels = uniqueLabels.toArray(new Double[0]);
     }
 
+    @Override
     public final boolean isTrained()
     {
         return getAttributeCount() != -1;
     }
 
+    @Override
     public final int getAttributeCount()
     {
         return _attributeCount;
     }
 
+    @Override
     public final Double[] getLabels()
     {
         return _labels;

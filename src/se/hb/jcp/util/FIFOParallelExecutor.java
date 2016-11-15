@@ -31,6 +31,7 @@ import java.util.concurrent.Future;
  * its name.
  *
  * @author anders.gidenstam(at)hb.se
+ * @param <E> the type of the result returned by the <tt>Callable</tt>s.
  */
 public class FIFOParallelExecutor<E>
 {
@@ -40,6 +41,7 @@ public class FIFOParallelExecutor<E>
     /**
      * Creates a <tt>FIFOParallelExecutor</tt> using the provided
      * <tt>ExecutorService</tt> to execute the <tt>Callable</tt>s.
+     * @param executorService the <tt>ExecutorService</tt> used to execute the <tt>Callable</tt>s.
      */
     public FIFOParallelExecutor(ExecutorService executorService)
     {
@@ -50,6 +52,8 @@ public class FIFOParallelExecutor<E>
      * Creates a <tt>FIFOParallelExecutor</tt> using the provided
      * level of parallelism and the <tt>ExecutorService</tt> to
      * execute the <tt>Callable</tt>s.
+     * @param parallelism      the level of parallelism to use.
+     * @param executorService  the <tt>ExecutorService</tt> used to execute the <tt>Callable</tt>s.
      */
     public FIFOParallelExecutor(int parallelism,
                                 ExecutorService executorService)
@@ -61,6 +65,8 @@ public class FIFOParallelExecutor<E>
      * Creates a <tt>FIFOParallelExecutor</tt> using the provided
      * <tt>BlockingQueue</tt> and the <tt>ExecutorService</tt> to
      * execute the <tt>Callable</tt>s.
+     * @param queue           the blocking queue used to store the submitted <tt>Callable</tt>s.
+     * @param executorService the <tt>ExecutorService</tt> used to execute the <tt>Callable</tt>s.
      */
     public FIFOParallelExecutor(BlockingQueue<Future<E>> queue,
                                 ExecutorService executorService)
@@ -74,6 +80,7 @@ public class FIFOParallelExecutor<E>
      * parallelism is exceeded.
      *
      * @param e  a <tt>Callable&lt;E&gt;</tt> that is to be executed.
+     * @throws java.lang.InterruptedException
      */
     public void submit(Callable<E> e) throws InterruptedException
     {
@@ -87,6 +94,8 @@ public class FIFOParallelExecutor<E>
      * needed.
      *
      * @return the next result from the submitted <tt>Callable</tt>s.
+     * @throws java.util.concurrent.ExecutionException
+     * @throws java.lang.InterruptedException
      */
     public E take() throws ExecutionException, InterruptedException
     {
