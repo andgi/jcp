@@ -383,12 +383,12 @@ public class jcp_train
                            " instances.");
 
         InductiveConformalClassifier icc =
-            new InductiveConformalClassifier(classes, _useLCCC);
-        icc._nc =
-            ClassificationNonconformityFunctionFactory.getInstance().
-                createNonconformityFunction(_ncFunctionType,
-                                            classes,
-                                            _classifier);
+            new InductiveConformalClassifier
+                    (ClassificationNonconformityFunctionFactory.getInstance().
+                         createNonconformityFunction(_ncFunctionType,
+                                                     classes,
+                                                     _classifier),
+                     classes, _useLCCC);
 
         icc.fit(_training.x, _training.y, _calibration.x, _calibration.y);
         long t4 = System.currentTimeMillis();
@@ -434,12 +434,12 @@ public class jcp_train
                            " instances.");
 
         TransductiveConformalClassifier tcc =
-            new TransductiveConformalClassifier(classes, _useLCCC);
-        tcc._nc =
-            ClassificationNonconformityFunctionFactory.getInstance().
-                createNonconformityFunction(_ncFunctionType,
-                                            classes,
-                                            _classifier);
+            new TransductiveConformalClassifier
+                    (ClassificationNonconformityFunctionFactory.getInstance().
+                         createNonconformityFunction(_ncFunctionType,
+                                                     classes,
+                                                     _classifier),
+                     classes, _useLCCC);
 
         tcc.fit(_training.x, _training.y);
         long t4 = System.currentTimeMillis();

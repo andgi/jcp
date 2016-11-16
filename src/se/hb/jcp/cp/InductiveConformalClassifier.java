@@ -41,7 +41,7 @@ public class InductiveConformalClassifier
 {
     private static final boolean PARALLEL = true;
 
-    public IClassificationNonconformityFunction _nc;
+    private IClassificationNonconformityFunction _nc;
     private Double[] _classes;
     private SortedMap<Double, Integer> _classIndex;
     private int _attributeCount = -1;
@@ -57,14 +57,32 @@ public class InductiveConformalClassifier
     private double[] _ytr;
     private double[] _ycal;
 
-    public InductiveConformalClassifier(double[] targets)
+    /**
+      * Creates an inductive conformal classifier using the supplied
+      * information.
+      *
+      * @param nc                     the untrained non-conformity function to use.
+      * @param targets                the class labels.
+      */
+    public InductiveConformalClassifier(IClassificationNonconformityFunction nc,
+                                        double[] targets)
     {
-        this(targets, false);
+        this(nc, targets, false);
     }
 
-    public InductiveConformalClassifier(double[] targets,
+    /**
+      * Creates an inductive conformal classifier using the supplied
+      * information.
+      *
+      * @param nc                     the untrained non-conformity function to use.
+      * @param targets                the class labels.
+      * @param useLabelConditionalCP  a boolean indicating whether label conditional conformal prediction should be used.
+      */
+    public InductiveConformalClassifier(IClassificationNonconformityFunction nc,
+                                        double[] targets,
                                         boolean  useLabelConditionalCP)
     {
+        _nc = nc;
         _useLabelConditionalCP = useLabelConditionalCP;
         _classIndex = new TreeMap<Double, Integer>();
         for (int c = 0; c < targets.length; c++) {
@@ -74,15 +92,37 @@ public class InductiveConformalClassifier
         Arrays.sort(_classes); // FIXME: Redundant?
     }
 
+    /**
+     * Trains and calibrates this conformal classifier using the supplied data.
+     *
+     * @param xtr           the attributes of the training instances.
+     * @param ytr           the targets of the training instances.
+     * @param xcal          the attributes of the calibration instances.
+     * @param ycal          the targets of the calibration instances.
+     */
     public void fit(DoubleMatrix2D xtr, double[] ytr,
                     DoubleMatrix2D xcal, double[] ycal)
     {
         _xtr = xtr;
         _ytr = ytr;
-        _xcal = xcal;
-        _ycal = ycal;
 
         _nc.fit(_xtr, _ytr);
+        calibrate(xcal, ycal);
+
+        _attributeCount = xtr.columns();
+    }
+
+    /**
+     * Calibrates this conformal classifier using the supplied data.
+     * The classifier must have been trained first.
+     *
+     * @param xcal          the attributes of the calibration instances.
+     * @param ycal          the targets of the calibration instances.
+     */
+    public void calibrate(DoubleMatrix2D xcal, double[] ycal)
+    {
+        _xcal = xcal;
+        _ycal = ycal;
 
         int n = _xcal.rows();
         _calibrationScores = new double[n];
@@ -134,7 +174,6 @@ public class InductiveConformalClassifier
                                    _classCalibrationScores[c].length);
             }
         }
-        _attributeCount = xtr.columns();
     }
 
     /**
@@ -245,6 +284,11 @@ public class InductiveConformalClassifier
         return _nc;
     }
 
+    /**
+     * Returns whether this classifier has been trained and calibrated.
+     *
+     * @return Returns <tt>true</tt> if the classifier has been trained or <tt>false</tt> otherwise.
+     */
     @Override
     public boolean isTrained()
     {

@@ -37,7 +37,7 @@ public class TransductiveConformalClassifier
 {
     private static final boolean PARALLEL = true;
 
-    public IClassificationNonconformityFunction _nc;
+    private IClassificationNonconformityFunction _nc;
     private Double[] _classes;
     private SortedMap<Double, Integer> _classIndex;
     private boolean _useLabelConditionalCP;
@@ -45,14 +45,34 @@ public class TransductiveConformalClassifier
     private DoubleMatrix2D _xtr;   
     private double[] _ytr;
 
-    public TransductiveConformalClassifier(double[] targets)
+    /**
+      * Creates a transductive conformal classifier using the supplied
+      * information.
+      *
+      * @param nc         the untrained non-conformity function to use.
+      * @param targets    the class labels.
+      */
+    public TransductiveConformalClassifier
+               (IClassificationNonconformityFunction nc,
+                double[] targets)
     {
-        this(targets, false);
+        this(nc, targets, false);
     }
 
-    public TransductiveConformalClassifier(double[] targets,
-                                           boolean  useLabelConditionalCP)
+    /**
+      * Creates a transductive conformal classifier using the supplied
+      * information.
+      *
+      * @param nc                     the untrained non-conformity function to use.
+      * @param targets                the class labels.
+      * @param useLabelConditionalCP  a boolean indicating whether label conditional conformal prediction should be used.
+      */
+    public TransductiveConformalClassifier
+               (IClassificationNonconformityFunction nc,
+                double[] targets,
+                boolean  useLabelConditionalCP)
     {
+        _nc = nc;
         _useLabelConditionalCP = useLabelConditionalCP;
         _classIndex = new TreeMap<Double, Integer>();
         for (int c = 0; c < targets.length; c++) {
@@ -62,6 +82,12 @@ public class TransductiveConformalClassifier
         Arrays.sort(_classes);  // FIXME: Redundant?
     }
 
+   /**
+     * Trains this conformal classifier using the supplied data.
+     *
+     * @param xtr           the attributes of the training instances.
+     * @param ytr           the targets of the training instances.
+     */
     public void fit(DoubleMatrix2D xtr, double[] ytr)
     {
         _xtr = xtr;
@@ -235,6 +261,18 @@ public class TransductiveConformalClassifier
     public IClassificationNonconformityFunction getNonconformityFunction()
     {
         return _nc;
+    }
+
+    /**
+     * Sets a new non-conformity function in this transductive conformal
+     * classifier. The new non-conformity function will be used for all
+     * future predictions.
+     *
+     * @param nc    the new non-conformity function.
+     */
+    public void setNonconformityFunction(IClassificationNonconformityFunction nc)
+    {
+        _nc = nc;
     }
 
     @Override
