@@ -178,10 +178,19 @@ public class CCTools
 
         System.out.println("Test Duration " +
                            (double)(t3 - t2)/1000.0 + " sec.");
+        double avgLabelSetSize = 0;
+        for (int s = 0; s < predictionsAtSize.length; s++) {
+            avgLabelSetSize += (double)predictionsAtSize[s]/noPredictions * s;
+        }
         System.out.println("Accuracy " +
                            ((double)correct / noPredictions) +
                            ", Single label prediction accuracy " +
                            ((double)correctAtSize[1] / noPredictions));
+        System.out.println("OneC efficiency " +
+                           "(fraction predictions with single label) " +
+                           ((double)predictionsAtSize[1] / noPredictions) +
+                           ", AvgC efficiency (average label set size) " +
+                           avgLabelSetSize);
         System.out.println("Per prediction set size:");
         for (int s = 0; s < predictionsAtSize.length; s++) {
             System.out.println
