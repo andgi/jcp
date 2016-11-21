@@ -22,22 +22,17 @@ import cern.colt.matrix.DoubleMatrix2D;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
 
 /**
- * A nonconformity function based on the predicted class probabilities given
- * by a classifier.
+ * A base class for nonconformity functions based on the predicted class
+ * probabilities given by a classifier.
  *
  * @author anders.gidenstam(at)hb.se
  */
-public class ClassProbabilityNonconformityFunction
+public abstract class ClassProbabilityNonconformityFunctionBase
     extends ClassifierNonconformityFunctionBase
     implements java.io.Serializable
 {
 
-    public ClassProbabilityNonconformityFunction(double[] classes)
-    {
-        this(classes, new se.hb.jcp.bindings.libsvm.SVMClassifier());
-    }
-
-    public ClassProbabilityNonconformityFunction
+    public ClassProbabilityNonconformityFunctionBase
                (double[] classes,
                 IClassProbabilityClassifier classifier)
     {
@@ -45,28 +40,17 @@ public class ClassProbabilityNonconformityFunction
     }
 
     @Override
-    public IClassificationNonconformityFunction fitNew(DoubleMatrix2D x,
-                                                       double[] y)
-    {
-        ClassProbabilityNonconformityFunction ncf =
-            new ClassProbabilityNonconformityFunction
-                    (_classes,
-                     (IClassProbabilityClassifier)_model.fitNew(x, y));
-        return ncf;
-    }
-
-    @Override
-    public double calculateNonConformityScore(DoubleMatrix1D x, double y)
+    public final double calculateNonConformityScore(DoubleMatrix1D x, double y)
     {
         double[] probability = new double[_n_classes];
-        ((IClassProbabilityClassifier)_model).predict(x, probability);
+        double label =
+            ((IClassProbabilityClassifier)_model).predict(x, probability);
 
-        double nc = 1.0 - probability[_class_index.get(y)];
+        double nc = computeNCScore(x, y, probability);
         if (DEBUG) {
             System.err.println("  instance (" + x + ") target " + y +
                                ": " + nc);
         }
-        double label = _model.predict(x);
         if (probability[_class_index.get(label)] <
             probability[_classes.length - 1 - _class_index.get(label)]) {
             System.err.println("Warning! Poor model prediction (" +
@@ -74,9 +58,21 @@ public class ClassProbabilityNonconformityFunction
                                probability[_class_index.get(label)] +
                                ") match!");
         }
-
         return nc;
     }
+
+    /**
+     * Step in the calculateNonConformityScore template method for computing
+     * the non-conformity score of an instance based on its assumed label and
+     * its class probabilities.
+     *
+     * @param x            the attributes of the instance.
+     * @param y            the assumed label of the instance.
+     * @param probability  an double[] array with the instance's class probabilities.
+     * @return  the non-conformity score of the instance.
+     */
+    abstract double computeNCScore(DoubleMatrix1D x, double y,
+                                   double[] probability);
 
     @Override
     CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
@@ -100,26 +96,26 @@ public class ClassProbabilityNonconformityFunction
         }
 
         @Override
-        protected void initialize(int first, int last)
+        protected final void initialize(int first, int last)
         {
             _probability = new double[_n_classes];
         }
 
         @Override
-        protected void finalize(int first, int last)
+        protected final void finalize(int first, int last)
         {
             _probability = null;
         }
 
         @Override
-        protected void compute(int i)
+        protected final void compute(int i)
         {
             // Overriden with inlined computation to avoid reallocating the
             // _probability array for each instance.
             DoubleMatrix1D instance = _x.viewRow(i);
             ((IClassProbabilityClassifier)_model).predict(instance,
                                                           _probability);
-            _nc[i] = 1.0 - _probability[_class_index.get(_y[i])];
+            _nc[i] = computeNCScore(instance, _y[i], _probability);
         }
     }
 }

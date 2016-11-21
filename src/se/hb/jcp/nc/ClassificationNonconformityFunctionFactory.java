@@ -33,7 +33,7 @@ public final class ClassificationNonconformityFunctionFactory
             new ClassificationNonconformityFunctionFactory();
     private static final String[] _ncfNames =
         {
-            "class probability nonconformity function",
+            "hinge loss nonconformity function",
             "SVM distance nonconformity function",
             "attribute average nonconformity function"
         };
@@ -58,7 +58,7 @@ public final class ClassificationNonconformityFunctionFactory
                 classifier = new se.hb.jcp.ml.BogusClassProbabilityClassifier
                                      (classifier, classes);
             }
-            return new ClassProbabilityNonconformityFunction
+            return new HingeLossNonconformityFunction
                            (classes,
                             (IClassProbabilityClassifier)classifier);
         case 1:
