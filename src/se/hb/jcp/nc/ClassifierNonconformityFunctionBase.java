@@ -141,6 +141,30 @@ public abstract class ClassifierNonconformityFunctionBase
         return _model;
     }
 
+    @Override
+    public final boolean isTrained()
+    {
+        return _model.isTrained();
+    }
+
+    @Override
+    public final int getAttributeCount()
+    {
+        return _model.getAttributeCount();
+    }
+
+    @Override
+    public final Double[] getLabels()
+    {
+        return _class_index.keySet().toArray(new Double[0]);
+    }
+
+    @Override
+    public DoubleMatrix1D nativeStorageTemplate()
+    {
+        return _model.nativeStorageTemplate();
+    }
+
     CalcNCActionBase createNewCalcNCAction(DoubleMatrix2D x,
                                            double[] y,
                                            double[] nc,

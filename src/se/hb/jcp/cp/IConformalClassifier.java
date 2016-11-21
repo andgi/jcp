@@ -28,6 +28,7 @@ import se.hb.jcp.nc.IClassificationNonconformityFunction;
  * Contract for JCP use:
  * 1. The ConformalClassifier must be serializable, both as untrained and as
  *    trained.
+ * 2. The predict* methods must be reentrant.
  */
 public interface IConformalClassifier
     extends se.hb.jcp.ml.IClassifierInformation, java.io.Serializable

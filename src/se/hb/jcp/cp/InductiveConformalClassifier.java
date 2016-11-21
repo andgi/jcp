@@ -310,10 +310,8 @@ public class InductiveConformalClassifier
     @Override
     public DoubleMatrix1D nativeStorageTemplate()
     {
-        if (getNonconformityFunction() != null &&
-            getNonconformityFunction().getClassifier() != null) {
-            return getNonconformityFunction().getClassifier()
-                       .nativeStorageTemplate();
+        if (getNonconformityFunction() != null) {
+            return getNonconformityFunction().nativeStorageTemplate();
         } else {
             return new cern.colt.matrix.impl.SparseDoubleMatrix1D(0);
         }

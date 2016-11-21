@@ -20,6 +20,8 @@ package se.hb.jcp.nc;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
+import se.hb.jcp.ml.IClassifierInformation;
+
 /**
  * Represents an instance of a specific non-conformity function for
  * conformal classification.
@@ -31,7 +33,7 @@ import cern.colt.matrix.DoubleMatrix2D;
  *    non-conformity function must be reentrant.
  */
 public interface IClassificationNonconformityFunction
-    extends java.io.Serializable
+    extends IClassifierInformation, java.io.Serializable
 {
     /**
      * Initializes this non-conformity function with the supplied data.
