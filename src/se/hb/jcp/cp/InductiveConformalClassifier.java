@@ -44,25 +44,18 @@ public class InductiveConformalClassifier
     private IClassificationNonconformityFunction _nc;
     private Double[] _classes;
     private SortedMap<Double, Integer> _classIndex;
-    private int _attributeCount = -1;
     // For normal conformal prediction.
     private double[] _calibrationScores;
     // For label/class-conditional conformal prediction.
     private boolean    _useLabelConditionalCP;
     private double[][] _classCalibrationScores;
 
-    private DoubleMatrix2D _xtr;
-    private DoubleMatrix2D _xcal;
-
-    private double[] _ytr;
-    private double[] _ycal;
-
     /**
       * Creates an inductive conformal classifier using the supplied
       * information.
       *
-      * @param nc                     the untrained non-conformity function to use.
-      * @param targets                the class labels.
+      * @param nc         the untrained non-conformity function to use.
+      * @param targets    the class labels.
       */
     public InductiveConformalClassifier(IClassificationNonconformityFunction nc,
                                         double[] targets)
@@ -103,28 +96,27 @@ public class InductiveConformalClassifier
     public void fit(DoubleMatrix2D xtr, double[] ytr,
                     DoubleMatrix2D xcal, double[] ycal)
     {
-        _xtr = xtr;
-        _ytr = ytr;
-
-        _nc.fit(_xtr, _ytr);
+        _nc.fit(xtr, ytr);
         calibrate(xcal, ycal);
-
-        _attributeCount = xtr.columns();
     }
 
     /**
      * Calibrates this conformal classifier using the supplied data.
-     * The classifier must have been trained first.
+     * The classifier's non-conformity function must have been trained first.
      *
      * @param xcal          the attributes of the calibration instances.
      * @param ycal          the targets of the calibration instances.
      */
     public void calibrate(DoubleMatrix2D xcal, double[] ycal)
     {
-        _xcal = xcal;
-        _ycal = ycal;
-
-        int n = _xcal.rows();
+        if (getNonconformityFunction() == null ||
+            !getNonconformityFunction().isTrained()) {
+            throw new UnsupportedOperationException
+                          ("The non-conformity function of the conformal " +
+                           "classifier must be trained before the classifier " +
+                           "can be calibrated.");
+        }
+        int n = xcal.rows();
         _calibrationScores = new double[n];
         if (_useLabelConditionalCP) {
             _classCalibrationScores = new double[_classes.length][];
@@ -135,17 +127,17 @@ public class InductiveConformalClassifier
         }
         if (!PARALLEL) {
             for (int i = 0; i < n; i++) {
-                DoubleMatrix1D instance = _xcal.viewRow(i);
+                DoubleMatrix1D instance = xcal.viewRow(i);
                 _calibrationScores[i] =
-                    _nc.calculateNonConformityScore(instance, _ycal[i]);
+                    _nc.calculateNonConformityScore(instance, ycal[i]);
                 if (_useLabelConditionalCP) {
-                    _classCalibrationScores[_classIndex.get(_ycal[i])][i] =
+                    _classCalibrationScores[_classIndex.get(ycal[i])][i] =
                         _calibrationScores[i];
                 }
             }
         } else {
             CalculateNCScoresAction all =
-                new CalculateNCScoresAction(_xcal, _ycal, _calibrationScores,
+                new CalculateNCScoresAction(xcal, ycal, _calibrationScores,
                                             _classCalibrationScores,
                                             0, n);
             all.start();
@@ -285,20 +277,39 @@ public class InductiveConformalClassifier
     }
 
     /**
+     * Sets a new non-conformity function in this inductive conformal
+     * classifier. The conformal classifier must be (re)calibrated before the
+     * new non-conformity function can be used for predictions.
+     *
+     * @param nc    the new non-conformity function.
+     */
+    public void setNonconformityFunction
+                    (IClassificationNonconformityFunction nc)
+    {
+        _nc = nc;
+        _calibrationScores = null;
+        _classCalibrationScores = null;
+    }
+
+    /**
      * Returns whether this classifier has been trained and calibrated.
      *
-     * @return Returns <tt>true</tt> if the classifier has been trained or <tt>false</tt> otherwise.
+     * @return <tt>true</tt> if the classifier has been trained and calibrated or <tt>false</tt> otherwise.
      */
     @Override
     public boolean isTrained()
     {
-        return getAttributeCount() >= 0;
+        return _calibrationScores != null;
     }
 
     @Override
     public int getAttributeCount()
     {
-        return _attributeCount;
+        if (getNonconformityFunction() != null) {
+            return getNonconformityFunction().getAttributeCount();
+        } else {
+            return -1;
+        }
     }
 
     @Override
@@ -323,7 +334,6 @@ public class InductiveConformalClassifier
         oos.writeObject(_nc);
         oos.writeObject(_classes);
         oos.writeObject(_classIndex);
-        oos.writeObject(_attributeCount);
         oos.writeObject(_calibrationScores);
         oos.writeObject(_useLabelConditionalCP);
         oos.writeObject(_classCalibrationScores);
@@ -337,7 +347,6 @@ public class InductiveConformalClassifier
         _nc = (IClassificationNonconformityFunction)ois.readObject();
         _classes = (Double[])ois.readObject();
         _classIndex = (SortedMap<Double, Integer>)ois.readObject();
-        _attributeCount = (int)ois.readObject();
         _calibrationScores = (double[])ois.readObject();
         _useLabelConditionalCP = (boolean)ois.readObject();
         _classCalibrationScores = (double[][])ois.readObject();
@@ -382,7 +391,7 @@ public class InductiveConformalClassifier
                               ConformalClassification[] response,
                               int first, int last)
         {
-          super(first, last);
+            super(first, last);
             _x = x;
             _response = response;
         }
