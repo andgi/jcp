@@ -104,7 +104,7 @@ public class IOTools
      *
      * The format is:
      * {
-     *     "p-values":{[&lt;label&gt;:&lt;p-value&gt;]*},
+     *     "p-values":{["&lt;label&gt;":&lt;p-value&gt;]*},
      *     "point-prediction":{"label":&lt;label&gt;,
      *                         "confidence":&lt;confidence&gt;,
      *                         "credibility":&lt;credibility&gt;}
@@ -117,6 +117,81 @@ public class IOTools
                                    JSONWriter              resultWriter)
     {
         resultWriter.object();
+        writeConformalClassificationAsJSON(prediction, resultWriter);
+        resultWriter.endObject();
+    }
+
+    /**
+     * Write a <tt>ConformalClassification</tt> including internal state
+     * as JSON to a JSON writer.
+     *
+     * The format is:
+     * {
+     *     "p-values":{["&lt;label&gt;":&lt;p-value&gt;]*},
+     *     "point-prediction":{"label":&lt;label&gt;,
+     *                         "confidence":&lt;confidence&gt;,
+     *                         "credibility":&lt;credibility&gt;},
+     *     "true-label":&lt;label&gt;,
+     *     "nc-scores":{ ["&lt;label&gt;":&lt;nc-score&gt;]* }
+     * }.
+     *
+     * @param prediction    the prediction to write.
+     * @param instance      the instance.
+     * @param target        the instance target/label.
+     * @param resultWriter  the JSON writer.
+     */
+    public static void writeAsJSON(ConformalClassification prediction,
+                                   DoubleMatrix1D          instance,
+                                   double                  target,
+                                   JSONWriter              resultWriter)
+    {
+        resultWriter.object();
+        // Write the basic conformal classification.
+        writeConformalClassificationAsJSON(prediction, resultWriter);
+        // Write extra information.
+        resultWriter.key("true-label");
+        resultWriter.value("" + target);
+        // FIXME: The NC-function is not callable for TCC.
+        if (prediction.getSource() instanceof
+            se.hb.jcp.cp.InductiveConformalClassifier) {
+            resultWriter.key("nc-scores");
+            resultWriter.object();
+            for (double label : prediction.getSource()
+                                    .getNonconformityFunction().getLabels()) {
+                resultWriter.key("" + label);
+                resultWriter.value(prediction.getSource().getNonconformityFunction()
+                                       .calculateNonConformityScore(instance,
+                                                                    label));
+            }
+            resultWriter.endObject();
+        }
+        resultWriter.endObject();
+    }
+
+    private static void writeAsJSON(DoubleMatrix1D instance,
+                                    boolean        includeTarget,
+                                    double         target,
+                                    JSONWriter     jsonWriter)
+    {
+        IntArrayList indices   = new IntArrayList();
+        DoubleArrayList values = new DoubleArrayList();
+        jsonWriter.object();
+        instance.getNonZeros(indices, values);
+        for (int i = 0; i < indices.size(); i++) {
+            jsonWriter.key("" + indices.get(i));
+            jsonWriter.value(values.get(i));
+        }
+        if (includeTarget) {
+            jsonWriter.key("" + instance.size());
+            jsonWriter.value(target);
+        }
+        jsonWriter.endObject();
+    }
+
+    private static void writeConformalClassificationAsJSON
+                            (ConformalClassification prediction,
+                             JSONWriter              resultWriter)
+    {
         // Write the p-values hash.
         resultWriter.key("p-values");
         resultWriter.object();
@@ -139,28 +214,6 @@ public class IOTools
         resultWriter.key("credibility");
         resultWriter.value(prediction.getPointPredictionCredibility());
         resultWriter.endObject();
-
-        resultWriter.endObject();
-    }
-
-    private static void writeAsJSON(DoubleMatrix1D instance,
-                                    boolean        includeTarget,
-                                    double         target,
-                                    JSONWriter     jsonWriter)
-    {
-        IntArrayList indices   = new IntArrayList();
-        DoubleArrayList values = new DoubleArrayList();
-        jsonWriter.object();
-        instance.getNonZeros(indices, values);
-        for (int i = 0; i < indices.size(); i++) {
-            jsonWriter.key("" + indices.get(i));
-            jsonWriter.value(values.get(i));
-        }
-        if (includeTarget) {
-            jsonWriter.key("" + instance.size());
-            jsonWriter.value(target);
-        }
-        jsonWriter.endObject();
     }
 
 }

@@ -37,6 +37,7 @@ public class jcp_predict
     private String  _modelFileName;
     private double  _significanceLevel = 0.10;
     private boolean _useCP = true;
+    private boolean _debug = false;
 
     public jcp_predict()
     {
@@ -52,7 +53,8 @@ public class jcp_predict
             CCTools.runTest(_modelFileName, _testSetFileName,
                             _jsonOutputFileName,
                             _pValuesOutputFileName, _labelsOutputFileName,
-                            _significanceLevel);
+                            _significanceLevel,
+                            _debug);
         } else {
             runPlainTest(_modelFileName, _testSetFileName,
                          _labelsOutputFileName);
@@ -140,6 +142,8 @@ public class jcp_predict
                     }
                 } else if (args[i].equals("-nocp")) {
                     _useCP = false;
+                } else if (args[i].equals("-debug")) {
+                    _debug = true;
                 } else if (args[i].startsWith("-")) {
                     System.err.println
                         ("Error: Unknown option '" + args[i] + "'.");
@@ -198,6 +202,8 @@ public class jcp_predict
         System.out.println
             ("  -nocp             Use a classifier without " +
              "conformal prediction. Must be given for -nocp models.");
+        System.out.println
+            ("  -debug            Enable extra debug output for predictions.");
     }
 
     private static void runPlainTest(String modelFileName,

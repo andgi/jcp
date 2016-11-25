@@ -37,7 +37,8 @@ public class CCTools
                                String jsonOutputFileName,
                                String pValuesOutputFileName,
                                String labelsOutputFileName,
-                               double significanceLevel)
+                               double significanceLevel,
+                               boolean debug)
         throws IOException
     {
         System.out.println("Loading the model '" + modelFileName +
@@ -54,7 +55,7 @@ public class CCTools
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
         runTest(cc, testSet, jsonOutputFileName, pValuesOutputFileName,
-                labelsOutputFileName, significanceLevel);
+                labelsOutputFileName, significanceLevel, debug);
 
         long t4 = System.currentTimeMillis();
         System.out.println("Total Duration " + (double)(t4 - t1)/1000.0 +
@@ -66,7 +67,8 @@ public class CCTools
                                String jsonOutputFileName,
                                String pValuesOutputFileName,
                                String labelsOutputFileName,
-                               double significanceLevel)
+                               double significanceLevel,
+                               boolean debug)
         throws IOException
     {
         BufferedWriter jsonOutputBW = null;
@@ -142,7 +144,14 @@ public class CCTools
                 }
             }
             if (jsonOutput != null) {
-                IOTools.writeAsJSON(predictions[i], jsonOutput);
+                if (debug) {
+                    IOTools.writeAsJSON(predictions[i],
+                                        testSet.x.viewRow(i),
+                                        testSet.y[i],
+                                        jsonOutput);
+                } else {
+                    IOTools.writeAsJSON(predictions[i], jsonOutput);
+                }
             }
             if (pValuesOutput != null) {
                 pValuesOutput.newLine();
