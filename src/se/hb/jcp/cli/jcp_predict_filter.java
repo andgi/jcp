@@ -30,6 +30,7 @@ import org.json.JSONWriter;
 
 import se.hb.jcp.cp.ConformalClassification;
 import se.hb.jcp.cp.IConformalClassifier;
+import se.hb.jcp.cp.measures.AggregatedPriorMeasures;
 import se.hb.jcp.util.FIFOParallelExecutor;
 
 /**
@@ -105,6 +106,7 @@ public class jcp_predict_filter
         JSONTokener instanceReader = new JSONTokener(System.in);
         OutputStreamWriter osw     = new OutputStreamWriter(System.out);
         JSONWriter  resultWriter   = new JSONWriter(osw);
+        AggregatedPriorMeasures measures = new AggregatedPriorMeasures();
 
         resultWriter.array();
         try {
@@ -119,6 +121,7 @@ public class jcp_predict_filter
                         // Write the result as a JSON object.
                         IOTools.writeAsJSON(prediction, resultWriter);
                         osw.flush();
+                        measures.add(prediction);
                     }
                 }
             } else {
@@ -129,7 +132,8 @@ public class jcp_predict_filter
                 Future<Integer> consumer =
                     _executor.submit(new ResultPrinterCallable(queue,
                                                                osw,
-                                                               resultWriter));
+                                                               resultWriter,
+                                                               measures));
 
                 // Read instances from stdin and put them in the executor queue.
                 while (!instanceReader.end()) {
@@ -168,6 +172,12 @@ public class jcp_predict_filter
             resultWriter.endArray();
             osw.flush();
         }
+        System.err.println("Prior efficiency measures over " +
+                           measures.getMeasure(0).getNumberOfObservations() +
+                           " instances:");
+        for (int i = 0; i < measures.size(); i++) {
+            System.err.println("  " + measures.getMeasure(i).toString());
+        }
     }
 
     private DoubleMatrix1D allocateInstance(IConformalClassifier cc)
@@ -202,15 +212,18 @@ public class jcp_predict_filter
         private final FIFOParallelExecutor<ConformalClassification> _queue;
         private final OutputStreamWriter _osw;
         private final JSONWriter _resultWriter;
+        private final AggregatedPriorMeasures _measures;
 
         public ResultPrinterCallable
                    (FIFOParallelExecutor<ConformalClassification> queue,
                     OutputStreamWriter osw,
-                    JSONWriter resultWriter)
+                    JSONWriter resultWriter,
+                    AggregatedPriorMeasures measures)
         {
             _queue = queue;
             _osw = osw;
             _resultWriter = resultWriter;
+            _measures = measures;
         }
 
         @Override
@@ -226,6 +239,7 @@ public class jcp_predict_filter
                     IOTools.writeAsJSON(prediction,
                                         _resultWriter);
                     _osw.flush();
+                    _measures.add(prediction);
                     count++;
                 }
             } catch (InterruptedException e) {
