@@ -47,8 +47,11 @@ public class AggregatedPriorMeasures
                 new MultipleCriterion(0.01),
                 new ExcessCriterion(0.10),
                 new ExcessCriterion(0.05),
-                new ExcessCriterion(0.01)
-             });
+                new ExcessCriterion(0.01),
+                new OneCCriterion(0.10),
+                new OneCCriterion(0.05),
+                new OneCCriterion(0.01)
+        });
     }
     /**
      * Creates a set of aggregating prior measures from an array of single
