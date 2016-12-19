@@ -23,6 +23,8 @@ import java.util.SortedSet;
 import org.json.JSONWriter;
 
 import se.hb.jcp.cp.*;
+import se.hb.jcp.cp.measures.AggregatedObservedMeasures;
+import se.hb.jcp.cp.measures.AggregatedPriorMeasures;
 
 /**
  * Higher-level tools for Conformal Classification.
@@ -125,6 +127,9 @@ public class CCTools
             new int[classSet.size()][classSet.size()+1];
         int[][] correctForClassAtSize =
             new int[classSet.size()][classSet.size()+1];
+        AggregatedPriorMeasures priorMeasures = new AggregatedPriorMeasures();
+        AggregatedObservedMeasures observedMeasures =
+            new AggregatedObservedMeasures();
 
         // FIXME: Parallelize the computation of the performance measures.
         for (int i = 0; i < predictions.length; i++){
@@ -171,6 +176,8 @@ public class CCTools
                 correctForClass[classIndex]++;
                 correctForClassAtSize[classIndex][predictionSize]++;
             }
+            priorMeasures.add(predictions[i]);
+            observedMeasures.add(predictions[i], testSet.y[i]);
         }
         long t4 = System.currentTimeMillis();
 
@@ -221,6 +228,19 @@ public class CCTools
                      ((double)correctForClassAtSize[i][s] /
                       predictionsForClassAtSize[i][s]));
             }
+        }
+        System.err.println("Observed measures over " +
+                           observedMeasures.getMeasure(0)
+                               .getNumberOfObservations() +
+                           " instances:");
+        for (int i = 0; i < observedMeasures.size(); i++) {
+            System.err.println("  " + observedMeasures.getMeasure(i).toString());
+        }
+        System.err.println("Prior efficiency measures over " +
+                           priorMeasures.getMeasure(0).getNumberOfObservations() +
+                           " instances:");
+        for (int i = 0; i < priorMeasures.size(); i++) {
+            System.err.println("  " + priorMeasures.getMeasure(i).toString());
         }
 
         System.out.println("Evaluation Duration " +
