@@ -19,28 +19,25 @@ package se.hb.jcp.cp.measures;
 import se.hb.jcp.cp.ConformalClassification;
 
 /**
- * The N/Number criterion is a prior efficiency measure based on the size of
- * the label set.
+ * The N/Number/AvgC criterion is a prior efficiency measure based on the size
+ * of the label set.
  * See [V. Vovk, V. Fedorova, I. Nouretdinov and A. Gammerman, "Criteria of
  * Efficiency for Conformal Prediction", COPA 2016, LNAI 9653, pp. 23-39, 2016]
  * for the definitions used here.
  *
  * @author anders.gidenstam(at)hb.se
  */
-public class NumberCriterion implements IPriorMeasure
+public class NumberCriterion
+    extends AbstractSignificanceBasedMeasure
+    implements IPriorMeasure
 {
-    private final String _name;
-    private final double _significanceLevel;
-
     /**
      * Creates a N/Number criterion measure.
      * @param significanceLevel the significance level used for the label sets.
      */
     public NumberCriterion(double significanceLevel)
     {
-        _name =
-            "Number criterion(significanceLevel = " + significanceLevel + ")";
-        _significanceLevel = significanceLevel;
+        super("Number criterion/AvgC", significanceLevel);
     }
 
     /**
@@ -52,15 +49,5 @@ public class NumberCriterion implements IPriorMeasure
     public double compute(ConformalClassification prediction)
     {
         return prediction.getClassSet(_significanceLevel).size();
-    }
-
-    /**
-     * Get the name of this measure.
-     * @return the name of this measure.
-     */
-    @Override
-    public String getName()
-    {
-        return _name;
     }
 }

@@ -27,20 +27,17 @@ import se.hb.jcp.cp.ConformalClassification;
  *
  * @author anders.gidenstam(at)hb.se
  */
-public class ExcessCriterion implements IPriorMeasure
+public class ExcessCriterion
+    extends AbstractSignificanceBasedMeasure
+    implements IPriorMeasure
 {
-    private final String _name;
-    private final double _significanceLevel;
-
     /**
      * Creates an E/Excess criterion measure.
      * @param significanceLevel the significance level used for the label sets.
      */
     public ExcessCriterion(double significanceLevel)
     {
-        _name =
-            "Excess criterion(significanceLevel = " + significanceLevel + ")";
-        _significanceLevel = significanceLevel;
+        super("Excess criterion", significanceLevel);
     }
 
     /**
@@ -54,15 +51,5 @@ public class ExcessCriterion implements IPriorMeasure
         return
             Math.max(0.0,
                      prediction.getClassSet(_significanceLevel).size() - 1.0);
-    }
-
-    /**
-     * Get the name of this measure.
-     * @return the name of this measure.
-     */
-    @Override
-    public String getName()
-    {
-        return _name;
     }
 }

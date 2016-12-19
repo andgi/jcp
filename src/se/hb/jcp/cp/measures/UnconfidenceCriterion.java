@@ -20,7 +20,7 @@ import se.hb.jcp.cp.ConformalClassification;
 
 /**
  * The U/Unconfidence criterion is a prior efficiency measure based on the
- * of the (un)confidence of the point prediction.
+ * (un)confidence of the point prediction.
  * See [V. Vovk, V. Fedorova, I. Nouretdinov and A. Gammerman, "Criteria of
  * Efficiency for Conformal Prediction", COPA 2016, LNAI 9653, pp. 23-39, 2016]
  * for the definitions used here.

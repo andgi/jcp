@@ -19,19 +19,35 @@ package se.hb.jcp.cp.measures;
 import se.hb.jcp.cp.ConformalClassification;
 
 /**
- * A prior measure depends only on the prediction made.
- * See [V. Vovk, V. Fedorova, I. Nouretdinov and A. Gammerman, "Criteria of
- * Efficiency for Conformal Prediction", COPA 2016, LNAI 9653, pp. 23-39, 2016]
- * for the definitions used here.
+ * Base class for measures that depend on the significance level.
  *
  * @author anders.gidenstam(at)hb.se
  */
-public interface IPriorMeasure extends IMeasure
+public class AbstractSignificanceBasedMeasure implements IMeasure
 {
+    private final String _name;
+    final double _significanceLevel;
+
     /**
-     * Compute the measure for the supplied conformal prediction.
-     * @param prediction   a <tt>ConformalClassification</tt>.
-     * @return             the measure for the supplied prediction.
+     * Creates an abstract significance based measure.
+     * @param measureName       the base name of the measure.
+     * @param significanceLevel the significance level used for the label sets.
      */
-    double compute(ConformalClassification prediction);
+    public AbstractSignificanceBasedMeasure(String measureName,
+                                            double significanceLevel)
+    {
+        _name =
+            measureName + "(significanceLevel = " + significanceLevel + ")";
+        _significanceLevel = significanceLevel;
+    }
+
+    /**
+     * Get the name of this measure.
+     * @return the name of this measure.
+     */
+    @Override
+    public String getName()
+    {
+        return _name;
+    }
 }

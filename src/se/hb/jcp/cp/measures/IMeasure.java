@@ -19,19 +19,18 @@ package se.hb.jcp.cp.measures;
 import se.hb.jcp.cp.ConformalClassification;
 
 /**
- * A prior measure depends only on the prediction made.
+ * A measure of prediction "quality".
  * See [V. Vovk, V. Fedorova, I. Nouretdinov and A. Gammerman, "Criteria of
  * Efficiency for Conformal Prediction", COPA 2016, LNAI 9653, pp. 23-39, 2016]
  * for the definitions used here.
  *
  * @author anders.gidenstam(at)hb.se
  */
-public interface IPriorMeasure extends IMeasure
+public interface IMeasure
 {
     /**
-     * Compute the measure for the supplied conformal prediction.
-     * @param prediction   a <tt>ConformalClassification</tt>.
-     * @return             the measure for the supplied prediction.
+     * Get the name of this measure.
+     * @return the name of this measure.
      */
-    double compute(ConformalClassification prediction);
+    String getName();
 }

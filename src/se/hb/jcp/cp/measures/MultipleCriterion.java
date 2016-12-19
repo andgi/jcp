@@ -27,20 +27,17 @@ import se.hb.jcp.cp.ConformalClassification;
  *
  * @author anders.gidenstam(at)hb.se
  */
-public class MultipleCriterion implements IPriorMeasure
+public class MultipleCriterion
+    extends AbstractSignificanceBasedMeasure
+    implements IPriorMeasure
 {
-    private final String _name;
-    private final double _significanceLevel;
-
     /**
      * Creates a M/Multiple criterion measure.
      * @param significanceLevel the significance level used for the label sets.
      */
     public MultipleCriterion(double significanceLevel)
     {
-        _name =
-            "Multiple criterion(significanceLevel = " + significanceLevel + ")";
-        _significanceLevel = significanceLevel;
+        super("Multiple criterion", significanceLevel);
     }
 
     /**
@@ -53,15 +50,5 @@ public class MultipleCriterion implements IPriorMeasure
     {
         return
             (prediction.getClassSet(_significanceLevel).size() > 1) ? 1.0 : 0.0;
-    }
-
-    /**
-     * Get the name of this measure.
-     * @return the name of this measure.
-     */
-    @Override
-    public String getName()
-    {
-        return _name;
     }
 }
