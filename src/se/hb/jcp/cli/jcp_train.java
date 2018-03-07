@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -51,6 +51,7 @@ public class jcp_train
     private boolean _useLCCC = false;
     private boolean _useTCC = false;
     private boolean _useCP = true;
+    private boolean _useMPC = false;
     private boolean _validate = false;
     private double  _significanceLevel = 0.10;
     private double  _validationFraction = 0.5;
@@ -205,6 +206,8 @@ public class jcp_train
                     _useTCC = true;
                 } else if (args[i].equals("-lccc")) {
                     _useLCCC = true;
+                } else if (args[i].equals("-mpc")) {
+                    _useMPC = true;
                 } else if (args[i].equals("-nocp")) {
                     _useCP = false;
                 } else if (args[i].equals("-vf")) {
@@ -340,6 +343,9 @@ public class jcp_train
             ("  -lccc             Use the label conditional extension to " +
              "conformal classification.");
         System.out.println
+            ("  -mpc              Use the multi-probabilistic extension to " +
+             "conformal classification. Needs an extra calibration set.");
+        System.out.println
             ("  -nocp             Use classification without " +
              "conformal prediction.");
         System.out.println
@@ -374,15 +380,30 @@ public class jcp_train
         } else {
             splitDataset((1 - _calibrationFraction), _calibrationFraction);
         }
+        DataSet mpcCalibration = null;
+        if (_useMPC) {
+            DataSet newCalibration = new DataSet();
+            DataSet dummy = new DataSet();
+            mpcCalibration = new DataSet();
+            _calibration.random3Partition(newCalibration, mpcCalibration, dummy, 0.5, 0.5);
+            _calibration = newCalibration;
+        }
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
-        System.out.println("Training on " + _training.x.rows() +
-                           " instances and calibrating on " +
-                           _calibration.x.rows() +
-                           " instances.");
+        if (!_useMPC) {
+            System.out.println("Training on " + _training.x.rows() +
+                               " instances and calibrating on " +
+                               _calibration.x.rows() +
+                               " instances.");
+        } else {
+            System.out.println("Training on " + _training.x.rows() +
+                               " instances and calibrating (underlying + MPC) on " +
+                               _calibration.x.rows() + " + " + mpcCalibration.x.rows() +
+                               " instances.");
+        }
 
-        InductiveConformalClassifier icc =
+        IConformalClassifier icc =
             new InductiveConformalClassifier
                     (ClassificationNonconformityFunctionFactory.getInstance().
                          createNonconformityFunction(_ncFunctionType,
@@ -390,7 +411,13 @@ public class jcp_train
                                                      _classifier),
                      classes, _useLCCC);
 
-        icc.fit(_training.x, _training.y, _calibration.x, _calibration.y);
+        ((InductiveConformalClassifier)icc).fit(_training.x, _training.y,
+                                                _calibration.x, _calibration.y);
+        if (_useMPC) {
+            icc = new se.hb.jcp.cp.ConformalMultiProbabilisticClassifier(icc);
+            ((ConformalMultiProbabilisticClassifier)icc)
+                .calibrate(mpcCalibration.x, mpcCalibration.y);
+        }
         long t4 = System.currentTimeMillis();
         System.out.println("Training complete.");
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
@@ -423,18 +450,25 @@ public class jcp_train
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
+        if (!_useMPC) {
+            _calibrationFraction = 0.0;
+        }
         if (_validate) {
-            splitDataset((1 - _validationFraction), 0.0);
+            splitDataset((1 - _validationFraction)*(1 - _calibrationFraction), _calibrationFraction);
         } else {
-            splitDataset(1.0, 0.0);
+            splitDataset((1 - _calibrationFraction), _calibrationFraction);
         }
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
         System.out.println("TCC training set " + _training.x.rows() +
                            " instances.");
+        if (_useMPC) {
+            System.out.println("MPC calibration set " + _calibration.x.rows() +
+                               " instances.");
+        }
 
-        TransductiveConformalClassifier tcc =
+        IConformalClassifier tcc =
             new TransductiveConformalClassifier
                     (ClassificationNonconformityFunctionFactory.getInstance().
                          createNonconformityFunction(_ncFunctionType,
@@ -442,7 +476,12 @@ public class jcp_train
                                                      _classifier),
                      classes, _useLCCC);
 
-        tcc.fit(_training.x, _training.y);
+        ((TransductiveConformalClassifier)tcc).fit(_training.x, _training.y);
+        if (_useMPC) {
+            tcc = new se.hb.jcp.cp.ConformalMultiProbabilisticClassifier(tcc);
+            ((ConformalMultiProbabilisticClassifier)tcc)
+                .calibrate(_calibration.x, _calibration.y);
+        }
         long t4 = System.currentTimeMillis();
         System.out.println("Training complete.");
         System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");

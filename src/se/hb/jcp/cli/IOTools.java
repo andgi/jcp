@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2016  Anders Gidenstam
+// Copyright (C) 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -214,6 +214,23 @@ public class IOTools
         resultWriter.key("credibility");
         resultWriter.value(prediction.getPointPredictionCredibility());
         resultWriter.endObject();
+        // Write the multi-probabilistic point prediction hash if available.
+        if (prediction instanceof
+            se.hb.jcp.cp.ConformalMultiProbabilisticClassification) {
+            resultWriter.key("multi-probabilistic-prediction");
+            resultWriter.object();
+            resultWriter.key("label");
+            if (label != Double.NaN) {
+               // Only show the label if it is unique.
+                resultWriter.value("" + label);
+            }
+            resultWriter.key("probability-lower");
+            resultWriter.value(((se.hb.jcp.cp.ConformalMultiProbabilisticClassification)prediction)
+                                   .getPointPredictionLowerBoundProbability());
+            resultWriter.key("probability-upper");
+            resultWriter.value(((se.hb.jcp.cp.ConformalMultiProbabilisticClassification)prediction)
+                                   .getPointPredictionUpperBoundProbability());
+            resultWriter.endObject();
+        }
     }
-
 }
