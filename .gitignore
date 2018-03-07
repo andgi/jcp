@@ -5,3 +5,12 @@ lib
 .idea
 docs/jcp.wiki
 docs/api
+old-models-*
+old-patches
+*.*model
+*.jliblinear
+*.jlibsvm
+*.liblinear
+*.libsvm
+*.opencv
+*.txt

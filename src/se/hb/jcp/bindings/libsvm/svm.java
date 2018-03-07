@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -26,7 +26,7 @@ public class svm
     public static svm_model svm_train(svm_problem prob, svm_parameter param)
     {
         if (DEBUG) {
-            System.out.println("svm_train(): slow path.");
+            System.err.println("svm_train(): slow path.");
         }
         return new svm_model(native_svm_train(prob, param));
     }
@@ -36,7 +36,7 @@ public class svm
                                       double[] y)
     {
         if (DEBUG) {
-            System.out.println("svm_train(): fast path.");
+            System.err.println("svm_train(): fast path.");
         }
         return new svm_model(native_svm_train_fast(param, x.Cptr, y));
     }
@@ -101,7 +101,7 @@ public class svm
                                                  double[] prob_estimates)
     {
         if (DEBUG) {
-            System.out.println("svm_predict_probability(): slow path.");
+            System.err.println("svm_predict_probability(): slow path.");
         }
         return native_svm_predict_probability(model.Cptr, x, prob_estimates);
     }
@@ -111,7 +111,7 @@ public class svm
                                                  double[] prob_estimates)
     {
         if (DEBUG) {
-            System.out.println("svm_predict_probability(): fast path.");
+            System.err.println("svm_predict_probability(): fast path.");
         }
         return native_svm_predict_probability_fast(model.Cptr,
                                                    x.Cptr,
@@ -153,7 +153,7 @@ public class svm
                                              svm_parameter param)
     {
         if (DEBUG) {
-            System.out.println("svm_check_parameter(): slow path.");
+            System.err.println("svm_check_parameter(): slow path.");
         }
         return native_svm_check_parameter(prob, param);
     }
@@ -163,7 +163,7 @@ public class svm
                                              double[] y)
     {
         if (DEBUG) {
-            System.out.println("svm_check_parameter(): fast path.");
+            System.err.println("svm_check_parameter(): fast path.");
         }
         return native_svm_check_parameter_fast(param, x.Cptr, y);
     }
