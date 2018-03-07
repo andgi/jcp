@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2016  Anders Gidenstam
+// Copyright (C) 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -50,9 +50,12 @@ public class AggregatedPriorMeasures
                 new ExcessCriterion(0.01),
                 new OneCCriterion(0.10),
                 new OneCCriterion(0.05),
-                new OneCCriterion(0.01)
+                new OneCCriterion(0.01),
+                new MultiProbabilisticLowerBound(),
+                new MultiProbabilisticUpperBound()
         });
     }
+
     /**
      * Creates a set of aggregating prior measures from an array of single
      * prediction ones.
