@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2016  Anders Gidenstam
+// Copyright (C) 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -16,6 +16,8 @@
 //
 package se.hb.jcp.cli;
 
+import java.io.BufferedWriter;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStreamWriter;
 import java.util.concurrent.Callable;
@@ -45,6 +47,7 @@ public class jcp_predict_filter
     static final boolean PARALLEL = true;
     ExecutorService _executor;
     String _modelFileName;
+    BufferedWriter _pValuesOutputFile;
 
     public jcp_predict_filter()
     {
@@ -66,6 +69,7 @@ public class jcp_predict_filter
     }
 
     private void processArguments(String[] args)
+            throws IOException
     {
         if (args.length < 1) {
             printUsage();
@@ -75,6 +79,19 @@ public class jcp_predict_filter
                 if (args[i].equals("-h")) {
                     printUsage();
                     System.exit(0);
+                } else if (args[i].equals("-sp")) {
+                    if (++i < args.length) {
+                        _pValuesOutputFile =
+                            new BufferedWriter
+                                (new OutputStreamWriter
+                                     (new FileOutputStream(args[i]), "utf-8"));
+                    } else {
+                        System.err.println
+                            ("Error: No file name given to -sp.");
+                        System.err.println();
+                        printUsage();
+                        System.exit(-1);
+                    }
                 } else {
                     // The last unknown argument should be the dataset file.
                     _modelFileName = args[i];
@@ -97,6 +114,8 @@ public class jcp_predict_filter
         System.out.println();
         System.out.println
             ("  -h                Print this message and exit.");
+        System.out.println
+            ("  -sp <file>        Save the predicted p-values in <file>.");
     }
 
     private void doClassification()
@@ -118,8 +137,9 @@ public class jcp_predict_filter
                         // Do the prediction.
                         ConformalClassification prediction =
                             cc.predict(instance);
-                        // Write the result as a JSON object.
-                        IOTools.writeAsJSON(prediction, resultWriter);
+                        // Write the result.
+                        writePrediction(prediction, resultWriter,
+                                        _pValuesOutputFile);
                         osw.flush();
                         measures.add(prediction);
                     }
@@ -133,6 +153,7 @@ public class jcp_predict_filter
                     _executor.submit(new ResultPrinterCallable(queue,
                                                                osw,
                                                                resultWriter,
+                                                               _pValuesOutputFile,
                                                                measures));
 
                 // Read instances from stdin and put them in the executor queue.
@@ -171,6 +192,9 @@ public class jcp_predict_filter
         } finally {
             resultWriter.endArray();
             osw.flush();
+            if (_pValuesOutputFile != null) {
+                _pValuesOutputFile.close();
+            }
         }
         System.err.println("Prior efficiency measures over " +
                            measures.getMeasure(0).getNumberOfObservations() +
@@ -185,6 +209,21 @@ public class jcp_predict_filter
         DoubleMatrix1D instance =
             cc.nativeStorageTemplate().like(cc.getAttributeCount());
         return instance;
+    }
+
+    private static void writePrediction(ConformalClassification prediction,
+                                        JSONWriter              jsonWriter,
+                                        BufferedWriter          pValuesWriter)
+            throws IOException
+    {
+        IOTools.writeAsJSON(prediction, jsonWriter);
+        if (pValuesWriter != null) {
+            DoubleMatrix1D pValues = prediction.getPValues();
+            for (int c = 0; c < pValues.size(); c++) {
+                pValuesWriter.write("" + pValues.get(c) + " ");
+            }
+            pValuesWriter.newLine();
+        }
     }
 
     private static class PredictionCallable
@@ -211,19 +250,22 @@ public class jcp_predict_filter
     {
         private final FIFOParallelExecutor<ConformalClassification> _queue;
         private final OutputStreamWriter _osw;
-        private final JSONWriter _resultWriter;
+        private final JSONWriter _jsonWriter;
+        private final BufferedWriter _pValuesOutputFile;
         private final AggregatedPriorMeasures _measures;
 
         public ResultPrinterCallable
                    (FIFOParallelExecutor<ConformalClassification> queue,
                     OutputStreamWriter osw,
-                    JSONWriter resultWriter,
+                    JSONWriter jsonWriter,
+                    BufferedWriter pValuesOutputFile,
                     AggregatedPriorMeasures measures)
         {
             _queue = queue;
             _osw = osw;
-            _resultWriter = resultWriter;
+            _jsonWriter = jsonWriter;
             _measures = measures;
+            _pValuesOutputFile = pValuesOutputFile;
         }
 
         @Override
@@ -235,9 +277,9 @@ public class jcp_predict_filter
                 ConformalClassification prediction;
                 // While there is a next prediction.
                 while ((prediction = _queue.take()) != null) {
-                    // Write the result as a JSON object.
-                    IOTools.writeAsJSON(prediction,
-                                        _resultWriter);
+                    // Write the result.
+                    writePrediction(prediction, _jsonWriter,
+                                    _pValuesOutputFile);
                     _osw.flush();
                     _measures.add(prediction);
                     count++;
