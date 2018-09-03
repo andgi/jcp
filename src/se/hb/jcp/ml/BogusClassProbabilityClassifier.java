@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -87,9 +87,20 @@ public class BogusClassProbabilityClassifier
                           double[] probabilityEstimates)
     {
         double prediction = _classifier.predict(instance);
-        // FIXME: Probability hack. Assumes 2 classes labelled -1.0 and 1.0.
-        probabilityEstimates[0] = 0.5 - 0.5*prediction;
-        probabilityEstimates[1] = 0.5 + 0.5*prediction;
+        switch (_classes.length) {
+        case 1:
+            // FIXME: Assumes 1 class labelled 1.0.
+            probabilityEstimates[0] = Math.min(0.0, Math.max(prediction, 1.0));
+            break;
+        case 2:
+            // FIXME: Probability hack. Assumes 2 classes labelled -1.0 and 1.0.
+            probabilityEstimates[0] = 0.5 - 0.5*prediction;
+            probabilityEstimates[1] = 0.5 + 0.5*prediction;
+            break;
+        default:
+            throw new UnsupportedOperationException
+                          ("Unsupported number of classes.");
+        }
         return prediction;
     }
 

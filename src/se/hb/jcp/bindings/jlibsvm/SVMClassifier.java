@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -253,8 +253,10 @@ public class SVMClassifier
      */
     private double computeB()
     {
-        // FIXME: This is only valid for 2-class SVM and classes -1.0 and 1.0.
-        double sign = _model.label[0] == -1.0 ? -1.0 : 1.0;
+        // FIXME: This is only valid for 1-class SVM and 2-class SVM with
+        //        classes -1.0 and 1.0.
+        double sign = (_model.label != null && _model.label[0] == -1.0)
+                      ? -1.0 : 1.0;
         return sign * -_model.rho[0];
     }
 
@@ -278,8 +280,10 @@ public class SVMClassifier
      */
     private double[] computeW()
     {
-        // FIXME: This is only valid for 2-class SVM and classes -1.0 and 1.0.
-        double sign = _model.label[0] == -1.0 ? -1.0 : 1.0;
+        // FIXME: This is only valid for 1-class SVM and 2-class SVM with
+        //        classes -1.0 and 1.0.
+        double sign = (_model.label != null && _model.label[0] == -1.0)
+                      ? -1.0 : 1.0;
         double[] w = new double[getAttributeCount()];
         for (int l = 0; l < _model.l; l++) {
             for (int i = 0; i < _model.SV[l].length; i++) {

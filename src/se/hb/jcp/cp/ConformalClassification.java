@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2016  Anders Gidenstam
+// Copyright (C) 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -100,7 +100,8 @@ public class ConformalClassification
         // Floating point inaccuracy makes it likely that more than one class
         // may be included at the prescribed significance level.
         // To avoid this do a binary search from above towards the limit.
-        double significanceLevel = 2.0 * targetSignificanceLevel;
+        double significanceLevel = 2.0 * targetSignificanceLevel +
+                                   Float.MIN_NORMAL;
         while (significanceLevel > targetSignificanceLevel) {
             for (int i = 0; i < _pValues.size(); i++) {
                 if (_pValues.get(i) > significanceLevel) {
@@ -138,8 +139,8 @@ public class ConformalClassification
      */
     public double getPointPredictionConfidence()
     {
-        double largestPValue = -1.0;
-        double secondLargestPValue = -1.0;
+        double largestPValue = 0.0;
+        double secondLargestPValue = 0.0;
         for (int i = 0; i < _pValues.size(); i++) {
             if (_pValues.get(i) > largestPValue) {
                 secondLargestPValue = largestPValue;
@@ -159,7 +160,7 @@ public class ConformalClassification
      */
     public double getPointPredictionCredibility()
     {
-        double largestPValue = -1.0;
+        double largestPValue = 0.0;
         for (int i = 0; i < _pValues.size(); i++) {
             if (_pValues.get(i) > largestPValue) {
                 largestPValue = _pValues.get(i);
