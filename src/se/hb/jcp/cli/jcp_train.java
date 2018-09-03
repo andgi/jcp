@@ -43,6 +43,7 @@ public class jcp_train
     private int     _ncFunctionType = 0;
     private IClassifier _classifier;
     private String  _dataSetFileName;
+    private String  _calibrationSetFileName;
     private String  _modelFileName;
     private DataSet _full;
     private DataSet _training;
@@ -74,7 +75,11 @@ public class jcp_train
             trainTCC(_dataSetFileName);
         } else if (_useCP) {
             // Supports train, calibrate and save and/or test.
-            trainICC(_dataSetFileName);
+          if (_calibrationSetFileName != null) {
+              trainICC(_dataSetFileName, _calibrationSetFileName);
+          } else {
+              trainICC(_dataSetFileName);
+          }
         } else {
             // Supports train and save and/or test.
             trainPlainClassifier(_dataSetFileName);
@@ -267,8 +272,16 @@ public class jcp_train
                         System.exit(-1);
                     }
                 } else {
-                    // The last unknown argument should be the dataset file.
-                    _dataSetFileName = args[i];
+                    // The last unknown argument should be the dataset file or
+                    // the training and calibration dataset files.
+                    if (i == args.length - 2) {
+                        _dataSetFileName = args[i];
+                        i++;
+                        _calibrationSetFileName = args[i];
+                        _validate = false;
+                    } else {
+                        _dataSetFileName = args[i];
+                    }
                 }
             }
         }
@@ -287,8 +300,17 @@ public class jcp_train
     private void printUsage()
     {
         System.out.println
-            ("Usage: jcp_train [options] <libsvm formatted data set>");
-        System.out.println();
+            ("Usage: jcp_train [options] {<libsvm formatted data set>|" +
+             "<libsvm formatted training set> " +
+             "<libsvm formatted calibration set>}");
+        System.out.println("  The supplied data set will be partitioned" +
+                           " randomly as needed for the selected");
+        System.out.println("  configuration.");
+        System.out.println("  Alternatively, for all ICC variants, separate" +
+                           " training and calibration data");
+        System.out.println("  sets can be supplied and will then be used" +
+                           " as is.");
+        System.out.println("Options:");
         System.out.println
             ("  -h                Print this message and exit.");
         System.out.println
@@ -391,6 +413,43 @@ public class jcp_train
         long t3 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
+        trainICC(classes, mpcCalibration, t1, t3);
+    }
+
+  private void trainICC(String trainingSetFileName,
+                        String calibrationSetFileName)
+        throws IOException
+    {
+        long t1 = System.currentTimeMillis();
+        _training = DataSetTools.loadDataSet(trainingSetFileName);
+        SimpleEntry<double[],SortedSet<Double>> pair =
+            DataSetTools.extractClasses(_training);
+        double[] classes = pair.getKey();
+        SortedSet<Double> classSet = pair.getValue();
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
+
+        _calibration = DataSetTools.loadDataSet(calibrationSetFileName);
+        DataSet mpcCalibration = null;
+        if (_useMPC) {
+            DataSet newCalibration = new DataSet();
+            DataSet dummy = new DataSet();
+            mpcCalibration = new DataSet();
+            _calibration.random3Partition(newCalibration, mpcCalibration, dummy, 0.5, 0.5);
+            _calibration = newCalibration;
+        }
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+
+        trainICC(classes, mpcCalibration, t1, t3);
+    }
+
+  private void trainICC(double[] classes,
+                        DataSet  mpcCalibration,
+                        long     t1,
+                        long     t3)
+        throws IOException
+    {
         if (!_useMPC) {
             System.out.println("Training on " + _training.x.rows() +
                                " instances and calibrating on " +
