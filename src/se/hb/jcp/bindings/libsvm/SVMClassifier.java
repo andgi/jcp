@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -22,12 +22,14 @@ import cern.colt.matrix.DoubleMatrix2D;
 import org.json.JSONObject;
 
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.ISVMClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
 import se.hb.jcp.ml.ClassifierBase;
 
 public class SVMClassifier
     extends ClassifierBase
-    implements IClassProbabilityClassifier,
+    implements ISVMClassifier,
+               IClassProbabilityClassifier,
                java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
@@ -133,7 +135,7 @@ public class SVMClassifier
             _parameters.eps = 1e-3;
             _parameters.p = 0.1;
             _parameters.shrinking = 1;
-            _parameters.probability = 1; // Must be set for the NC-function.
+            _parameters.probability = 1; // Must be set for the 1st NC-function.
             _parameters.nr_weight = 0;
             _parameters.weight_label = new int[0];
             _parameters.weight = new double[0];
@@ -201,6 +203,25 @@ public class SVMClassifier
         }
 
         return prediction;
+    }
+
+    /**
+     * Returns the signed distance between the separating hyperplane and the
+     * instance.
+     *
+     * @return the signed distance between the separating hyperplane and the instance.
+     */
+    public double distanceFromSeparatingPlane(DoubleMatrix1D instance)
+    {
+        SparseDoubleMatrix1D tmp_instance;
+        if (instance instanceof
+                se.hb.jcp.bindings.libsvm.SparseDoubleMatrix1D) {
+            tmp_instance = (SparseDoubleMatrix1D)instance;
+        } else {
+            tmp_instance = new SparseDoubleMatrix1D(instance.size());
+            tmp_instance.assign(instance);
+        }
+        return svm.svm_distance_from_separating_plane(_model, tmp_instance);
     }
 
     public DoubleMatrix1D nativeStorageTemplate()

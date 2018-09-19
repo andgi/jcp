@@ -161,6 +161,14 @@ JNIEXPORT jstring JNICALL Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_
 JNIEXPORT jint JNICALL Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1check_1probability_1model
   (JNIEnv *, jclass, jlong);
 
+/*
+ * Class:     se_hb_jcp_bindings_libsvm_svm
+ * Method:    native_svm_distance_from_separating_plane
+ * Signature: (JJJ)D
+ */
+JNIEXPORT jdouble JNICALL Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1distance_1from_1separating_1plane
+  (JNIEnv *, jclass, jlong, jlong, jlong);
+
 #ifdef __cplusplus
 }
 #endif

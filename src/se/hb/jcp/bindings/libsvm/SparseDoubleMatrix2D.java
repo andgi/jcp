@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -244,8 +244,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * Sets up a matrix with a given number of rows and columns.
      * @param rows the number of rows the matrix shall have.
      * @param columns the number of columns the matrix shall have.
-     * @throws IllegalArgumentException if <tt>rows<0 || columns<0 ||
-     *         (double)columns*rows > Integer.MAX_VALUE</tt>.
+     * @throws IllegalArgumentException if <tt>rows&lt;0 || columns&lt;0 ||
+     *         (double)columns*rows &gt; Integer.MAX_VALUE</tt>.
      */
     protected void setUp(int rows, int columns)
     {

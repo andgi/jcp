@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -41,6 +41,8 @@ static void free_svm_problem(struct svm_problem* problem);
 static struct svm_parameter* svm_parameter_from_java(JNIEnv* env,
                                                      jobject jparam);
 static void free_svm_parameter(struct svm_parameter* param);
+static void   compute_w(struct svm_model* model, double w[]);
+static double compute_b(struct svm_model* model);
 static void print_func(const char* str);
 
 /* Internal shared data. */
@@ -612,6 +614,42 @@ Java_se_hb_jcp_bindings_libsvm_svm_1model_native_1free_1svm_1model
             //svm_free_and_destroy_model(&model);
         }
     }
+}
+
+/*
+ * Class:     se_hb_jcp_bindings_libsvm_svm
+ * Method:    native_svm_distance_from_separating_plane
+ * Signature: (JJJ)D
+ */
+JNIEXPORT jdouble JNICALL
+Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1distance_1from_1separating_1plane
+    (JNIEnv*      env,
+     jclass       jsvm,
+     jlong        jmodel_ptr,
+     jlong        jinstance_ptr,
+     jlong        attribute_count)
+{
+    struct svm_model* model = (struct svm_model*)jmodel_ptr;
+    struct svm_node*  instance = *(struct svm_node **)jinstance_ptr;
+
+    // FIXME: This is only valid for 1-class SVM and 2-class SVM with
+    //        classes -1.0 and 1.0.
+    // See the libSVM FAQ #804,
+    // http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f804 for the internal
+    // details.
+    double* w = (double*)std::calloc(sizeof(double), attribute_count);
+    compute_w(model, w);
+    double distance = compute_b(model);
+
+    if (model->nr_class == 2) {
+        for (int i = 0; instance[i].index >= 0; i++) {
+            distance += w[instance[i].index] * instance[i].value;
+        }
+    } else {
+        // Not implemented.
+    }
+    std::free(w);
+    return distance;
 }
 
 /******************************************************************************/
@@ -1214,6 +1252,29 @@ static struct svm_parameter* svm_parameter_from_java(JNIEnv* env,
 static void free_svm_parameter(struct svm_parameter* param)
 {
     std::free(param);
+}
+
+static void compute_w(struct svm_model* model, double w[])
+{
+    // FIXME: This is only valid for 1-class SVM and 2-class SVM with
+    //        classes -1.0 and 1.0.
+    double sign = (model->label != 0 && model->label[0] == -1.0)
+                  ? -1.0 : 1.0;
+    for (int l = 0; l < model->l; l++) {
+        for (int i = 0; model->SV[l][i].index >= 0; i++) {
+            w[model->SV[l][i].index] +=
+                sign * model->sv_coef[0][l] * model->SV[l][i].value;
+        }
+    }
+}
+
+static double compute_b(struct svm_model* model)
+{
+    // FIXME: This is only valid for 1-class SVM and 2-class SVM with
+    //        classes -1.0 and 1.0.
+    double sign = (model->label != 0 && model->label[0] == -1.0)
+                  ? -1.0 : 1.0;
+    return sign * -model->rho[0];
 }
 
 static void print_func(const char* str)

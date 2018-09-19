@@ -180,6 +180,13 @@ public class svm
         //throw new UnsupportedOperationException("Not implemented");
     }
 
+    public static double svm_distance_from_separating_plane(svm_model model,
+                                                            SparseDoubleMatrix1D x)
+    {
+        return native_svm_distance_from_separating_plane(model.Cptr,
+                                                         x.Cptr,
+                                                         x.size());
+    }
 
     // Internal native functions.
     private static native long native_svm_train(svm_problem prob,
@@ -226,6 +233,10 @@ public class svm
          double[] y);
     private static native int native_svm_check_probability_model
         (long model_ptr);
+    private static native double native_svm_distance_from_separating_plane
+        (long model_ptr,
+         long x_ptr,
+         long no_attributes);
 
     static {
         try {
