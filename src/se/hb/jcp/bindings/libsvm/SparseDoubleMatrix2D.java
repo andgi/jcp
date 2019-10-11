@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018 - 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -196,7 +196,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
 
        @param row the row to fix.
        @return a new slice view.
-       @throws IndexOutOfBoundsException if <tt>row < 0 || row >= rows()</tt>.
+       @throws IndexOutOfBoundsException if <tt>row &lt; 0 || row &gt;= rows()</tt>.
        @see #viewColumn(int)
     */
     public DoubleMatrix1D viewRow(int row)

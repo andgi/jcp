@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -51,7 +51,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * @param rows the number of rows the matrix shall have.
      * @param columns the number of columns the matrix shall have.
      * @throws IllegalArgumentException if
-               <tt>rows<0 || columns<0 || (double)columns*rows >
+               <tt>rows&lt;0 || columns&lt;0 || (double)columns*rows &gt;
                Integer.MAX_VALUE</tt>.
     */
     public SparseDoubleMatrix2D(int rows, int columns)
@@ -129,7 +129,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * objects without throwing any exception.
      * <b>You should only use this method when you are absolutely sure that
      * the coordinate is within bounds.</b>
-     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &&
+     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &amp;&amp;
      * 0 &lt;= row &lt; rows()</tt>.
      *
      * @param row     the index of the row-coordinate.
@@ -149,7 +149,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * indexes without throwing any exception.
      * <b>You should only use this method when you are absolutely sure that
      * the coordinate is within bounds.</b>
-     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &&
+     * Precondition (unchecked): <tt>0 &lt;= column &lt; columns() &amp;&amp;
      *                               0 &lt;= row &lt; rows()</tt>.
      *
      * @param row     the index of the row-coordinate.
@@ -177,7 +177,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
 
        @param row the row to fix.
        @return a new slice view.
-       @throws IndexOutOfBoundsException if <tt>row < 0 || row >= rows()</tt>.
+       @throws IndexOutOfBoundsException if <tt>row &lt; 0 || row &gt;= rows()</tt>.
        @see #viewColumn(int)
     */
     public DoubleMatrix1D viewRow(int row)
@@ -227,8 +227,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * Sets up a matrix with a given number of rows and columns.
      * @param rows the number of rows the matrix shall have.
      * @param columns the number of columns the matrix shall have.
-     * @throws IllegalArgumentException if <tt>rows<0 || columns<0 ||
-     *         (double)columns*rows > Integer.MAX_VALUE</tt>.
+     * @throws IllegalArgumentException if <tt>rows&lt;0 || columns&lt;0 ||
+     *         (double)columns*rows &gt; Integer.MAX_VALUE</tt>.
      */
     protected void setUp(int rows, int columns)
     {

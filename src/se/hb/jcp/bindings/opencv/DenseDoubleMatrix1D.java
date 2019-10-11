@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Anders Gidenstam
+// Copyright (C) 2014, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -84,7 +84,7 @@ public class DenseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * All entries are initially <tt>0</tt>.
      * @param columns the number of columns the matrix shall have.
      * @throws IllegalArgumentException if
-               <tt>columns<0 || columns > Integer.MAX_VALUE</tt>.
+               <tt>columns&lt;0 || columns &gt; Integer.MAX_VALUE</tt>.
     */
     public DenseDoubleMatrix1D(int columns)
     {
