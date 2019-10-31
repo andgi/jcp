@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018 - 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -75,11 +75,11 @@ public class jcp_train
             trainTCC(_dataSetFileName);
         } else if (_useCP) {
             // Supports train, calibrate and save and/or test.
-          if (_calibrationSetFileName != null) {
-              trainICC(_dataSetFileName, _calibrationSetFileName);
-          } else {
-              trainICC(_dataSetFileName);
-          }
+            if (_calibrationSetFileName != null) {
+                trainICC(_dataSetFileName, _calibrationSetFileName);
+            } else {
+                trainICC(_dataSetFileName);
+            }
         } else {
             // Supports train and save and/or test.
             trainPlainClassifier(_dataSetFileName);
@@ -470,6 +470,15 @@ public class jcp_train
                                                      _classifier),
                      classes, _useLCCC);
 
+        System.out.println("_training.x " + _training.x.getClass().getName() +
+                           "(" + _training.x.columns() + "x" +
+                           _training.x.rows() + "; " +
+                           _training.x.cardinality() + " nonzeros)");
+        System.out.println("_calibration.x " +
+                           _calibration.x.getClass().getName() +
+                           "(" + _calibration.x.columns() + "x" +
+                           _calibration.x.rows() + "; " +
+                           _calibration.x.cardinality() + " nonzeros)");
         ((InductiveConformalClassifier)icc).fit(_training.x, _training.y,
                                                 _calibration.x, _calibration.y);
         if (_useMPC) {

@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -75,14 +75,16 @@ public class libsvmReader
                 vxi.add(xi);
                 vxv.add(xv);
                 rows++;
-            }   p = new DataSet();
+            }
+            p = new DataSet();
             // Create and initialize y.
             p.y = new double[rows];
             //p.y = DoubleFactory1D.dense.make(rows);
             for (int r = 0; r < p.y.length; r++) {
                 p.y[r] = vy.get(r);
                 //p.y.set(r, vy.get(r));
-            }   // Create and initialize x.
+            }
+            // Create and initialize x.
             if (template != null) {
                 p.x = template.like2D(rows, columns);
             } else {
@@ -90,7 +92,8 @@ public class libsvmReader
                 //p.x = new se.hb.jcp.bindings.libsvm.SparseDoubleMatrix2D(rows, columns);
                 // Default to colt data storage.
                 p.x = DoubleFactory2D.sparse.make(rows, columns);
-            }   for (int r = 0; r < p.x.rows(); r++) {
+            }
+            for (int r = 0; r < p.x.rows(); r++) {
                 int[]    xi = vxi.get(r);
                 double[] xv = vxv.get(r);
                 for (int a = 0; a < xi.length; a++) {
