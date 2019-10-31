@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -39,7 +39,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * liblinear expects.
      * NOTE: Internal Feature indices MUST start from 1.
      */
-    Feature[][] rows;
+    Feature[][] _rows;
 
     /**
      * SparseDoubleMatrix1D views of rows in this matrix.
@@ -59,9 +59,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     public SparseDoubleMatrix2D(int rows, int columns)
     {
         setUp(rows, columns);
-        this.rows = new Feature[rows][];
         for (int r = 0; r < rows; r++) {
-            this.rows[r] = new Feature[0];
+            _rows[r] = new Feature[0];
         }
     }
 
@@ -160,7 +159,9 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      */
     public void setQuick(int row, int column, double value)
     {
-        viewRow(row).setQuick(column, value);
+        SparseDoubleMatrix1D rowView = (SparseDoubleMatrix1D)viewRow(row);
+        rowView.setQuick(column, value);
+        _rows[row] = rowView._nodes;
     }
 
     /**
@@ -187,8 +188,13 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     {
         checkRow(row);
         if (_rowViews[row] == null) {
-            _rowViews[row] = new SparseDoubleMatrix1D(columns, rows[row]);
+            _rowViews[row] = new SparseDoubleMatrix1D(columns, _rows[row]);
         }
+        // FIXME?! Make sure this row is what's actually in the matrix.
+        //         This will actually be one step behind when copying
+        //         rows between matrices since this view is updated after
+        //         it is fetched.
+        _rows[row] = _rowViews[row]._nodes;
         return _rowViews[row];
     }
 
@@ -206,9 +212,9 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
         checkRow(row);
         SparseDoubleMatrix1D newRow =
             new SparseDoubleMatrix1D(columns, indices, values);
-        rows[row] = newRow.nodes;
+        _rows[row] = newRow._nodes;
         if (_rowViews[row] != null) {
-            _rowViews[row].nodes = newRow.nodes;
+            _rowViews[row]._nodes = newRow._nodes;
         }
     }
 
@@ -236,6 +242,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     protected void setUp(int rows, int columns)
     {
         super.setUp(rows, columns);
+        _rows = new Feature[rows][];
         _rowViews = new SparseDoubleMatrix1D[rows];
     }
 }

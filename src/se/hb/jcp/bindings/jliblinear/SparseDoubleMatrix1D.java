@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -41,7 +41,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * liblinear expects.
      * NOTE: Internal Feature indices MUST start from 1.
      */
-    Feature[] nodes;
+    Feature[] _nodes;
 
     /**
      * Constructs a matrix with a copy of the given values.
@@ -54,9 +54,9 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     {
         setUp(values.length);
         // FIXME: The result is always a dense vector.
-        nodes = new Feature[values.length];
+        _nodes = new Feature[values.length];
         for (int i = 0; i < values.length; i++) {
-            nodes[i] = new FeatureNode(i+1, values[i]);
+            _nodes[i] = new FeatureNode(i+1, values[i]);
         }
     }
 
@@ -75,9 +75,9 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
                                 double[] values)
     {
         setUp(columns);
-        nodes = new Feature[indices.length];
+        _nodes = new Feature[indices.length];
         for (int i = 0; i < indices.length; i++) {
-            nodes[i] = new FeatureNode(indices[i]+1, values[i]);
+            _nodes[i] = new FeatureNode(indices[i]+1, values[i]);
         }
     }
 
@@ -91,14 +91,14 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     public SparseDoubleMatrix1D(int columns)
     {
         setUp(columns);
-        nodes = new Feature[0];
+        _nodes = new Feature[0];
     }
 
     SparseDoubleMatrix1D(int columns, Feature[] nodes)
     {
         setUp(columns);
         isNoView = false;
-        this.nodes = nodes;
+        _nodes = nodes;
     }
 
     /**
@@ -121,15 +121,15 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
         checkSize(other);
         if (other instanceof SparseDoubleMatrix1D) {
             // FIXME: Should this be a deep copy?
-            this.nodes = ((SparseDoubleMatrix1D)other).nodes;
+            _nodes = ((SparseDoubleMatrix1D)other)._nodes;
             return this;
         } else {
             IntArrayList indexList = new IntArrayList();
             DoubleArrayList valueList = new DoubleArrayList();
             other.getNonZeros(indexList, valueList);
-            nodes = new Feature[indexList.size()];
+            _nodes = new Feature[indexList.size()];
             for (int i = 0; i < indexList.size(); i++) {
-                nodes[i] =
+                _nodes[i] =
                     new FeatureNode(indexList.get(i)+1, valueList.get(i));
             }
             return this;
@@ -187,9 +187,9 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      */
     public double getQuick(int column)
     {
-        for (int i = 0; i < nodes.length; i++) {
-            if (nodes[i].getIndex() == column+1) {
-                return nodes[i].getValue();
+        for (int i = 0; i < _nodes.length; i++) {
+            if (_nodes[i].getIndex() == column+1) {
+                return _nodes[i].getValue();
             }
         }
         return 0.0;
@@ -211,21 +211,21 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     public void setQuick(int index, double value)
     {
         int i;
-        for (i = 0; i < nodes.length; i++) {
-            if (nodes[i].getIndex() == index+1) {
-                nodes[i].setValue(value);
+        for (i = 0; i < _nodes.length; i++) {
+            if (_nodes[i].getIndex() == index+1) {
+                _nodes[i].setValue(value);
                 return;
             }
         }
         if (value != 0.0) {
-            Feature[] old = nodes;
-            nodes = new FeatureNode[old.length + 1];
+            Feature[] old = _nodes;
+            _nodes = new FeatureNode[old.length + 1];
             for (i = 0; i < old.length && old[i].getIndex() < index+1; i++) {
-                nodes[i] = old[i];
+                _nodes[i] = old[i];
             }
-            nodes[i] = new FeatureNode(index+1, value);
+            _nodes[i] = new FeatureNode(index+1, value);
             for (; i < old.length; i++) {
-                nodes[i + 1] = old[i];
+                _nodes[i + 1] = old[i];
             }
         }
     }

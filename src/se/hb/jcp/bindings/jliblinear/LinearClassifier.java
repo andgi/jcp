@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -56,6 +56,10 @@ public class LinearClassifier
         SparseDoubleMatrix2D tmp_x;
         if (x instanceof SparseDoubleMatrix2D) {
             tmp_x = (SparseDoubleMatrix2D)x;
+            // FIXME: Look at each row so that the matrix is properly updated.
+            for (int r = 0; r < tmp_x.rows(); ++r) {
+                tmp_x.viewRow(r).cardinality();
+            }
         } else {
             tmp_x = new SparseDoubleMatrix2D(x.rows(), x.columns());
             tmp_x.assign(x);
@@ -64,7 +68,7 @@ public class LinearClassifier
         problem.bias = 0.0;
         problem.l = y.length;
         problem.n = tmp_x.columns();
-        problem.x = tmp_x.rows;
+        problem.x = tmp_x._rows;
         problem.y = y;
 
         _model = Linear.train(problem, parameters);
@@ -88,7 +92,7 @@ public class LinearClassifier
             tmp_instance.assign(instance);
         }
 
-        return Linear.predict(_model, tmp_instance.nodes);
+        return Linear.predict(_model, tmp_instance._nodes);
     }
 
     public DoubleMatrix1D nativeStorageTemplate()
@@ -192,5 +196,9 @@ public class LinearClassifier
             // Load the model from a separate file.
             _model = Linear.loadModel(file);
         }
+    }
+
+    static {
+        Linear.setDebugOutput(null);
     }
 }
