@@ -37,7 +37,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * Internal array of array of svm_node nodes as the Java version of
      * libsvm expects.
      */
-    svm_node[][] rows;
+    svm_node[][] _rows;
 
     /**
      * SparseDoubleMatrix1D views of rows in this matrix.
@@ -57,9 +57,8 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     public SparseDoubleMatrix2D(int rows, int columns)
     {
         setUp(rows, columns);
-        this.rows = new svm_node[rows][];
         for (int r = 0; r < rows; r++) {
-            this.rows[r] = new svm_node[0];
+            this._rows[r] = new svm_node[0];
         }
     }
 
@@ -158,7 +157,10 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      */
     public void setQuick(int row, int column, double value)
     {
-        viewRow(row).setQuick(column, value);
+        SparseDoubleMatrix1D rowView = (SparseDoubleMatrix1D)viewRow(row);
+        rowView.setQuick(column, value);
+        _rows[row] = rowView._nodes;
+        //System.out.println("jlibsvm.SparseDoubleMatrix2D.setQuick(): Done.");
     }
 
     /**
@@ -184,8 +186,13 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     {
         checkRow(row);
         if (_rowViews[row] == null) {
-            _rowViews[row] = new SparseDoubleMatrix1D(columns, rows[row]);
+            _rowViews[row] = new SparseDoubleMatrix1D(columns, _rows[row]);
         }
+        // FIXME?! Make sure this row is what's actually in the matrix.
+        //         This will actually be one step behind when copying
+        //         rows between matrices since this view is updated after
+        //         it is fetched.
+        _rows[row] = _rowViews[row]._nodes;
         return _rowViews[row];
     }
 
@@ -203,10 +210,11 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
         checkRow(row);
         SparseDoubleMatrix1D newRow =
             new SparseDoubleMatrix1D(columns, indices, values);
-        rows[row] = newRow.nodes;
+        _rows[row] = newRow._nodes;
         if (_rowViews[row] != null) {
-            _rowViews[row].nodes = newRow.nodes;
+            _rowViews[row]._nodes = newRow._nodes;
         }
+        //System.out.println("jlibsvm.SparseDoubleMatrix2D.setRow(): Done.");
     }
 
     /**
@@ -233,6 +241,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     protected void setUp(int rows, int columns)
     {
         super.setUp(rows, columns);
+        _rows = new svm_node[rows][];
         _rowViews = new SparseDoubleMatrix1D[rows];
     }
 }

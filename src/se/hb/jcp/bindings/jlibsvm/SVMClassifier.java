@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016, 2018  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2018 - 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -41,7 +41,27 @@ public class SVMClassifier
         new SparseDoubleMatrix1D(0);
     protected svm_parameter _parameters;
     protected svm_model _model;
-    AtomicReference<double[]> _cachedW = new AtomicReference<double[]>();
+
+    class ImmutableEntry implements java.io.Serializable
+    {
+        private double _b;
+        private double[] _w;
+        public ImmutableEntry(double b, double[] w)
+        {
+            _b = b;
+            _w = w;
+        }
+        public double getB()
+        {
+            return _b;
+        }
+        public double[] getW()
+        {
+            return _w;
+        }
+    }
+    AtomicReference<ImmutableEntry> _cachedBW =
+        new AtomicReference<ImmutableEntry>();
 
     public SVMClassifier()
     {
@@ -137,11 +157,11 @@ public class SVMClassifier
             _parameters.coef0 = 0;
             _parameters.nu = 0.5;
             _parameters.cache_size = 100;
-            _parameters.C = 1;
+            _parameters.C = 1.0;
             _parameters.eps = 1e-3;
             _parameters.p = 0.1;
             _parameters.shrinking = 1;
-            _parameters.probability = 1; // Must be set for the NC-function.
+            _parameters.probability = 1; // Must be set for the NC-function 0.
             _parameters.nr_weight = 0;
             _parameters.weight_label = new int[0];
             _parameters.weight = new double[0];
@@ -157,12 +177,18 @@ public class SVMClassifier
             tmp_x = new SparseDoubleMatrix2D(x.rows(), x.columns());
             tmp_x.assign(x);
         }
+        // FIXME: Debug message.
+//        System.out.println("jlibsvm.SVMClassifier.internalFit: tmp_x is " +
+//                           tmp_x.columns() + "x" + tmp_x.rows() + " and has " +
+//                           tmp_x.cardinality() + " non-zeros.");
         svm_problem problem = new svm_problem();
         problem.l = y.length;
-        problem.x = tmp_x.rows;
+        problem.x = tmp_x._rows;
         problem.y = y;
 
         _model = svm.svm_train(problem, _parameters);
+
+        _cachedBW.compareAndSet(_cachedBW.get(), null);
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
@@ -182,7 +208,7 @@ public class SVMClassifier
             tmp_instance.assign(instance);
         }
 
-        return svm.svm_predict(_model, tmp_instance.nodes);
+        return svm.svm_predict(_model, tmp_instance._nodes);
     }
 
     public double predict(DoubleMatrix1D instance,
@@ -197,7 +223,7 @@ public class SVMClassifier
         }
 
         double prediction = svm.svm_predict_probability(_model,
-                                                        tmp_instance.nodes,
+                                                        tmp_instance._nodes,
                                                         probabilityEstimates);
         // jlibsvm seem to use the reverse order of labels, so reverse
         // the array of probability estimates before returning them.
@@ -224,9 +250,11 @@ public class SVMClassifier
      */
     public double distanceFromSeparatingPlane(DoubleMatrix1D instance)
     {
-        // FIXME: This is only valid for 2-class SVM and classes -1.0 and 1.0.
-        double[] w = getW();
-        double   b = computeB();
+        // FIXME: This is only valid for 1 and 2-class SVM and classes -1.0
+        //        and 1.0.
+        ImmutableEntry bw = getBW();
+        double   b = bw.getB();
+        double[] w = bw.getW();
         if (_model.nr_class == 2) {
             double distance = b;
             for (int i = 0; i < instance.size(); i++) {
@@ -243,6 +271,17 @@ public class SVMClassifier
         return _storageTemplate;
     }
 
+    private ImmutableEntry getBW()
+    {
+        ImmutableEntry bw = _cachedBW.get();
+        if (bw == null) {
+            //System.out.println("jlibsvm.SVMClassifier: Computed b and w!");
+            bw = new ImmutableEntry(computeB(), computeW());
+            _cachedBW.compareAndSet(null, bw);
+        }
+        return bw;
+    }
+
     /**
      * Returns the signed distance from the origin to the separating
      * hyperplane. See the libSVM FAQ #804,
@@ -255,19 +294,9 @@ public class SVMClassifier
     {
         // FIXME: This is only valid for 1-class SVM and 2-class SVM with
         //        classes -1.0 and 1.0.
-        double sign = (_model.label != null && _model.label[0] == -1.0)
+        double sign = (_model.label != null && _model.label[0] == -1)
                       ? -1.0 : 1.0;
         return sign * -_model.rho[0];
-    }
-
-    private double[] getW()
-    {
-        double[] w = _cachedW.get();
-        if (w == null) {
-            w = computeW();
-            _cachedW.compareAndSet(null, w);
-        }
-        return w;
     }
 
     /**
@@ -282,13 +311,15 @@ public class SVMClassifier
     {
         // FIXME: This is only valid for 1-class SVM and 2-class SVM with
         //        classes -1.0 and 1.0.
-        double sign = (_model.label != null && _model.label[0] == -1.0)
+        double sign = (_model.label != null && _model.label[0] == -1)
                       ? -1.0 : 1.0;
         double[] w = new double[getAttributeCount()];
-        for (int l = 0; l < _model.l; l++) {
-            for (int i = 0; i < _model.SV[l].length; i++) {
-                w[_model.SV[l][i].index] +=
-                    sign * _model.sv_coef[0][l] * _model.SV[l][i].value;
+        for (int sv = 0; sv < _model.l; sv++) {
+//            System.out.print(" _model.SV[" + sv +
+//                             "].length: " +  _model.SV[sv].length);
+            for (int i = 0; i < _model.SV[sv].length; i++) {
+                w[_model.SV[sv][i].index] +=
+                    sign * _model.sv_coef[0][sv] * _model.SV[sv][i].value;
             }
         }
         return w;
@@ -299,7 +330,7 @@ public class SVMClassifier
     {
         // Save the classifier parameters.
         oos.writeObject(_parameters);
-        oos.writeObject(_cachedW);
+        oos.writeObject(_cachedBW);
         // Save the model if it has been trained.
         if (_model != null) {
             // Create a (likely) unique file name for the Java libsvm model.
@@ -323,7 +354,7 @@ public class SVMClassifier
     {
         // Load the classifier parameters.
         _parameters = (svm_parameter)ois.readObject();
-        _cachedW = (AtomicReference<double[]>)ois.readObject();
+        _cachedBW = (AtomicReference<ImmutableEntry>)ois.readObject();
         // Load the model file name from the Java input stream.
         String fileName = (String)ois.readObject();
         if (fileName != null) {
@@ -336,6 +367,7 @@ public class SVMClassifier
         // Replace the svm print_string_function with a no-op.
         svm.svm_set_print_string_function(new libsvm.svm_print_interface() {
             public void print(String s) {
+                //System.out.print(s);
             }
         });
     }

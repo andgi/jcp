@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015  Anders Gidenstam
+// Copyright (C) 2015, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -38,7 +38,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     /**
      * Internal array of svm_nodes nodes as the Java version of libsvm expects.
      */
-    svm_node[] nodes;
+    svm_node[] _nodes;
 
     /**
      * Constructs a matrix with a copy of the given values.
@@ -51,11 +51,11 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     {
         setUp(values.length);
         // FIXME: The result is always a dense vector.
-        nodes = new svm_node[values.length];
+        _nodes = new svm_node[values.length];
         for (int i = 0; i < values.length; i++) {
-            nodes[i] = new svm_node();
-            nodes[i].index = i;
-            nodes[i].value = values[i];
+            _nodes[i] = new svm_node();
+            _nodes[i].index = i;
+            _nodes[i].value = values[i];
         }
     }
 
@@ -74,11 +74,11 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
                                 double[] values)
     {
         setUp(columns);
-        nodes = new svm_node[indices.length];
+        _nodes = new svm_node[indices.length];
         for (int i = 0; i < indices.length; i++) {
-            nodes[i] = new svm_node();
-            nodes[i].index = indices[i];
-            nodes[i].value = values[i];
+            _nodes[i] = new svm_node();
+            _nodes[i].index = indices[i];
+            _nodes[i].value = values[i];
         }
     }
 
@@ -92,14 +92,14 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     public SparseDoubleMatrix1D(int columns)
     {
         setUp(columns);
-        nodes = new svm_node[0];
+        _nodes = new svm_node[0];
     }
 
     SparseDoubleMatrix1D(int columns, svm_node[] nodes)
     {
         setUp(columns);
         isNoView = false;
-        this.nodes = nodes;
+        _nodes = nodes;
     }
 
     /**
@@ -122,18 +122,21 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
         checkSize(other);
         if (other instanceof SparseDoubleMatrix1D) {
             // FIXME: Should this be a deep copy?
-            this.nodes = ((SparseDoubleMatrix1D)other).nodes;
+            _nodes = ((SparseDoubleMatrix1D)other)._nodes;
             return this;
         } else {
             IntArrayList indexList = new IntArrayList();
             DoubleArrayList valueList = new DoubleArrayList();
             other.getNonZeros(indexList, valueList);
-            nodes = new svm_node[indexList.size()];
+            _nodes = new svm_node[indexList.size()];
             for (int i = 0; i < indexList.size(); i++) {
-                nodes[i] = new svm_node();
-                nodes[i].index = indexList.get(i);
-                nodes[i].value = valueList.get(i);
+                _nodes[i] = new svm_node();
+                _nodes[i].index = indexList.get(i);
+                _nodes[i].value = valueList.get(i);
+//                System.out.print("(" + _nodes[i].index + ":" +
+//                                 _nodes[i].value + ")");
             }
+//            System.out.println();
             return this;
         }
     }
@@ -189,9 +192,9 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      */
     public double getQuick(int column)
     {
-        for (int i = 0; i < nodes.length; i++) {
-            if (nodes[i].index == column) {
-                return nodes[i].value;
+        for (int i = 0; i < _nodes.length; i++) {
+            if (_nodes[i].index == column) {
+                return _nodes[i].value;
             }
         }
         return 0.0;
@@ -213,23 +216,23 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     public void setQuick(int index, double value)
     {
         int i;
-        for (i = 0; i < nodes.length; i++) {
-            if (nodes[i].index == index) {
-                nodes[i].value = value;
+        for (i = 0; i < _nodes.length; i++) {
+            if (_nodes[i].index == index) {
+                _nodes[i].value = value;
                 return;
             }
         }
         if (value != 0.0) {
-            svm_node[] old = nodes;
-            nodes = new svm_node[old.length + 1];
+            svm_node[] old = _nodes;
+            _nodes = new svm_node[old.length + 1];
             for (i = 0; i < old.length && old[i].index < index; i++) {
-                nodes[i] = old[i];
+                _nodes[i] = old[i];
             }
-            nodes[i] = new svm_node();
-            nodes[i].index = index;
-            nodes[i].value = value;
+            _nodes[i] = new svm_node();
+            _nodes[i].index = index;
+            _nodes[i].value = value;
             for (; i < old.length; i++) {
-                nodes[i + 1] = old[i];
+                _nodes[i + 1] = old[i];
             }
         }
     }
