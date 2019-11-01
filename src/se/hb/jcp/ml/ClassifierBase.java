@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2016  Anders Gidenstam
+// Copyright (C) 2016, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -31,12 +31,11 @@ public abstract class ClassifierBase
 {
     private int _attributeCount = -1;
     private Double[] _labels = null;
+    private boolean _trained = false;
 
     @Override
     public final void fit(DoubleMatrix2D x, double[] y)
     {
-        internalFit(x, y);
-
         // Setup remaining classifier information.
         _attributeCount = x.columns();
         // FIXME: Extracting the set of labels from y is rather expensive
@@ -47,12 +46,16 @@ public abstract class ClassifierBase
             uniqueLabels.add(y[i]);
         }
         _labels = uniqueLabels.toArray(new Double[0]);
+
+        // Train the model.
+        internalFit(x, y);
+        _trained = true;
     }
 
     @Override
     public final boolean isTrained()
     {
-        return getAttributeCount() != -1;
+        return _trained;
     }
 
     @Override

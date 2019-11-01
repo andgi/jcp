@@ -29,15 +29,18 @@ import de.bwaldvogel.liblinear.*;
 
 import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IClassProbabilityClassifier;
 
 public class LinearClassifier
     extends ClassifierBase
-    implements java.io.Serializable
+    implements IClassProbabilityClassifier,
+               java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected JSONObject _jsonParameters;
     protected Model _model;
+    private   boolean _switchProbabilities = false;
 
     public LinearClassifier()
     {
@@ -72,7 +75,13 @@ public class LinearClassifier
         problem.y = y;
 
         _model = Linear.train(problem, parameters);
-
+        _switchProbabilities =
+            (double)_model.getLabels()[0] != (double)getLabels()[0];
+        //System.out.println("jliblinear.LinearClassifier.internalFit(): " +
+        //                   "_switchProbabilities = " +
+        //                   (double)_model.getLabels()[0] + " != " +
+        //                   (double)getLabels()[0] + " = " +
+        //                   _switchProbabilities);
     }
 
     public IClassifier fitNew(DoubleMatrix2D x, double[] y)
@@ -93,6 +102,36 @@ public class LinearClassifier
         }
 
         return Linear.predict(_model, tmp_instance._nodes);
+    }
+
+    public double predict(DoubleMatrix1D instance,
+                          double[] probabilityEstimates)
+    {
+        SparseDoubleMatrix1D tmp_instance;
+        if (instance instanceof SparseDoubleMatrix1D) {
+            tmp_instance = (SparseDoubleMatrix1D)instance;
+        } else {
+            tmp_instance = new SparseDoubleMatrix1D(instance.size());
+            tmp_instance.assign(instance);
+        }
+
+        double prediction = Linear.predictProbability(_model,
+                                                      tmp_instance._nodes,
+                                                      probabilityEstimates);
+        // jliblinear seem to use the reverse order of labels, so reverse
+        // the array of probability estimates before returning them.
+        // FIXME: Currently using Model.getLabels() and this.getLabels() to
+        //        ensure compatibility.
+        if (_switchProbabilities) {
+            int i = 0;
+            int j = probabilityEstimates.length-1;
+            for (; i < j; i++, j--) {
+                double tmp = probabilityEstimates[i];
+                probabilityEstimates[i] = probabilityEstimates[j];
+                probabilityEstimates[j] = tmp;
+            }
+        }
+        return prediction;
     }
 
     public DoubleMatrix1D nativeStorageTemplate()

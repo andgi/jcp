@@ -34,13 +34,14 @@ import se.hb.jcp.ml.ClassifierBase;
 
 public class SVMClassifier
     extends ClassifierBase
-    implements ISVMClassifier, //IClassProbabilityClassifier // FIXME: disabled.
+    implements ISVMClassifier, IClassProbabilityClassifier,
                java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected svm_parameter _parameters;
     protected svm_model _model;
+    private   boolean _switchProbabilities = false;
 
     class ImmutableEntry implements java.io.Serializable
     {
@@ -173,20 +174,27 @@ public class SVMClassifier
         SparseDoubleMatrix2D tmp_x;
         if (x instanceof SparseDoubleMatrix2D) {
             tmp_x = (SparseDoubleMatrix2D)x;
+            // FIXME: Look at each row so that the matrix is properly updated.
+            for (int r = 0; r < tmp_x.rows(); ++r) {
+                tmp_x.viewRow(r).cardinality();
+            }
         } else {
             tmp_x = new SparseDoubleMatrix2D(x.rows(), x.columns());
             tmp_x.assign(x);
         }
-        // FIXME: Debug message.
-//        System.out.println("jlibsvm.SVMClassifier.internalFit: tmp_x is " +
-//                           tmp_x.columns() + "x" + tmp_x.rows() + " and has " +
-//                           tmp_x.cardinality() + " non-zeros.");
         svm_problem problem = new svm_problem();
         problem.l = y.length;
         problem.x = tmp_x._rows;
         problem.y = y;
 
         _model = svm.svm_train(problem, _parameters);
+        _switchProbabilities =
+            (double)_model.label[0] != (double)getLabels()[0];
+        //System.out.println("jlibsvm.SVMClassifier.internalFit(): " +
+        //                   "_switchProbabilities = " +
+        //                   (double)_model.label[0] + " != " +
+        //                   (double)getLabels()[0] + " = " +
+        //                   _switchProbabilities);
 
         _cachedBW.compareAndSet(_cachedBW.get(), null);
     }
@@ -227,17 +235,16 @@ public class SVMClassifier
                                                         probabilityEstimates);
         // jlibsvm seem to use the reverse order of labels, so reverse
         // the array of probability estimates before returning them.
-        // FIXME: Verify for more data sets. Use svm_model.label[c] and
-        //        this.getLabels() to ensure compatibility.
-        // FIXME: Disabled for the time being as it seems jlibsvm
-        //        always return the same probabilities for all instances.
-        //        An issue in the default configuration?
-        int i = 0;
-        int j = probabilityEstimates.length-1;
-        for (; i < j; i++, j--) {
-            double tmp = probabilityEstimates[i];
-            probabilityEstimates[i] = probabilityEstimates[j];
-            probabilityEstimates[j] = tmp;
+        // FIXME: Currently using svm_model.label[c] and this.getLabels() to
+        //        ensure compatibility.
+        if (_switchProbabilities) {
+            int i = 0;
+            int j = probabilityEstimates.length-1;
+            for (; i < j; i++, j--) {
+                double tmp = probabilityEstimates[i];
+                probabilityEstimates[i] = probabilityEstimates[j];
+                probabilityEstimates[j] = tmp;
+            }
         }
         return prediction;
     }
