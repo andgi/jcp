@@ -338,6 +338,8 @@ public class SVMClassifier
         // Save the classifier parameters.
         oos.writeObject(_parameters);
         oos.writeObject(_cachedBW);
+        oos.writeObject(_switchProbabilities);
+
         // Save the model if it has been trained.
         if (_model != null) {
             // Create a (likely) unique file name for the Java libsvm model.
@@ -362,6 +364,7 @@ public class SVMClassifier
         // Load the classifier parameters.
         _parameters = (svm_parameter)ois.readObject();
         _cachedBW = (AtomicReference<ImmutableEntry>)ois.readObject();
+        _switchProbabilities = (boolean)ois.readObject();
         // Load the model file name from the Java input stream.
         String fileName = (String)ois.readObject();
         if (fileName != null) {

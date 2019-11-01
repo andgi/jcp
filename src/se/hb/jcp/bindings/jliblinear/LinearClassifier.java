@@ -199,6 +199,8 @@ public class LinearClassifier
         } else {
             oos.writeObject(null);
         }
+        // Save the _switchProbabilities part.
+        oos.writeObject(_switchProbabilities);
 
         // Save the model if it has been trained.
         if (_model != null) {
@@ -226,6 +228,8 @@ public class LinearClassifier
         if (jsonText != null) {
             _jsonParameters = new JSONObject(jsonText);
         }
+        // Load the _switchProbabilities part.
+        _switchProbabilities = (boolean)ois.readObject();
 
         // Load model file name from the Java input stream.
         String fileName = (String)ois.readObject();
