@@ -41,7 +41,7 @@ static void free_svm_problem(struct svm_problem* problem);
 static struct svm_parameter* svm_parameter_from_java(JNIEnv* env,
                                                      jobject jparam);
 static void free_svm_parameter(struct svm_parameter* param);
-static void   compute_w(struct svm_model* model, double w[]);
+static void   compute_w(struct svm_model* model, double* w, long no_attributes);
 static double compute_b(struct svm_model* model);
 static void print_func(const char* str);
 
@@ -631,23 +631,34 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1distance_1from_1separating_1plan
 {
     struct svm_model* model = (struct svm_model*)jmodel_ptr;
     struct svm_node*  instance = *(struct svm_node **)jinstance_ptr;
+    if (env->ExceptionOccurred()) {
+        std::cerr
+            << "Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1distance_1from_1separating_1plane():"
+            << " Java exception at argument conversion."
+            << std::endl;
+        return 0.0;
+    }
 
     // FIXME: This is only valid for 1-class SVM and 2-class SVM with
     //        classes -1.0 and 1.0.
     // See the libSVM FAQ #804,
     // http://www.csie.ntu.edu.tw/~cjlin/libsvm/faq.html#f804 for the internal
     // details.
-    double* w = (double*)std::calloc(sizeof(double), attribute_count);
-    compute_w(model, w);
+    double* w = (double*)std::calloc(attribute_count, sizeof(double));
+    compute_w(model, w, attribute_count);
     double distance = compute_b(model);
 
     if (model->nr_class == 2) {
-        for (int i = 0; instance[i].index >= 0; i++) {
+        int last = -1; // FIXME: There appears to be elements with index 0 last.
+        for (int i = 0; (last < instance[i].index) &&
+                        (instance[i].index < attribute_count); i++) {
             distance += w[instance[i].index] * instance[i].value;
+            last = instance[i].index;
         }
     } else {
         // Not implemented.
     }
+
     std::free(w);
     return distance;
 }
@@ -1254,16 +1265,19 @@ static void free_svm_parameter(struct svm_parameter* param)
     std::free(param);
 }
 
-static void compute_w(struct svm_model* model, double w[])
+static void compute_w(struct svm_model* model, double* w, long no_attributes)
 {
     // FIXME: This is only valid for 1-class SVM and 2-class SVM with
     //        classes -1.0 and 1.0.
     double sign = (model->label != 0 && model->label[0] == -1.0)
                   ? -1.0 : 1.0;
     for (int l = 0; l < model->l; l++) {
-        for (int i = 0; model->SV[l][i].index >= 0; i++) {
+        int last = -1; // FIXME: There appears to be elements with index 0 last.
+        for (int i = 0; (last < model->SV[l][i].index) &&
+                        (model->SV[l][i].index < no_attributes); i++) {
             w[model->SV[l][i].index] +=
                 sign * model->sv_coef[0][l] * model->SV[l][i].value;
+            last = model->SV[l][i].index;
         }
     }
 }
