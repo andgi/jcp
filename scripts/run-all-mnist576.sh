@@ -6,6 +6,7 @@ export TRAINING_SET=$DIR/../../pisvm-datasets/classification/mnist_train_576_rbf
 
 export TEST_SET=$DIR/../../pisvm-datasets/classification/mnist_test_576_rbf_8vr.500.dat
 
+export TRAINING_ARGS="-nc 0"
 
 $DIR/train-all.sh &> output.txt
 

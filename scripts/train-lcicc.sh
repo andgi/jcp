@@ -11,21 +11,21 @@ BASE=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..
 # Train the classifiers
 
 echo;
-echo "Training libsvm LCICC."
-$TIME $BASE/jcp_train.sh -lccc -c 0 -m mnist_576_rbf_8vr.lcicc.libsvmmodel $TRAINING_SET 
+echo "Training libsvm LCICC." $BASE/jcp_train.sh -lccc -c 0 -m mnist_576_rbf_8vr.lcicc.libsvmmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -lccc -c 0 -m mnist_576_rbf_8vr.lcicc.libsvmmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training jlibsvm LCICC."
-$TIME $BASE/jcp_train.sh -lccc -c 1 -m mnist_576_rbf_8vr.lcicc.jlibsvmmodel $TRAINING_SET
+echo "Training jlibsvm LCICC." $BASE/jcp_train.sh -lccc -c 1 -m mnist_576_rbf_8vr.lcicc.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -lccc -c 1 -m mnist_576_rbf_8vr.lcicc.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training jliblinear LCICC."
-$TIME $BASE/jcp_train.sh -lccc -c 2 -m mnist_576_rbf_8vr.lcicc.jliblinearmodel $TRAINING_SET
+echo "Training jliblinear LCICC." $BASE/jcp_train.sh -lccc -c 2 -m mnist_576_rbf_8vr.lcicc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -lccc -c 2 -m mnist_576_rbf_8vr.lcicc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training OpenCV SVM LCICC."
-$TIME $BASE/jcp_train.sh -lccc -c 3 -m mnist_576_rbf_8vr.lcicc.ocvsvmmodel $TRAINING_SET
+echo "Training OpenCV SVM LCICC." $BASE/jcp_train.sh -lccc -c 3 -m mnist_576_rbf_8vr.lcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -lccc -c 3 -m mnist_576_rbf_8vr.lcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training OpenCV RF LCICC."
-$TIME $BASE/jcp_train.sh -lccc -c 4 -m mnist_576_rbf_8vr.lcicc.ocvrfmodel $TRAINING_SET
+echo "Training OpenCV RF LCICC." $BASE/jcp_train.sh -lccc -c 4 -m mnist_576_rbf_8vr.lcicc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -lccc -c 4 -m mnist_576_rbf_8vr.lcicc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
