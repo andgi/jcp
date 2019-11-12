@@ -421,7 +421,7 @@ public class jcp_train
         throws IOException
     {
         long t1 = System.currentTimeMillis();
-        _training = DataSetTools.loadDataSet(trainingSetFileName);
+        _training = DataSetTools.loadDataSet(trainingSetFileName, _classifier);
         SimpleEntry<double[],SortedSet<Double>> pair =
             DataSetTools.extractClasses(_training);
         double[] classes = pair.getKey();
@@ -429,7 +429,8 @@ public class jcp_train
         long t2 = System.currentTimeMillis();
         System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
 
-        _calibration = DataSetTools.loadDataSet(calibrationSetFileName);
+        _calibration = DataSetTools.loadDataSet(calibrationSetFileName,
+                                                _classifier);
         DataSet mpcCalibration = null;
         if (_useMPC) {
             DataSet newCalibration = new DataSet();
@@ -471,13 +472,13 @@ public class jcp_train
                      classes, _useLCCC);
 
         System.out.println("_training.x " + _training.x.getClass().getName() +
-                           "(" + _training.x.columns() + "x" +
-                           _training.x.rows() + "; " +
+                           "(" + _training.x.rows() + "x" +
+                           _training.x.columns() + "; " +
                            _training.x.cardinality() + " nonzeros)");
         System.out.println("_calibration.x " +
                            _calibration.x.getClass().getName() +
-                           "(" + _calibration.x.columns() + "x" +
-                           _calibration.x.rows() + "; " +
+                           "(" + _calibration.x.rows() + "x" +
+                           _calibration.x.columns() + "; " +
                            _calibration.x.cardinality() + " nonzeros)");
         ((InductiveConformalClassifier)icc).fit(_training.x, _training.y,
                                                 _calibration.x, _calibration.y);

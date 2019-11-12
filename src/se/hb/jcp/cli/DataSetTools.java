@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2019  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -25,6 +25,7 @@ import cern.colt.matrix.DoubleMatrix1D;
 
 import se.hb.jcp.cp.*;
 import se.hb.jcp.io.*;
+import se.hb.jcp.ml.IClassifier;
 
 /**
  * Higher-level tools for DataSets.
@@ -60,6 +61,25 @@ public class DataSetTools
     }
 
     public static DataSet loadDataSet(String filename,
+                                      IClassifier classifier)
+        throws IOException
+    {
+        DataSet dataSet = loadDataSet(filename,
+                                      classifier.nativeStorageTemplate());
+
+        if (classifier.isTrained() &&
+            dataSet.x.columns() != classifier.getAttributeCount()) {
+            System.err.println
+                ("Warning: " +
+                 "The number of attributes in the data set, " +
+                 dataSet.x.columns() + ", " +
+                 "does not match the number of attributes in the model, " +
+                 classifier.getAttributeCount() + ".");
+        }
+        return dataSet;
+    }
+
+    public static DataSet loadDataSet(String filename,
                                       DoubleMatrix1D template)
         throws IOException
     {
@@ -68,9 +88,11 @@ public class DataSetTools
         DataSet dataSet = new libsvmReader().read(file, template);
         file.close();
 
-        System.err.println("Loaded the dataset " + filename + " containing " +
+        System.err.println("Loaded the dataset " + filename + " (" +
+                           dataSet.x.getClass().getName() + ") containing " +
                            dataSet.x.rows() + " instances with " +
-                           dataSet.x.columns() + " attributes.");
+                           dataSet.x.columns() + " attributes and " +
+                           dataSet.x.cardinality() + " nonzeros.");
         return dataSet;
     }
 
