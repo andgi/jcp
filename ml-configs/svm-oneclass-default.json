@@ -2,10 +2,10 @@
     "svm_type": "ONE_CLASS",
     "kernel_type": "RBF",
     "degree": 3,
-    "gamma": 0.5,
+    "gamma": 0.05,
     "coef0": 0,
-    "C": 1,
-    "nu": 0.5,
+    "C": 1.0,
+    "nu": 0.1,
     "p": 0.1,
     "weights": {
     },

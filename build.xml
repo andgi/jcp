@@ -76,8 +76,8 @@
       <group title="JCP core" packages="se.hb.jcp.cp:se.hb.jcp.ml:se.hb.jcp.nc"/>
       <group title="JCP bindings" packages="se.hb.jcp.bindings.*"/>
       <group title="JCP CLI" packages="se.hb.jcp.cli"/>
-      <link offline="true" href="http://github.com/andgi/jcp.git/docs/api/" packagelistLoc="C:\tmp"/>
-      <link href="http://github.com/andgi/jcp.git/docs/api/"/>
+      <link offline="true" href="http://www.gidenstam.org/JCP/API/" packagelistLoc="C:\tmp"/>
+      <link href="http://www.gidenstam.org/JCP/API/"/>
     </javadoc>
   </target>
 
