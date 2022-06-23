@@ -292,7 +292,7 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1labels
      jlong     jmodel_ptr,
      jintArray jlabels)
 {
-    int* labels = env->GetIntArrayElements(jlabels, NULL);
+    jint* labels = env->GetIntArrayElements(jlabels, NULL);
 
     svm_get_labels((const struct svm_model*)jmodel_ptr, labels);
 
@@ -311,7 +311,7 @@ Java_se_hb_jcp_bindings_libsvm_svm_native_1svm_1get_1sv_1indices
      jlong     jmodel_ptr,
      jintArray jindices)
 {
-    int* indices = env->GetIntArrayElements(jindices, NULL);
+    jint* indices = env->GetIntArrayElements(jindices, NULL);
 
     svm_get_sv_indices((const struct svm_model*)jmodel_ptr, indices);
 
