@@ -189,7 +189,8 @@ public class SVMClassifier
 
         _model = svm.svm_train(problem, _parameters);
         _switchProbabilities =
-            (double)_model.label[0] != (double)getLabels()[0];
+            _model.label != null &&
+            ((double)_model.label[0] != (double)getLabels()[0]);
         //System.out.println("jlibsvm.SVMClassifier.internalFit(): " +
         //                   "_switchProbabilities = " +
         //                   (double)_model.label[0] + " != " +

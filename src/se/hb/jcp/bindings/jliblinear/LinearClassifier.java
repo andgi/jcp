@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016, 2019  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2019, 2021  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -29,11 +29,12 @@ import de.bwaldvogel.liblinear.*;
 
 import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.ISVMClassifier;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
 
 public class LinearClassifier
     extends ClassifierBase
-    implements IClassProbabilityClassifier,
+    implements ISVMClassifier, IClassProbabilityClassifier,
                java.io.Serializable
 {
     private static final SparseDoubleMatrix1D _storageTemplate =
@@ -125,13 +126,54 @@ public class LinearClassifier
         if (_switchProbabilities) {
             int i = 0;
             int j = probabilityEstimates.length-1;
-            for (; i < j; i++, j--) {
+            for (; i < j; ++i, --j) {
                 double tmp = probabilityEstimates[i];
                 probabilityEstimates[i] = probabilityEstimates[j];
                 probabilityEstimates[j] = tmp;
             }
         }
         return prediction;
+    }
+
+    /**
+     * Returns the signed distance between the separating hyperplane and the
+     * instance.
+     *
+     * @return the signed distance between the separating hyperplane and the instance.
+     */
+    public double distanceFromSeparatingPlane(DoubleMatrix1D instance)
+    {
+        // FIXME: This is only valid for 2-class LinearSVM and classes -1.0
+        //        and 1.0.
+        // FIXME: Unclear if this computation is ok?
+        double   b = _model.getBias();
+        double[] w = _model.getFeatureWeights();
+
+        if (!(_model.getNrFeature() == instance.size() - 1)) {
+            for (int i = 0; i < w.length; ++i) {
+                if (w[i] == 0.0) {
+                    System.out.println("  w[" + i + "] = 0.0");
+                }
+            }
+            throw
+                new UnsupportedOperationException("_model.getNrFeature() == " +
+                                                  _model.getNrFeature() +
+                                                  " and w.length == " +
+                                                  w.length +
+                                                  " and instance.size() == " +
+                                                  instance.size());
+        }
+
+        if (_model.getNrClass() == 2) {
+            double distance = b;
+            // FIXME: Which part of w is the first feature: 0 or 1?
+            for (int i = 0; i < instance.size(); ++i) {
+                distance += w[i] * instance.get(i);
+            }
+            return distance;
+        } else {
+            throw new UnsupportedOperationException("Not implemented");
+        }
     }
 
     public DoubleMatrix1D nativeStorageTemplate()
