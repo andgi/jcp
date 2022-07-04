@@ -2,11 +2,11 @@
 
 DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
 
-export TRAINING_SET=$DIR/../../pisvm-datasets/classification/mnist_train_576_rbf_8vr.500.dat
+export TRAINING_SET=$DIR/../../pisvm-datasets/classification/kddcup99_nvr_train.scale.100000.dat
 
-export TEST_SET=$DIR/../../pisvm-datasets/classification/mnist_test_576_rbf_8vr.500.dat
+export TEST_SET=$DIR/../../pisvm-datasets/classification/kddcup99_nvr_test.scale.dat
 
-export MODELNAME=mnist_576_rbf_8vr
+export MODELNAME=kddcup99_nvr
 
 export TRAINING_ARGS="-nc 0"
 

@@ -11,21 +11,21 @@ BASE=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )/..
 # Train the classifiers
 
 echo;
-echo "Training libsvm TCC." $BASE/jcp_train.sh -tcc -c 0 -m mnist_576_rbf_8vr.tcc.libsvmmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -tcc -c 0 -m mnist_576_rbf_8vr.tcc.libsvmmodel $TRAINING_ARGS $TRAINING_SET
+echo "Training libsvm TCC." $BASE/jcp_train.sh -tcc -c 0 -m $MODELNAME.tcc.libsvmmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -tcc -c 0 -m $MODELNAME.tcc.libsvmmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training jlibsvm TCC." $BASE/jcp_train.sh -tcc -c 1 -m mnist_576_rbf_8vr.tcc.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -tcc -c 1 -m mnist_576_rbf_8vr.tcc.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
+echo "Training jlibsvm TCC." $BASE/jcp_train.sh -tcc -c 1 -m $MODELNAME.tcc.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -tcc -c 1 -m $MODELNAME.tcc.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training jliblinear TCC." $BASE/jcp_train.sh -tcc -c 2 -m mnist_576_rbf_8vr.tcc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -tcc -c 2 -m mnist_576_rbf_8vr.tcc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
+echo "Training jliblinear TCC." $BASE/jcp_train.sh -tcc -c 2 -m $MODELNAME.tcc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -tcc -c 2 -m $MODELNAME.tcc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training OpenCV SVM TCC." $BASE/jcp_train.sh -tcc -c 3 -m mnist_576_rbf_8vr.tcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -tcc -c 3 -m mnist_576_rbf_8vr.tcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
+echo "Training OpenCV SVM TCC." $BASE/jcp_train.sh -tcc -c 3 -m $MODELNAME.tcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -tcc -c 3 -m $MODELNAME.tcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 
 echo;
-echo "Training OpenCV RF TCC." $BASE/jcp_train.sh -tcc -c 4 -m mnist_576_rbf_8vr.tcc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -tcc -c 4 -m mnist_576_rbf_8vr.tcc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
+echo "Training OpenCV RF TCC." $BASE/jcp_train.sh -tcc -c 4 -m $MODELNAME.tcc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -tcc -c 4 -m $MODELNAME.tcc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
