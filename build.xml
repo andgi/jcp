@@ -72,7 +72,7 @@
       </fileset>
 
       <doctitle><![CDATA[<h1>JCP - Java Conformal Prediction framework</h1>]]></doctitle>
-      <bottom><![CDATA[<i>Copyright &#169; 2014 - 2022  Anders Gidenstam.</i>]]></bottom>
+      <bottom><![CDATA[<i>Copyright &#169; 2014 - 2024  Anders Gidenstam.</i>]]></bottom>
       <group title="JCP core" packages="se.hb.jcp.cp:se.hb.jcp.ml:se.hb.jcp.nc"/>
       <group title="JCP bindings" packages="se.hb.jcp.bindings.*"/>
       <group title="JCP CLI" packages="se.hb.jcp.cli"/>
