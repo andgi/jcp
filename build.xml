@@ -1,4 +1,4 @@
-<project name="jcp" basedir="." default="all">
+<project name="jcp" basedir="." default="jar">
 
   <property name="src.dir"     value="src"/>
   <property name="jni.dir"     value="jni"/>
