@@ -11,6 +11,7 @@
     <fileset dir="${env.OCVJARDIR}" includes="opencv.jar" />
     <fileset dir="../libsvm-java" includes="libsvm.jar" />
     <fileset dir="../liblinear-java" includes="liblinear-java.jar" />
+    <fileset dir="../deeplearning4j/lib" includes="*.jar" />
   </path>
 
   <property name="build.dir"   value="build"/>
