@@ -10,27 +10,56 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.lossfunctions.LossFunctions;
 
+import cern.colt.matrix.DoubleMatrix1D;
+import cern.colt.matrix.DoubleMatrix2D;
+
+import org.json.JSONObject;
+
 import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassifier;
 
-public class NNClassifier {
-    public void test() {
-        int numInput = 784; // Taille des données MNIST (28x28)
-        int numHidden = 1000; // Nombre de neurones dans la couche cachée
-        int numOutput = 10; // Nombre de classes de sortie
-        double learningRate = 0.1;
+public class NNClassifier extends ClassifierBase{
+    
+    protected MultiLayerConfiguration _conf; 
+    protected MultiLayerNetwork _model; 
 
-        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .seed(12345)
-            .optimizationAlgo(OptimizationAlgorithm.STOCHASTIC_GRADIENT_DESCENT)
-            .list()
-            .layer(0, new DenseLayer.Builder().nIn(numInput).nOut(numHidden)
-                .activation(Activation.RELU).build())
-            .layer(1, new OutputLayer.Builder(LossFunctions.LossFunction.NEGATIVELOGLIKELIHOOD)
-                .nIn(numHidden).nOut(numOutput).activation(Activation.SOFTMAX).build())
-            .build();
+    public NNClassifier() {
+    }
+    public NNClassifier(JSONObject configuration) {
+        this();
+        //TOFIX I dont know if its work like this ? 
+        _conf = MultiLayerConfiguration.fromJson(configuration.toString());
+    }
 
-        MultiLayerNetwork model = new MultiLayerNetwork(conf);
-        model.init();
+    public NNClassifier(MultiLayerConfiguration configuration) {
+        _conf = configuration;
+        _model = new MultiLayerNetwork(_conf);
+        _model.init();
+    }
+
+    @Override
+    public IClassifier fitNew(DoubleMatrix2D x, double[] y) {
+        NNClassifier clone = new NNClassifier(_conf); 
+        // TOFIX it only fit with Dataset object ! 
+        //clone.fit(x);
+        return clone;
+    }
+
+    @Override
+    public double predict(DoubleMatrix1D instance) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'predict'");
+    }
+
+    @Override
+    public DoubleMatrix1D nativeStorageTemplate() {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'nativeStorageTemplate'");
+    }
+
+    @Override
+    protected void internalFit(DoubleMatrix2D x, double[] y) {
+        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException("Unimplemented method 'internalFit'");
     }
 }
