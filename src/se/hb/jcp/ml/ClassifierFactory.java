@@ -32,7 +32,8 @@ public final class ClassifierFactory
         {
             "se.hb.jcp.bindings.libsvm.SVMClassifier",
             "se.hb.jcp.bindings.jlibsvm.SVMClassifier",
-            "se.hb.jcp.bindings.jliblinear.LinearClassifier"
+            "se.hb.jcp.bindings.jliblinear.LinearClassifier",
+            "se.hb.jcp.bindings.deeplearning4j.NNClassifier"
         };
 
     private ClassifierFactory()
@@ -59,6 +60,8 @@ public final class ClassifierFactory
             return new se.hb.jcp.bindings.jlibsvm.SVMClassifier(config);
         case 2:
             return new se.hb.jcp.bindings.jliblinear.LinearClassifier(config);
+        case 3:
+            return new se.hb.jcp.bindings.deeplearning4j.NNClassifier(config);
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
         }
