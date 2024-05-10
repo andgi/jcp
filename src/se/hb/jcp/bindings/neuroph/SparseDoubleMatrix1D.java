@@ -17,13 +17,14 @@
 // The public interface is based on cern.colt.matrix.DoubleMatrix1D.
 package se.hb.jcp.bindings.neuroph;
 
-import cern.colt.matrix.DoubleMatrix1D;
-import cern.colt.matrix.DoubleMatrix2D;
+import org.neuroph.core.Neuron;
+import org.neuroph.core.input.WeightedSum;
+import org.neuroph.core.transfer.Linear;
+
 import cern.colt.list.DoubleArrayList;
 import cern.colt.list.IntArrayList;
-
-import de.bwaldvogel.liblinear.Feature;
-import de.bwaldvogel.liblinear.FeatureNode;
+import cern.colt.matrix.DoubleMatrix1D;
+import cern.colt.matrix.DoubleMatrix2D;
 
 /**
  * Class for sparse 1-d matrices (aka <i>vectors</i>) holding
@@ -34,6 +35,7 @@ import de.bwaldvogel.liblinear.FeatureNode;
 */
 // TODO: Make sure to adhere to colt's conventions.
 
+
 public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
 {
     /**
@@ -41,7 +43,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * liblinear expects.
      * NOTE: Internal Feature indices MUST start from 1.
      */
-    Feature[] _nodes;
+    Neuron[] _neurons;
 
     /**
      * Constructs a matrix with a copy of the given values.
@@ -50,13 +52,13 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      *
      * @param values the values to be filled into the new matrix.
      */
-    public SparseDoubleMatrix1D(double[] values)
-    {
+    public SparseDoubleMatrix1D(double[] values) {
         setUp(values.length);
-        // FIXME: The result is always a dense vector.
-        _nodes = new Feature[values.length];
+        _neurons = new Neuron[values.length];
         for (int i = 0; i < values.length; i++) {
-            _nodes[i] = new FeatureNode(i+1, values[i]);
+            Neuron neuron = new Neuron(new WeightedSum(), new Linear());
+            neuron.setInput(values[i]);
+            _neurons[i] = neuron;
         }
     }
 
@@ -70,14 +72,13 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param indices  the indices to be filled in the new matrix.
      * @param values   the values to be filled into the new matrix.
      */
-    public SparseDoubleMatrix1D(int      columns,
-                                int[]    indices,
-                                double[] values)
-    {
+    public SparseDoubleMatrix1D(int columns, int[] indices, double[] values) {
         setUp(columns);
-        _nodes = new Feature[indices.length];
+        _neurons = new Neuron[indices.length];
         for (int i = 0; i < indices.length; i++) {
-            _nodes[i] = new FeatureNode(indices[i]+1, values[i]);
+            Neuron neuron = new Neuron(new WeightedSum(), new Linear());
+            neuron.setInput(values[i]);
+            _neurons[i] = neuron;
         }
     }
 
@@ -88,17 +89,15 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @throws IllegalArgumentException if
                <tt>columns&lt;0 || columns &gt; Integer.MAX_VALUE</tt>.
     */
-    public SparseDoubleMatrix1D(int columns)
-    {
+    public SparseDoubleMatrix1D(int columns) {
         setUp(columns);
-        _nodes = new Feature[0];
+        _neurons = new Neuron[0];
     }
 
-    SparseDoubleMatrix1D(int columns, Feature[] nodes)
-    {
+    SparseDoubleMatrix1D(int columns, Neuron[] neurons) {
         setUp(columns);
         isNoView = false;
-        _nodes = nodes;
+        _neurons = neurons;
     }
 
     /**
@@ -113,28 +112,29 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @return <tt>this</tt> (for convenience only).
      * @throws      IllegalArgumentException if <tt>size() != other.size()</tt>.
      */
-    public DoubleMatrix1D assign(DoubleMatrix1D other)
-    {
-        if (other==this) {
+    public DoubleMatrix1D assign(DoubleMatrix1D other) {
+        if (other == this) {
             return this;
         }
         checkSize(other);
         if (other instanceof SparseDoubleMatrix1D) {
             // FIXME: Should this be a deep copy?
-            _nodes = ((SparseDoubleMatrix1D)other)._nodes;
+            _neurons = ((SparseDoubleMatrix1D) other)._neurons;
             return this;
         } else {
             IntArrayList indexList = new IntArrayList();
             DoubleArrayList valueList = new DoubleArrayList();
             other.getNonZeros(indexList, valueList);
-            _nodes = new Feature[indexList.size()];
+            _neurons = new Neuron[indexList.size()];
             for (int i = 0; i < indexList.size(); i++) {
-                _nodes[i] =
-                    new FeatureNode(indexList.get(i)+1, valueList.get(i));
+                Neuron neuron = new Neuron(new WeightedSum(), new Linear());
+                neuron.setInput(valueList.get(i));
+                _neurons[i] = neuron;
             }
             return this;
         }
     }
+
 
     /**
      * Construct and returns a new empty matrix <i>of the same dynamic
@@ -185,14 +185,11 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param column  the index of the column-coordinate.
      * @return the value at the specified coordinate.
      */
-    public double getQuick(int column)
-    {
-        for (int i = 0; i < _nodes.length; i++) {
-            if (_nodes[i].getIndex() == column+1) {
-                return _nodes[i].getValue();
-            }
+    public double getQuick(int column) {
+        if (column < 0 || column >= _neurons.length) {
+            return 0.0; // Out of bounds, return default value
         }
-        return 0.0;
+        return _neurons[column].getNetInput();
     }
 
     /**
@@ -208,27 +205,13 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      * @param index  the index of the cell.
      * @param value  the value to be filled into the specified cell.
      */
-    public void setQuick(int index, double value)
-    {
-        int i;
-        for (i = 0; i < _nodes.length; i++) {
-            if (_nodes[i].getIndex() == index+1) {
-                _nodes[i].setValue(value);
-                return;
-            }
+    public void setQuick(int index, double value) {
+        if (index < 0 || index >= _neurons.length) {
+            return; // Out of bounds, do nothing
         }
-        if (value != 0.0) {
-            Feature[] old = _nodes;
-            _nodes = new FeatureNode[old.length + 1];
-            for (i = 0; i < old.length && old[i].getIndex() < index+1; i++) {
-                _nodes[i] = old[i];
-            }
-            _nodes[i] = new FeatureNode(index+1, value);
-            for (; i < old.length; i++) {
-                _nodes[i + 1] = old[i];
-            }
-        }
+        _neurons[index].setInput(value);
     }
+    
 
     /**
      * Construct and returns a new selection view.

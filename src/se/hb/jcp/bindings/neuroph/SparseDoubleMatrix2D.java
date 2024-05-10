@@ -20,8 +20,9 @@ package se.hb.jcp.bindings.neuroph;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
-import de.bwaldvogel.liblinear.Feature;
-import de.bwaldvogel.liblinear.FeatureNode;
+import org.neuroph.core.Neuron;
+import org.neuroph.core.input.WeightedSum;
+import org.neuroph.core.transfer.Linear;
 
 /**
  * Class for sparse 2-d matrices holding <tt>double</tt> elements in
@@ -39,7 +40,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
      * liblinear expects.
      * NOTE: Internal Feature indices MUST start from 1.
      */
-    Feature[][] _rows;
+    Neuron[][] _rows;
 
     /**
      * SparseDoubleMatrix1D views of rows in this matrix.
@@ -60,7 +61,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     {
         setUp(rows, columns);
         for (int r = 0; r < rows; r++) {
-            _rows[r] = new Feature[0];
+            _rows[r] = new Neuron[0];
         }
     }
 
@@ -161,7 +162,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     {
         SparseDoubleMatrix1D rowView = (SparseDoubleMatrix1D)viewRow(row);
         rowView.setQuick(column, value);
-        _rows[row] = rowView._nodes;
+        _rows[row] = rowView._neurons;
     }
 
     /**
@@ -194,7 +195,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
         //         This will actually be one step behind when copying
         //         rows between matrices since this view is updated after
         //         it is fetched.
-        _rows[row] = _rowViews[row]._nodes;
+        _rows[row] = _rowViews[row]._neurons;
         return _rowViews[row];
     }
 
@@ -212,9 +213,9 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
         checkRow(row);
         SparseDoubleMatrix1D newRow =
             new SparseDoubleMatrix1D(columns, indices, values);
-        _rows[row] = newRow._nodes;
+        _rows[row] = newRow._neurons;
         if (_rowViews[row] != null) {
-            _rowViews[row]._nodes = newRow._nodes;
+            _rowViews[row]._neurons = newRow._neurons;
         }
     }
 
@@ -242,7 +243,7 @@ public class SparseDoubleMatrix2D extends cern.colt.matrix.DoubleMatrix2D
     protected void setUp(int rows, int columns)
     {
         super.setUp(rows, columns);
-        _rows = new Feature[rows][];
+        _rows = new Neuron[rows][];
         _rowViews = new SparseDoubleMatrix1D[rows];
     }
 }
