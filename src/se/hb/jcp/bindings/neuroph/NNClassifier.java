@@ -1,4 +1,4 @@
-package se.hb.jcp.bindings.deeplearning4j;
+package se.hb.jcp.bindings.neuroph;
 
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
