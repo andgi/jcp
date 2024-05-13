@@ -22,10 +22,10 @@ echo;
 echo "Training jliblinear ICC." $BASE/jcp_train.sh -c 2 -m $MODELNAME.icc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -c 2 -m $MODELNAME.icc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 
-echo;
-echo "Training OpenCV SVM ICC." $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
+#echo;
+#echo "Training OpenCV SVM ICC." $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
+#$TIME $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 
-echo;
-echo "Training OpenCV RF ICC." $BASE/jcp_train.sh -c 4 -m $MODELNAME.icc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -c 4 -m $MODELNAME.icc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
+#echo;
+#echo "Training OpenCV RF ICC." $BASE/jcp_train.sh -c 4 -m $MODELNAME.icc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
+#$TIME $BASE/jcp_train.sh -c 4 -m $MODELNAME.icc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET

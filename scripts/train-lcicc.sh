@@ -22,10 +22,10 @@ echo;
 echo "Training jliblinear LCICC." $BASE/jcp_train.sh -lccc -c 2 -m $MODELNAME.lcicc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -lccc -c 2 -m $MODELNAME.lcicc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 
-echo;
-echo "Training OpenCV SVM LCICC." $BASE/jcp_train.sh -lccc -c 3 -m $MODELNAME.lcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
+#echo;
+#echo "Training OpenCV SVM LCICC." $BASE/jcp_train.sh -lccc -c 3 -m $MODELNAME.lcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 #$TIME $BASE/jcp_train.sh -lccc -c 3 -m $MODELNAME.lcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 
-echo;
-echo "Training OpenCV RF LCICC." $BASE/jcp_train.sh -lccc -c 4 -m $MODELNAME.lcicc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
+#echo;
+#echo "Training OpenCV RF LCICC." $BASE/jcp_train.sh -lccc -c 4 -m $MODELNAME.lcicc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET
 #$TIME $BASE/jcp_train.sh -lccc -c 4 -m $MODELNAME.lcicc.ocvrfmodel $TRAINING_ARGS $TRAINING_SET

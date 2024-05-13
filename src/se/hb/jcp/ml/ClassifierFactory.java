@@ -33,8 +33,8 @@ public final class ClassifierFactory
             "se.hb.jcp.bindings.libsvm.SVMClassifier",
             "se.hb.jcp.bindings.jlibsvm.SVMClassifier",
             "se.hb.jcp.bindings.jliblinear.LinearClassifier",
-            "se.hb.jcp.bindings.opencv.SVMClassifier",
-            "se.hb.jcp.bindings.opencv.RandomForestClassifier"
+            //"se.hb.jcp.bindings.opencv.SVMClassifier",
+            //"se.hb.jcp.bindings.opencv.RandomForestClassifier"
         };
 
     private ClassifierFactory()
@@ -61,10 +61,11 @@ public final class ClassifierFactory
             return new se.hb.jcp.bindings.jlibsvm.SVMClassifier(config);
         case 2:
             return new se.hb.jcp.bindings.jliblinear.LinearClassifier(config);
-        case 3:
+/*      case 3:
             return new se.hb.jcp.bindings.opencv.SVMClassifier(config);
         case 4:
             return new se.hb.jcp.bindings.opencv.RandomForestClassifier(config);
+*/
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
         }
