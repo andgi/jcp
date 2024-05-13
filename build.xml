@@ -12,6 +12,7 @@
     <fileset dir="../libsvm-java" includes="libsvm.jar" />
     <fileset dir="../liblinear-java" includes="liblinear-java.jar" />
     <fileset dir="../neuroph-2.98/Framework" includes="*.jar" />
+    <fileset dir="../neuroph-2.98/Framework/libs" includes="*.jar" />
   </path>
 
   <property name="build.dir"   value="build"/>

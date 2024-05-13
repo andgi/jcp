@@ -17,6 +17,8 @@ import se.hb.jcp.ml.IClassProbabilityClassifier;
 import se.hb.jcp.ml.IClassifier;
 
 import java.io.File;
+import java.util.List;
+import java.util.ArrayList;
 
 public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier {
     private static final SparseDoubleMatrix1D _storageTemplate =
@@ -31,7 +33,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         //we can think about a json file with the number of features, then hidden layers and output 
         //and transfert fonction ? 
         // and read weights ? 
-        _network = readJsonParammeters();
+        _network = createNetworkFromConfig(configuration);
     }
 
 
@@ -44,19 +46,28 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         _network = network;
     }
 
-    @Override
+    
     public IClassifier fitNew(DoubleMatrix2D x, double[] y) {
         NeuralNetwork newNetwork = createAndTrainNetwork(x, y);
         return new NNClassifier(newNetwork);
     }
 
-    @Override
+    
     public double predict(DoubleMatrix1D instance) {
-        return 0.0;
+        _network.setInput(instance.toArray());
+        _network.calculate();
+        return _network.getOutput()[0];
     }
 
     public double predict(DoubleMatrix1D instance, double[] probabilityEstimates) {
-        return 0.0;
+
+        _network.setInput(instance.toArray());
+    
+        _network.calculate();
+    
+        double[] output = _network.getOutput();
+        System.arraycopy(output, 0, probabilityEstimates, 0, output.length);
+        return output[0];
     }
 
     @Override
@@ -66,33 +77,65 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
     @Override
     protected void internalFit(DoubleMatrix2D x, double[] y) {
-
+        _network = createAndTrainNetwork(x, y);
     }
 
     private NeuralNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
-       
-        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, 2, 3, 1);
 
+        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, x.columns(), 3, 1);
+
+  
         DataSet dataSet = createDataSet(x, y);
-        
+
         neuralNetwork.learn(dataSet);
+
         return neuralNetwork;
     }
     private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
-        DataSet dataSet = new DataSet(1000, y.length);
-
+        DataSet dataSet = new DataSet(x.columns(), 1); 
+   
         for (int i = 0; i < x.rows(); i++) {
             double[] features = x.viewRow(i).toArray();
-            double label = y[i];
-            DataSetRow dataSetRow = new DataSetRow(features, new double[]{label});
-            //TOFIX
-            //dataSet.add(dataSetRow);
+            double[] label = {y[i]};
+            dataSet.add(features, label );
         }
         return dataSet;
     }
 
-    private NeuralNetwork readJsonParammeters() {
-        // TODO Auto-generated method stub
-        throw new UnsupportedOperationException("Unimplemented method 'readJsonParammeters'");
+    private NeuralNetwork createNetworkFromConfig(JSONObject config) {
+        List<Integer> neuronsInLayers = new ArrayList<>();
+        if (config == null) {
+            //default config
+        }
+        else {
+            if (config.has("networkType")) {
+                System.out.println("NETWORK");
+                
+            }
+            if (config.has("num_inputs")) {
+                int numInputs = config.getInt("num_inputs");
+                neuronsInLayers.add(numInputs);
+
+            }
+            if (config.has("hidden_layers")) {
+                int hiddenLayers = config.getInt("hidden_layers");
+                neuronsInLayers.add(hiddenLayers);
+            }
+            if (config.has("num_outputs")) {
+                int numOutputs = config.getInt("num_outputs");
+                neuronsInLayers.add(numOutputs);
+            }
+
+        }
+
+    
+       
+        
+        
+
+        //NeuralNetwork neuralNetwork = new MultiLayerPerceptron(neuronsInLayers, TransferFunctionType.TANH);
+        //train ? 
+        //return neuralNetwork;
+        return null;
     }
 }
