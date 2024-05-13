@@ -1,4 +1,7 @@
-{
+{   
+    "learning-rate":0.5,
+    "maxError":0.001,
+    "maxIterations":30000,
     "randomizeWeights": true,
     "networkType": "RBF_NETWORK",
     "weights": {

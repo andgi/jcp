@@ -24,7 +24,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected NeuralNetwork _network;
-
+    
     public NNClassifier() {
     }
 
@@ -33,7 +33,8 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         //we can think about a json file with the number of features, then hidden layers and output 
         //and transfert fonction ? 
         // and read weights ? 
-        _network = createNetworkFromConfig(configuration);
+        //_network = createNetworkFromConfig(configuration);
+        //here we have to determine parameters (create new class for that ?)
     }
 
 
@@ -54,18 +55,20 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
     
     public double predict(DoubleMatrix1D instance) {
+
         _network.setInput(instance.toArray());
         _network.calculate();
         return _network.getOutput()[0];
     }
 
     public double predict(DoubleMatrix1D instance, double[] probabilityEstimates) {
-
+      
         _network.setInput(instance.toArray());
-    
+        
         _network.calculate();
     
         double[] output = _network.getOutput();
+        
         System.arraycopy(output, 0, probabilityEstimates, 0, output.length);
         return output[0];
     }
@@ -82,18 +85,25 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
     private NeuralNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
 
-        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, x.columns(), 3, 1);
+        //NeuralNetwork neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, x.columns(), 3, 1);
 
-  
+        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(x.columns(), 16, 1);
+        
         DataSet dataSet = createDataSet(x, y);
+        
+        BackPropagation backPropagation = new BackPropagation();
+        backPropagation.setLearningRate(0.01);
+        backPropagation.setMaxIterations(500);
 
+        neuralNetwork.setLearningRule(backPropagation);
+        
         neuralNetwork.learn(dataSet);
 
         return neuralNetwork;
     }
     private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
+     
         DataSet dataSet = new DataSet(x.columns(), 1); 
-   
         for (int i = 0; i < x.rows(); i++) {
             double[] features = x.viewRow(i).toArray();
             double[] label = {y[i]};
@@ -103,7 +113,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
     }
 
     private NeuralNetwork createNetworkFromConfig(JSONObject config) {
-        List<Integer> neuronsInLayers = new ArrayList<>();
+        /*List<Integer> neuronsInLayers = new ArrayList<>();
         if (config == null) {
             //default config
         }
@@ -126,7 +136,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
                 neuronsInLayers.add(numOutputs);
             }
 
-        }
+        }*/
 
     
        
@@ -135,7 +145,14 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
         //NeuralNetwork neuralNetwork = new MultiLayerPerceptron(neuronsInLayers, TransferFunctionType.TANH);
         //train ? 
+
         //return neuralNetwork;
-        return null;
+        //return null;
+        List<Integer> layerParam = new ArrayList<>();
+        layerParam.add(4);
+        layerParam.add(16);
+        layerParam.add(1);
+        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(layerParam, TransferFunctionType.TANH);
+        return neuralNetwork;
     }
 }
