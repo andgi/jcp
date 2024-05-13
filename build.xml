@@ -6,15 +6,15 @@
   <property environment="env"/>
 
   <path id="classpath">
-    <fileset dir="../colt/lib" includes="*.jar" />
-    <fileset dir="../JSON" includes="json.jar" />
-    <fileset dir="${env.OCVJARDIR}" includes="opencv.jar" />
-    <fileset dir="../libsvm-java" includes="libsvm.jar" />
-    <fileset dir="../liblinear-java" includes="liblinear-java.jar" />
-    <fileset dir="../neuroph-2.98/Framework" includes="*.jar" />
-    <fileset dir="../neuroph-2.98/Framework/libs" includes="*.jar" />
-    <fileset dir="../deeplearning4j" includes="*.jar" />
-    <fileset dir="../weka" includes="*.jar" />
+    <fileset dir="../test-install/colt/lib" includes="*.jar" />
+    <fileset dir="../test-install/JSON" includes="json.jar" />
+    <!--fileset dir="${env.OCVJARDIR}" includes="opencv.jar" /-->
+    <fileset dir="../test-install/libsvm-java" includes="libsvm.jar" />
+    <fileset dir="../test-install/liblinear-java" includes="liblinear-java.jar" />
+    <fileset dir="../test-install/neuroph-java/Framework" includes="*.jar" />
+    <fileset dir="../test-install/neuroph-java/Framework/libs" includes="*.jar" />
+    <fileset dir="../test-install/deeplearning4j" includes="*.jar" />
+    <fileset dir="../test-install/weka" includes="*.jar" />
   </path>
 
   <property name="build.dir"   value="build"/>
