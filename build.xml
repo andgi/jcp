@@ -8,9 +8,13 @@
   <path id="classpath">
     <fileset dir="../colt/lib" includes="*.jar" />
     <fileset dir="../JSON" includes="json.jar" />
-    <fileset dir="${env.OCVJARDIR}" includes="opencv.jar" />
+    <!--fileset dir="${env.OCVJARDIR}" includes="opencv.jar" /-->
     <fileset dir="../libsvm-java" includes="libsvm.jar" />
     <fileset dir="../liblinear-java" includes="liblinear-java.jar" />
+    <fileset dir="../neuroph-java/Framework" includes="*.jar" />
+    <fileset dir="../neuroph-java/Framework/libs" includes="*.jar" />
+    <fileset dir="../deeplearning4j" includes="*.jar" />
+    <fileset dir="../weka" includes="*.jar" />
   </path>
 
   <property name="build.dir"   value="build"/>
