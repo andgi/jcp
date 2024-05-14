@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016, 2018  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018, 2024  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -52,7 +52,7 @@ public abstract class ClassProbabilityNonconformityFunctionBase
                                ": " + nc);
         }
         // FIXME: This safety check only works for 2 classes.
-        if (_classes.length == 2 &&
+        if (_classes.length == 2 && _class_index.get(label) != null &&
             probability[_class_index.get(label)] <
             probability[_classes.length - 1 - _class_index.get(label)]) {
             System.err.println("Warning! Poor model prediction (" +

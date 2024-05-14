@@ -22,6 +22,10 @@ echo;
 echo "Training jliblinear MPC LCICC." $BASE/jcp_train.sh -mpc -lccc -c 2 -m $MODELNAME.mpclcicc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -mpc -lccc -c 2 -m $MODELNAME.mpclcicc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 
+echo;
+echo "Training Neuroph MPC LCICC." $BASE/jcp_train.sh -mpc -lccc -c 3 -m $MODELNAME.mpclcicc.neurophmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -mpc -lccc -c 3 -m $MODELNAME.mpclcicc.neurophmodel $TRAINING_ARGS $TRAINING_SET
+
 #echo;
 #echo "Training OpenCV SVM MPC LCICC." $BASE/jcp_train.sh -mpc -lccc -c 3 -m $MODELNAME.mpclcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 #$TIME $BASE/jcp_train.sh -mpc -lccc -c 3 -m $MODELNAME.mpclcicc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET

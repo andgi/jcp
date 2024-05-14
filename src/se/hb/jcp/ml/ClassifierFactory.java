@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2015  Anders Gidenstam
+// Copyright (C) 2014 - 2015, 2024  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -33,6 +33,7 @@ public final class ClassifierFactory
             "se.hb.jcp.bindings.libsvm.SVMClassifier",
             "se.hb.jcp.bindings.jlibsvm.SVMClassifier",
             "se.hb.jcp.bindings.jliblinear.LinearClassifier",
+            "se.hb.jcp.bindings.neuroph.NNClassifier"
             //"se.hb.jcp.bindings.opencv.SVMClassifier",
             //"se.hb.jcp.bindings.opencv.RandomForestClassifier"
         };
@@ -61,6 +62,8 @@ public final class ClassifierFactory
             return new se.hb.jcp.bindings.jlibsvm.SVMClassifier(config);
         case 2:
             return new se.hb.jcp.bindings.jliblinear.LinearClassifier(config);
+        case 3:
+            return new se.hb.jcp.bindings.neuroph.NNClassifier(config);
 /*      case 3:
             return new se.hb.jcp.bindings.opencv.SVMClassifier(config);
         case 4:

@@ -22,6 +22,10 @@ echo;
 echo "Training jliblinear LCTCC." $BASE/jcp_train.sh -lccc -tcc -c 2 -m $MODELNAME.lctcc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -lccc -tcc -c 2 -m $MODELNAME.lctcc.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
 
+echo;
+echo "Training Neuroph LCTCC." $BASE/jcp_train.sh -lccc -tcc -c 3 -m $MODELNAME.lctcc.neurophmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -lccc -tcc -c 3 -m $MODELNAME.lctcc.neurophmodel $TRAINING_ARGS $TRAINING_SET
+
 #echo;
 #echo "Training OpenCV SVM LCTCC." $BASE/jcp_train.sh -lccc -tcc -c 3 -m $MODELNAME.lctcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 #$TIME $BASE/jcp_train.sh -lccc -tcc -c 3 -m $MODELNAME.lctcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
