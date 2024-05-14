@@ -1,11 +1,21 @@
 package se.hb.jcp.bindings.neuroph;
 
+import java.util.Arrays;
+
 import org.neuroph.core.NeuralNetwork;
 import org.neuroph.core.data.DataSet;
 import org.neuroph.core.data.DataSetRow;
 import org.neuroph.nnet.MultiLayerPerceptron;
 import org.neuroph.nnet.learning.BackPropagation;
 import org.neuroph.util.TransferFunctionType;
+import org.neuroph.nnet.learning.MomentumBackpropagation;
+import org.neuroph.core.events.LearningEvent;
+import org.neuroph.core.events.LearningEventListener;
+import org.neuroph.core.transfer.TransferFunction;
+import org.neuroph.core.Neuron;
+import org.neuroph.core.Layer;
+import org.neuroph.core.transfer.Tanh;
+
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -20,7 +30,7 @@ import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 
-public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier {
+public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier, LearningEventListener {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected NeuralNetwork _network;
@@ -70,6 +80,8 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         double[] output = _network.getOutput();
         
         System.arraycopy(output, 0, probabilityEstimates, 0, output.length);
+        System.out.println(" Output: " + Arrays.toString(output));
+        System.out.println(" Output: " + Arrays.toString(probabilityEstimates));
         return output[0];
     }
 
@@ -85,18 +97,23 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
     private NeuralNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
 
-        //NeuralNetwork neuralNetwork = new MultiLayerPerceptron(TransferFunctionType.TANH, x.columns(), 3, 1);
-
-        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(x.columns(), 16, 1);
+        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(x.columns(), 25, 1);
+        /*TransferFunction softmax = new SoftMax(neuralNetwork.getLayerAt(neuralNetwork.getLayersCount() - 1));
+        Neuron last = (Neuron) neuralNetwork.getOutputNeurons().get(0);
+        last.setTransferFunction(softmax);*/
+        /*Layer lastLayer = neuralNetwork.getLayerAt(neuralNetwork.getLayersCount() - 1);
         
+        Neuron last = lastLayer.getNeuronAt(lastLayer.getNeuronsCount() - 1);
+        last.setTransferFunction(new Tanh());*/
         DataSet dataSet = createDataSet(x, y);
         
-        BackPropagation backPropagation = new BackPropagation();
-        backPropagation.setLearningRate(0.01);
-        backPropagation.setMaxIterations(500);
 
-        neuralNetwork.setLearningRule(backPropagation);
-        
+        MomentumBackpropagation learningRule = (MomentumBackpropagation) neuralNetwork.getLearningRule();
+        learningRule.addListener(this);
+
+        learningRule.setLearningRate(0.5);
+        learningRule.setMaxError(0.01);
+        learningRule.setMaxIterations(1000);
         neuralNetwork.learn(dataSet);
 
         return neuralNetwork;
@@ -107,7 +124,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         for (int i = 0; i < x.rows(); i++) {
             double[] features = x.viewRow(i).toArray();
             double[] label = {y[i]};
-            dataSet.add(features, label );
+            dataSet.add(features, label);
         }
         return dataSet;
     }
@@ -154,5 +171,9 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         layerParam.add(1);
         NeuralNetwork neuralNetwork = new MultiLayerPerceptron(layerParam, TransferFunctionType.TANH);
         return neuralNetwork;
+    }
+    public void handleLearningEvent(LearningEvent event) {
+        BackPropagation bp = (BackPropagation) event.getSource();
+        System.out.println(bp.getCurrentIteration() + ". iteration | Total network error: " + bp.getTotalNetworkError());
     }
 }
