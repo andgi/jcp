@@ -34,7 +34,7 @@ public abstract class ClassifierNonconformityFunctionBase
     implements IClassificationNonconformityFunction,
                java.io.Serializable
 {
-    static final boolean DEBUG = true;
+    static final boolean DEBUG = false;
     static final boolean PARALLEL = true;
 
     IClassifier _model;
