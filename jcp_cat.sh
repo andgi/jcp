@@ -1,7 +1,7 @@
 #!/bin/bash
 # Expected environment:
-#  None
+#  none
 
-DIR=$( cd "$( dirname "${BASH_SOURCE[0]}" )" && pwd )
+. ./jcp_base.sh
 
-java -classpath ${DIR}/build/jar/jcp.jar:${DIR}/../colt/lib/colt.jar:${DIR}/../colt/lib/concurrent.jar:${DIR}/../JSON/json.jar se.hb.jcp.cli.jcp_cat $@
+java -classpath ${JCLASSES} se.hb.jcp.cli.jcp_cat $@
