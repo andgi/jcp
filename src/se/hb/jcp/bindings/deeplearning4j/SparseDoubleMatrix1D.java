@@ -33,7 +33,6 @@ public class SparseDoubleMatrix1D extends DoubleMatrix1D {
 
     SparseDoubleMatrix1D(int columns, INDArray nodes) {
         setUp(columns);
-        isNoView = false;
         _nodes = nodes;
     }
 

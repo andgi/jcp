@@ -26,6 +26,7 @@ import org.slf4j.LoggerFactory;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.reflect.Array;
 import java.io.File;
 import java.io.IOException;
 
@@ -128,23 +129,35 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
 
     
         model.fit(dataSet);
+        //System.out.println(dataSet);
 
         return model;
     }
     
     private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
-
+        
         int rows = x.rows();
         int cols = x.columns();
-        double[][] array = new double[rows][cols];
+        //System.out.println(x);
+        /*double[][] array = new double[rows][cols];
         for (int i = 0; i < rows; i++) {
             for (int j = 0; j < cols; j++) {
                 array[i][j] = x.get(i, j);
+                if (x.get(i,j) != 0) {
+                    System.out.println(x.get(i,j));
+                }
             }
-        }
-        INDArray features = Nd4j.create(array);
-     
+        }*/
+        //issue here
+        //System.out.println(Arrays.toString(x.toArray()[1]));
+        
+
+        INDArray features = Nd4j.create(x.toArray());
+        System.out.println(features);
+        //System.out.println(features);
+        
         INDArray labels = Nd4j.create(y, new int[]{rows, 1});
+  
 
         DataSet dataSet = new DataSet(features, labels);
         

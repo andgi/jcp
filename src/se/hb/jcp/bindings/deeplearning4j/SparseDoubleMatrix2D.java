@@ -30,7 +30,7 @@ public class SparseDoubleMatrix2D extends DoubleMatrix2D {
     }
 
     public double getQuick(int row, int column) {
-        return _rows[row].getDouble(column);
+        return viewRow(row).getQuick(column);
     }
 
     public void setQuick(int row, int column, double value) {
