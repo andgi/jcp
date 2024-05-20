@@ -26,6 +26,10 @@ echo;
 echo "Training Neuroph TCC." $BASE/jcp_train.sh -tcc -c 3 -m $MODELNAME.tcc.neurophmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -tcc -c 3 -m $MODELNAME.tcc.neurophmodel $TRAINING_ARGS $TRAINING_SET
 
+echo;
+echo "Training DeepLearning4j TCC." $BASE/jcp_train.sh -tcc -c 4 -m $MODELNAME.tcc.deeplearning4jmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -tcc -c 4 -m $MODELNAME.tcc.deeplearning4jmodel $TRAINING_ARGS $TRAINING_SET
+
 #echo;
 #echo "Training OpenCV SVM TCC." $BASE/jcp_train.sh -tcc -c 3 -m $MODELNAME.tcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 #$TIME $BASE/jcp_train.sh -tcc -c 3 -m $MODELNAME.tcc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET

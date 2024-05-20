@@ -15,7 +15,6 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 // The public interface is based on cern.colt.matrix.DoubleMatrix2D.
-
 package se.hb.jcp.bindings.neuroph;
 
 import org.neuroph.core.Layer;

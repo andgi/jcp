@@ -64,7 +64,7 @@ auxiliary.show.customizer.message=<message>
         <java-data xmlns="http://www.netbeans.org/ns/freeform-project-java/4">
             <compilation-unit>
                 <package-root>src</package-root>
-                <classpath mode="compile">../colt/lib/colt.jar:../colt/lib/concurrent.jar:../JSON/json.jar:../liblinear-java/liblinear-java.jar:../libsvm-java/libsvm.jar:/usr/share/java/opencv.jar:../neuroph-2.98/Framework/neuroph-core-2.98.jar</classpath>
+                <classpath mode="compile">../colt/lib/colt.jar:../colt/lib/concurrent.jar:../JSON/json.jar:../liblinear-java/liblinear-java.jar:../libsvm-java/libsvm.jar:/usr/share/java/opencv.jar:../neuroph-2.98/Framework/neuroph-core-2.98.jar:../deeplearning4j/deeplearning4j.jar:../deeplearning4j/nd4j-native-platform-1.0.0-M2.1.jar</classpath>
                 <built-to>build/jar/jcp.jar</built-to>
                 <javadoc-built-to>docs/api</javadoc-built-to>
                 <source-level>1.7</source-level>

@@ -15,8 +15,12 @@
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
 // The public interface is based on cern.colt.matrix.DoubleMatrix2D.
-
 package se.hb.jcp.bindings.neuroph;
+
+import java.io.ObjectInputStream;
+import java.io.ObjectOutputStream;
+import java.io.File;
+import java.io.IOException;
 
 import java.util.Arrays;
 
@@ -48,7 +52,7 @@ import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 
-public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier, LearningEventListener {
+public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier, LearningEventListener, java.io.Serializable {
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected NeuralNetwork _network;
@@ -96,11 +100,12 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         _network.calculate();
     
         double[] output = _network.getOutput();
-        
-        System.arraycopy(output, 0, probabilityEstimates, 0, output.length);
-        System.out.println(" Output: " + Arrays.toString(output));
-        System.out.println(" Output: " + Arrays.toString(probabilityEstimates));
-        return output[0];
+       
+        double probability = output[0];
+        probabilityEstimates[0] = 1 - probability;
+        probabilityEstimates[1] = probability;
+        System.out.println(probability);
+        return (probability >= 0.5) ? 1.0 : -1.0;
     }
 
     @Override
@@ -131,13 +136,12 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
         learningRule.setLearningRate(0.5);
         learningRule.setMaxError(0.01);
-        learningRule.setMaxIterations(1000);
+        learningRule.setMaxIterations(200);
         neuralNetwork.learn(dataSet);
 
         return neuralNetwork;
     }
     private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
-     
         DataSet dataSet = new DataSet(x.columns(), 1); 
         for (int i = 0; i < x.rows(); i++) {
             double[] features = x.viewRow(i).toArray();
@@ -193,5 +197,34 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
     public void handleLearningEvent(LearningEvent event) {
         BackPropagation bp = (BackPropagation) event.getSource();
         System.out.println(bp.getCurrentIteration() + ". iteration | Total network error: " + bp.getTotalNetworkError());
+    }
+
+    private void writeObject(ObjectOutputStream oos) throws IOException {
+        oos.defaultWriteObject(); // Write non-transient fields
+
+        // Save the model if it has been trained
+        if (_network != null) {
+            // Save the neural network to a file
+            String modelFileName = "neural_network.model";
+            _network.save(modelFileName);
+
+            // Write the model file name to the stream
+            oos.writeObject(modelFileName);
+        } else {
+            // Indicate that the model has not been trained
+            oos.writeObject(null);
+        }
+    }
+
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+        ois.defaultReadObject(); // Read non-transient fields
+
+        // Load model file name from the stream
+        String modelFileName = (String) ois.readObject();
+        if (modelFileName != null) {
+            File file = new File(modelFileName);
+            // Load the neural network from the saved file
+            _network = NeuralNetwork.createFromFile(file);
+        }
     }
 }

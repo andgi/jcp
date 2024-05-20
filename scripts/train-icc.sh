@@ -26,6 +26,10 @@ echo;
 echo "Training Neuroph ICC." $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.neurophmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.neurophmodel $TRAINING_ARGS $TRAINING_SET
 
+echo;
+echo "Training DeepLearning4j ICC." $BASE/jcp_train.sh -c 4 -m $MODELNAME.icc.deeplearning4jmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -c 4 -m $MODELNAME.icc.deeplearning4jmodel $TRAINING_ARGS $TRAINING_SET
+
 #echo;
 #echo "Training OpenCV SVM ICC." $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
 #$TIME $BASE/jcp_train.sh -c 3 -m $MODELNAME.icc.ocvsvmmodel $TRAINING_ARGS $TRAINING_SET
