@@ -84,11 +84,11 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
     
         double[] output = _network.getOutput();
        
-        System.arraycopy(output, 0, probabilityEstimates, 0, output.length);
-        //System.out.print("Input: " + Arrays.toString(instance.toArray()));
-        //System.out.println(" Output: " + Arrays.toString(output));
-        
-        return output[0];
+        double probability = output[0];
+        probabilityEstimates[0] = 1 - probability;
+        probabilityEstimates[1] = probability;
+        System.out.println(probability);
+        return (probability >= 0.5) ? 1.0 : -1.0;
     }
 
     @Override
