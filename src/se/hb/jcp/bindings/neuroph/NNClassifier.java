@@ -111,8 +111,8 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         
         Neuron last = lastLayer.getNeuronAt(lastLayer.getNeuronsCount() - 1);
         last.setTransferFunction(new Tanh());*/
-        DataSet dataSet = createDataSet(x, y);
-        
+        DoubleMatrix2D normalizedX = normalizeData(x);
+        DataSet dataSet = createDataSet(normalizedX, y);
 
         MomentumBackpropagation learningRule = (MomentumBackpropagation) neuralNetwork.getLearningRule();
         learningRule.addListener(this);
@@ -124,6 +124,41 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
         return neuralNetwork;
     }
+    /*private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
+        DataSet dataSet = new DataSet(x.columns(), 1);
+        int minorClassCount = 0;
+        for (double label : y) {
+            if (label == -1.0) {
+                minorClassCount++;
+            }
+        }
+        
+        int[] minorClassIndices = new int[minorClassCount];
+        int index = 0;
+        for (int i = 0; i < y.length; i++) {
+            if (y[i] == -1.0) {
+                minorClassIndices[index++] = i;
+            }
+        }
+    
+        for (int i = 0; i < x.rows(); i++) {
+            double[] features = x.viewRow(i).toArray();
+            double[] label = {y[i]};
+            dataSet.add(new DataSetRow(features, label));
+        }
+        
+        // Optionally: Over-sample minor class
+        while (minorClassCount < y.length / 2) {
+            int randomIndex = minorClassIndices[(int) (Math.random() * minorClassIndices.length)];
+            double[] features = x.viewRow(randomIndex).toArray();
+            double[] label = {y[randomIndex]};
+            dataSet.add(new DataSetRow(features, label));
+            minorClassCount++;
+        }
+        
+        return dataSet;
+    }*/
+    
     private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
         DataSet dataSet = new DataSet(x.columns(), 1); 
         for (int i = 0; i < x.rows(); i++) {
@@ -132,6 +167,24 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
             dataSet.add(features, label);
         }
         return dataSet;
+    }
+    private DoubleMatrix2D normalizeData(DoubleMatrix2D data) {
+        for (int i = 0; i < data.columns(); i++) {
+            double mean = 0;
+            double std = 0;
+            for (int j = 0; j < data.rows(); j++) {
+                mean += data.get(j, i);
+            }
+            mean /= data.rows();
+            for (int j = 0; j < data.rows(); j++) {
+                std += Math.pow(data.get(j, i) - mean, 2);
+            }
+            std = Math.sqrt(std / data.rows());
+            for (int j = 0; j < data.rows(); j++) {
+                data.set(j, i, (data.get(j, i) - mean) / std);
+            }
+        }
+        return data;
     }
 
     private NeuralNetwork createNetworkFromConfig(JSONObject config) {
