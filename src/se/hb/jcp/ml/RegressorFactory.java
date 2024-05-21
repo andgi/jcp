@@ -35,17 +35,18 @@ public class RegressorFactory {
         return _regressorNames;
     }
 
-    public IClassifier createRegressor(int type)
+    public IRegressor createRegressor(int type)
     {
         JSONObject config = new JSONObject();
         return createRegressor(type, config);
     }
 
-    public IClassifier createRegressor(int type, JSONObject config)
+    public IRegressor createRegressor(int type, JSONObject config)
     {
         switch (type) {
         case 0:
-            return new se.hb.jcp.bindings.libsvm.SVMClassifier(config);
+        //add regressor ... 
+            return null;
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
         }

@@ -32,7 +32,8 @@ import se.hb.jcp.nc.*;
 import se.hb.jcp.ml.ClassifierFactory;
 import se.hb.jcp.ml.IClassifier;
 
-import se.hb.jcp.ml.IRegressor;
+import se.hb.jcp.ml.RegressorFactory;
+import se.hb.jcp.ml.IRegressor; 
 /**
  * Command line training tool for JCP.
  *
@@ -58,10 +59,11 @@ public class jcp_train
     private double  _significanceLevel = 0.10;
     private double  _validationFraction = 0.5;
     private double  _calibrationFraction = 0.2;
-
-    private int _regressorType = 0;
+    
+    
     private IRegressor _regressor;
-
+    private boolean _isRegression = false;
+    
     public jcp_train()
     {
         _training    = new DataSet();
@@ -70,32 +72,31 @@ public class jcp_train
         _classifier  = new se.hb.jcp.bindings.jlibsvm.SVMClassifier();
     }
 
-    public void run(String[] args)
-        throws IOException
-    {
+    public void run(String[] args) throws IOException {
         processArguments(args);
-        if (_useCP && _useTCC) {
-            // Supports train and save and/or test.
-            trainTCC(_dataSetFileName);
-        } else if (_useCP) {
-            // Supports train, calibrate and save and/or test.
-            if (_calibrationSetFileName != null) {
-                trainICC(_dataSetFileName, _calibrationSetFileName);
-            } else {
-                trainICC(_dataSetFileName);
-            }
+        if (_isRegression) {
+            trainRegressor(_dataSetFileName);
         } else {
-            // Supports train and save and/or test.
-            trainPlainClassifier(_dataSetFileName);
+            if (_useCP && _useTCC) {
+                trainTCC(_dataSetFileName);
+            } else if (_useCP) {
+                if (_calibrationSetFileName != null) {
+                    trainICC(_dataSetFileName, _calibrationSetFileName);
+                } else {
+                    trainICC(_dataSetFileName);
+                }
+            } else {
+                trainPlainClassifier(_dataSetFileName);
+            }
         }
     }
 
-    private void processArguments(String[] args)
-    {
+    private void processArguments(String[] args) {
         int classifierType = 0;
+        int regressorType = 0;
         JSONObject classifierConfig = new JSONObject();
+        JSONObject regressorConfig = new JSONObject();
 
-        // Load and create training and calibration sets.
         if (args.length < 1) {
             printUsage();
             System.exit(-1);
@@ -109,21 +110,15 @@ public class jcp_train
                         boolean ok = false;
                         try {
                             int c = Integer.parseInt(args[i]);
-                            String[] NCFs =
-                                ClassificationNonconformityFunctionFactory.
-                                    getInstance().getNonconformityFunctions();
+                            String[] NCFs = ClassificationNonconformityFunctionFactory.getInstance().getNonconformityFunctions();
                             if (0 <= c && c < NCFs.length) {
                                 _ncFunctionType = c;
                                 ok = true;
                             }
                         } catch (Exception e) {
-                            // Handled below as ok is false.
                         }
                         if (!ok) {
-                            System.err.println
-                                ("Error: Illegal nonconformity function " +
-                                 "number '" + args[i] +
-                                 "' given to -nc.");
+                            System.err.println("Error: Illegal nonconformity function number '" + args[i] + "' given to -nc.");
                             System.err.println();
                             printUsage();
                             System.exit(-1);
@@ -134,20 +129,33 @@ public class jcp_train
                         boolean ok = false;
                         try {
                             int c = Integer.parseInt(args[i]);
-                            if (0 <= c &&
-                                c < ClassifierFactory.getInstance().
-                                        getClassifierTypes().length) {
+                            if (0 <= c && c < ClassifierFactory.getInstance().getClassifierTypes().length) {
                                 classifierType = c;
                                 ok = true;
                             }
                         } catch (Exception e) {
-                            // Handled below as ok is false.
                         }
                         if (!ok) {
-                            System.err.println
-                                ("Error: Illegal classifier number '" +
-                                 args[i] +
-                                 "' given to -c.");
+                            System.err.println("Error: Illegal classifier number '" + args[i] + "' given to -c.");
+                            System.err.println();
+                            printUsage();
+                            System.exit(-1);
+                        }
+                    }
+                } else if (args[i].equals("-r")) {
+                    _isRegression = true;
+                    if (++i < args.length) {
+                        boolean ok = false;
+                        try {
+                            int r = Integer.parseInt(args[i]);
+                            if (0 <= r && r < RegressorFactory.getInstance().getRegressorTypes().length) {
+                                regressorType = r;
+                                ok = true;
+                            }
+                        } catch (Exception e) {
+                        }
+                        if (!ok) {
+                            System.err.println("Error: Illegal regressor number '" + args[i] + "' given to -r.");
                             System.err.println();
                             printUsage();
                             System.exit(-1);
@@ -157,16 +165,17 @@ public class jcp_train
                     boolean ok = false;
                     if (++i < args.length) {
                         try {
-                            classifierConfig = loadClassifierConfig(args[i]);
+                            if (_isRegression) {
+                                regressorConfig = loadConfig(args[i]);
+                            } else {
+                                classifierConfig = loadConfig(args[i]);
+                            }
                             ok = true;
                         } catch (Exception e) {
-                            // Handled below as ok is false.
                         }
                     }
                     if (!ok) {
-                        System.err.println
-                            ("Error: No or bad configuration file given " +
-                             "to -p.");
+                        System.err.println("Error: No or bad configuration file given to -p.");
                         System.err.println();
                         printUsage();
                         System.exit(-1);
@@ -175,8 +184,7 @@ public class jcp_train
                     if (++i < args.length) {
                         _modelFileName = args[i];
                     } else {
-                        System.err.println
-                            ("Error: No model file name given to -m.");
+                        System.err.println("Error: No model file name given to -m.");
                         System.err.println();
                         printUsage();
                         System.exit(-1);
@@ -191,20 +199,15 @@ public class jcp_train
                                 ok = true;
                             }
                         } catch (Exception e) {
-                            // Handled below as ok is false.
                         }
                         if (!ok) {
-                            System.err.println
-                                ("Error: Illegal significance level '" +
-                                 args[i] +
-                                 "' given to -s.");
+                            System.err.println("Error: Illegal significance level '" + args[i] + "' given to -s.");
                             System.err.println();
                             printUsage();
                             System.exit(-1);
                         }
                     } else {
-                        System.err.println
-                            ("Error: No significance level given to -s.");
+                        System.err.println("Error: No significance level given to -s.");
                         System.err.println();
                         printUsage();
                         System.exit(-1);
@@ -217,89 +220,41 @@ public class jcp_train
                     _useLCCC = true;
                 } else if (args[i].equals("-mpc")) {
                     _useMPC = true;
-                } else if (args[i].equals("-nocp")) {
-                    _useCP = false;
-                } else if (args[i].equals("-vf")) {
+                } else if (args[i].equals("-nc-val")) {
                     if (++i < args.length) {
                         boolean ok = false;
                         try {
-                            double vf = Double.parseDouble(args[i]);
-                            if (0.0 <= vf && vf <= 1.0) {
-                                _validationFraction = vf;
+                            int c = Integer.parseInt(args[i]);
+                            if (0 <= c && c < ClassificationNonconformityFunctionFactory.getInstance().getNonconformityFunctions().length) {
+                                _ncFunctionType = c;
                                 ok = true;
                             }
                         } catch (Exception e) {
-                            // Handled below as ok is false.
                         }
                         if (!ok) {
-                            System.err.println
-                                ("Error: Illegal validation fraction '" +
-                                 args[i] +
-                                 "' given to -vf.");
+                            System.err.println("Error: Illegal nonconformity function number '" + args[i] + "' given to -nc-val.");
                             System.err.println();
                             printUsage();
                             System.exit(-1);
                         }
-                    } else {
-                        System.err.println
-                            ("Error: No validation fraction given to -vf.");
-                        System.err.println();
-                        printUsage();
-                        System.exit(-1);
                     }
-                } else if (args[i].equals("-cf")) {
-                    if (++i < args.length) {
-                        boolean ok = false;
-                        try {
-                            double cf = Double.parseDouble(args[i]);
-                            if (0.0 <= cf && cf <= 1.0) {
-                                _calibrationFraction = cf;
-                                ok = true;
-                            }
-                        } catch (Exception e) {
-                            // Handled below as ok is false.
-                        }
-                        if (!ok) {
-                            System.err.println
-                                ("Error: Illegal calibration fraction '" +
-                                 args[i] +
-                                 "' given to -cf.");
-                            System.err.println();
-                            printUsage();
-                            System.exit(-1);
-                        }
-                    } else {
-                        System.err.println
-                            ("Error: No calibration fraction given to -cf.");
-                        System.err.println();
-                        printUsage();
-                        System.exit(-1);
-                    }
+                } else if (_dataSetFileName == null) {
+                    _dataSetFileName = args[i];
+                } else if (_calibrationSetFileName == null) {
+                    _calibrationSetFileName = args[i];
                 } else {
-                    // The last unknown argument should be the dataset file or
-                    // the training and calibration dataset files.
-                    if (i == args.length - 2) {
-                        _dataSetFileName = args[i];
-                        i++;
-                        _calibrationSetFileName = args[i];
-                        _validate = false;
-                    } else {
-                        _dataSetFileName = args[i];
-                    }
+                    System.err.println("Error: Too many arguments given.");
+                    System.err.println();
+                    printUsage();
+                    System.exit(-1);
                 }
             }
         }
-        if (_dataSetFileName == null) {
-            System.err.println
-                ("Error: No data set file name given.");
-            System.err.println();
-            printUsage();
-            System.exit(-1);
-        }
-        _classifier =
-            ClassifierFactory.getInstance().createClassifier(classifierType,
-                                                             classifierConfig);
+
+        _classifier = ClassifierFactory.getInstance().createClassifier(classifierType, classifierConfig);
+        _regressor = RegressorFactory.getInstance().createRegressor(regressorType, regressorConfig);
     }
+
 
     private void printUsage()
     {
@@ -386,6 +341,17 @@ public class jcp_train
         System.out.println
             ("                    Applies when doing validation after " +
              "training.");
+    }
+
+    private JSONObject loadConfig(String fileName) {
+        try (FileInputStream fis = new FileInputStream(fileName)) {
+            return new JSONObject(new JSONTokener(fis));
+        } catch (Exception e) {
+            throw new RuntimeException("Error loading configuration file.", e);
+        }
+    }
+    private void trainRegressor(String dataSetFileName) throws IOException {
+        //TODO
     }
 
     private void trainICC(String dataSetFileName)
