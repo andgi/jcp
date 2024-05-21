@@ -32,6 +32,7 @@ import se.hb.jcp.nc.*;
 import se.hb.jcp.ml.ClassifierFactory;
 import se.hb.jcp.ml.IClassifier;
 
+import se.hb.jcp.ml.IRegressor;
 /**
  * Command line training tool for JCP.
  *
@@ -57,6 +58,9 @@ public class jcp_train
     private double  _significanceLevel = 0.10;
     private double  _validationFraction = 0.5;
     private double  _calibrationFraction = 0.2;
+
+    private int _regressorType = 0;
+    private IRegressor _regressor;
 
     public jcp_train()
     {
