@@ -241,9 +241,11 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         // Save the model if it has been trained
         if (_network != null) {
             // Save the neural network to a file
-            String modelFileName = "neural_network.model";
+            
+            String modelFileName =
+            Long.toHexString(Double.doubleToLongBits(Math.random())) +
+                ".neuroph";
             _network.save(modelFileName);
-
             // Write the model file name to the stream
             oos.writeObject(modelFileName);
         } else {
