@@ -358,6 +358,30 @@ public class jcp_train
     }
     private void trainRegressor(String dataSetFileName) throws IOException {
         //TODO
+        long t1 = System.currentTimeMillis();
+        _full = DataSetTools.loadDataSet(dataSetFileName);
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
+        if (_validate) {
+            splitDataset((1 - _validationFraction)*(1 - _calibrationFraction), (1 - _validationFraction)*_calibrationFraction);
+        } else {
+            splitDataset((1 - _calibrationFraction), _calibrationFraction);
+        }
+        DataSet mpcCalibration = null;
+        if (_useMPC) {
+            DataSet newCalibration = new DataSet();
+            DataSet dummy = new DataSet();
+            mpcCalibration = new DataSet();
+            _calibration.random3Partition(newCalibration, mpcCalibration, dummy, 0.5, 0.5);
+            _calibration = newCalibration;
+        }
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+
+        System.out.println("Training on " + _training.x.rows() + " instances and calibrating on " + _calibration.x.rows() + " instances.");
+        /*InductiveConformalRegressor icr = new InductiveConformalRegressor(new RegressionNonconformityFunction(_regressor));
+        icr.fit(_training.x, _training.y, _calibration.x, _calibration.y);*/
+        //TODO 
     }
 
     private void trainICC(String dataSetFileName)
