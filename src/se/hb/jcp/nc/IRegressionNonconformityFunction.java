@@ -16,9 +16,18 @@
 //
 package se.hb.jcp.nc;
 
+import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.impl.AbstractMatrix2D;
 
 public interface IRegressionNonconformityFunction {
     public DoubleMatrix2D predict(AbstractMatrix2D x, double significance);
+    void fit(DoubleMatrix2D x, double[] y);
+    boolean isTrained();
+    double calculateNonConformityScore(DoubleMatrix1D instance, double label);
+    double predict(DoubleMatrix1D instance);
+    int getAttributeCount();
+    DoubleMatrix1D nativeStorageTemplate();
 }
+
+
