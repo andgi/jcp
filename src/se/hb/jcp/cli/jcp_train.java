@@ -41,7 +41,8 @@ import se.hb.jcp.ml.IRegressor;
  */
 
 public class jcp_train
-{
+{   
+    private boolean _isClassification = false;
     private int     _ncFunctionType = 0;
     private IClassifier _classifier;
     private String  _dataSetFileName;
@@ -125,6 +126,7 @@ public class jcp_train
                         }
                     }
                 } else if (args[i].equals("-c")) {
+                    _isClassification = true;
                     if (++i < args.length) {
                         boolean ok = false;
                         try {
@@ -251,8 +253,12 @@ public class jcp_train
             }
         }
 
-        _classifier = ClassifierFactory.getInstance().createClassifier(classifierType, classifierConfig);
-        _regressor = RegressorFactory.getInstance().createRegressor(regressorType, regressorConfig);
+        if (_isRegression) {
+            _regressor = RegressorFactory.getInstance().createRegressor(regressorType, regressorConfig);
+        }
+        if (_isClassification) {
+            _classifier = ClassifierFactory.getInstance().createClassifier(classifierType, classifierConfig);
+        }
     }
 
 

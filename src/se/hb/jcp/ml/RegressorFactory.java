@@ -24,7 +24,7 @@ public class RegressorFactory {
     //add regressor
     private static final String[] _regressorNames =
     {
-        "se.hb.jcp.bindings.libsvm.SVMClassifier",
+        "se.hb.jcp.bindings.deeplearning4j.NN4jRegressor"
     };  
     private RegressorFactory()
     {
@@ -45,8 +45,7 @@ public class RegressorFactory {
     {
         switch (type) {
         case 0:
-        //add regressor ... 
-            return null;
+            return new se.hb.jcp.bindings.deeplearning4j.NN4jRegressor(config);
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
         }
