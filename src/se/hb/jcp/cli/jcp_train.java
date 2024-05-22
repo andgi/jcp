@@ -64,7 +64,7 @@ public class jcp_train
     
     private IRegressor _regressor;
     private boolean _isRegression = false;
-    
+
     public jcp_train()
     {
         _training    = new DataSet();
@@ -379,9 +379,9 @@ public class jcp_train
         System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
 
         System.out.println("Training on " + _training.x.rows() + " instances and calibrating on " + _calibration.x.rows() + " instances.");
-        /*InductiveConformalRegressor icr = new InductiveConformalRegressor(new RegressionNonconformityFunction(_regressor));
-        icr.fit(_training.x, _training.y, _calibration.x, _calibration.y);*/
-        //TODO 
+        InductiveConformalRegressor icr = new InductiveConformalRegressor(RegressionNonconformityFunctionFactory.getInstance().createNonconformityFunction(_ncFunctionType, _regressor));
+        icr.fit(_training.x, _training.y, _calibration.x, _calibration.y);
+         
     }
 
     private void trainICC(String dataSetFileName)
