@@ -47,7 +47,6 @@ public class RTools {
         System.out.println("Duration " + (double) (t3 - t2) / 1000.0 + " sec.");
 
         runTest(cr, testSet, jsonOutputFileName, confidenceLevel, debug);
-
         long t4 = System.currentTimeMillis();
         System.out.println("Total Duration " + (double) (t4 - t1) / 1000.0 +
                 " sec.");
