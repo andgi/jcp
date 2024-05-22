@@ -5,7 +5,7 @@ import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.impl.AbstractMatrix2D;
 import se.hb.jcp.ml.IRegressor;
 
-public class SquaredErrorNonconformityFunction implements IRegressionNonconformityFunction {
+public class SquaredErrorNonconformityFunction implements IRegressionNonconformityFunction,  java.io.Serializable{
     private IRegressor _regressor;
     private boolean _isTrained = false;
 
@@ -49,6 +49,7 @@ public class SquaredErrorNonconformityFunction implements IRegressionNonconformi
     @Override
     public DoubleMatrix2D predict(AbstractMatrix2D x, double significance) {
         //TODO
+        System.out.println("To implement");
         return null; 
     }
 }

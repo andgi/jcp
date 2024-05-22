@@ -30,7 +30,7 @@ import java.util.Arrays;
 
 import se.hb.jcp.nc.IRegressionNonconformityFunction;
 
-public class InductiveConformalRegressor implements IConformalPredictor, java.io.Serializable {
+public class InductiveConformalRegressor implements IConformalRegressor, java.io.Serializable {
     
     private static final boolean PARALLEL = true;
 

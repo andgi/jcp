@@ -29,76 +29,79 @@ import se.hb.jcp.ml.IClassifier;
 
 /**
  * Higher-level tools for DataSets.
- *
- * @author anders.gidenstam(at)hb.se
  */
+public class DataSetTools {
 
-public class DataSetTools
-{
     public static DataSet loadDataSet(String filename)
-        throws IOException
-    {
-        return
-            loadDataSet(filename,
-                        new cern.colt.matrix.impl.SparseDoubleMatrix1D(0));
+            throws IOException {
+        return loadDataSet(filename,
+                new cern.colt.matrix.impl.SparseDoubleMatrix1D(0));
     }
 
     public static DataSet loadDataSet(String filename,
                                       IConformalClassifier cc)
-        throws IOException
-    {
+            throws IOException {
         DataSet dataSet = loadDataSet(filename, cc.nativeStorageTemplate());
 
         if (cc.isTrained() && dataSet.x.columns() != cc.getAttributeCount()) {
-            System.err.println
-                ("Warning: " +
-                 "The number of attributes in the data set, " +
-                 dataSet.x.columns() + ", " +
-                 "does not match the number of attributes in the model, " +
-                 cc.getAttributeCount() + ".");
+            System.err.println("Warning: " +
+                    "The number of attributes in the data set, " +
+                    dataSet.x.columns() + ", " +
+                    "does not match the number of attributes in the model, " +
+                    cc.getAttributeCount() + ".");
         }
         return dataSet;
     }
 
     public static DataSet loadDataSet(String filename,
                                       IClassifier classifier)
-        throws IOException
-    {
+            throws IOException {
         DataSet dataSet = loadDataSet(filename,
-                                      classifier.nativeStorageTemplate());
+                classifier.nativeStorageTemplate());
 
         if (classifier.isTrained() &&
-            dataSet.x.columns() != classifier.getAttributeCount()) {
-            System.err.println
-                ("Warning: " +
-                 "The number of attributes in the data set, " +
-                 dataSet.x.columns() + ", " +
-                 "does not match the number of attributes in the model, " +
-                 classifier.getAttributeCount() + ".");
+                dataSet.x.columns() != classifier.getAttributeCount()) {
+            System.err.println("Warning: " +
+                    "The number of attributes in the data set, " +
+                    dataSet.x.columns() + ", " +
+                    "does not match the number of attributes in the model, " +
+                    classifier.getAttributeCount() + ".");
+        }
+        return dataSet;
+    }
+
+    public static DataSet loadDataSet(String filename,
+                                      IConformalRegressor cr)
+            throws IOException {
+        DataSet dataSet = loadDataSet(filename, cr.nativeStorageTemplate());
+
+        if (cr.isTrained() && dataSet.x.columns() != cr.getAttributeCount()) {
+            System.err.println("Warning: " +
+                    "The number of attributes in the data set, " +
+                    dataSet.x.columns() + ", " +
+                    "does not match the number of attributes in the model, " +
+                    cr.getAttributeCount() + ".");
         }
         return dataSet;
     }
 
     public static DataSet loadDataSet(String filename,
                                       DoubleMatrix1D template)
-        throws IOException
-    {
+            throws IOException {
         FileInputStream file;
         file = new FileInputStream(filename);
         DataSet dataSet = new libsvmReader().read(file, template);
         file.close();
 
         System.err.println("Loaded the dataset " + filename + " (" +
-                           dataSet.x.getClass().getName() + ") containing " +
-                           dataSet.x.rows() + " instances with " +
-                           dataSet.x.columns() + " attributes and " +
-                           dataSet.x.cardinality() + " nonzeros.");
+                dataSet.x.getClass().getName() + ") containing " +
+                dataSet.x.rows() + " instances with " +
+                dataSet.x.columns() + " attributes and " +
+                dataSet.x.cardinality() + " nonzeros.");
         return dataSet;
     }
 
-    public static
-        SimpleEntry<double[],SortedSet<Double>> extractClasses(DataSet dataSet)
-    {
+    public static SimpleEntry<double[], SortedSet<Double>> extractClasses(DataSet dataSet) {
         TreeSet<Double> classSet = new TreeSet<Double>();
         for (int r = 0; r < dataSet.x.rows(); r++) {
             classSet.add(dataSet.y[r]);
@@ -109,9 +112,9 @@ public class DataSetTools
         for (Double c : classSet.toArray(new Double[0])) {
             classes[i] = c;
             System.err.println("   Class " + i + " with label '" + classes[i] +
-                               "'.");
+                    "'.");
             i++;
         }
-        return new SimpleEntry<double[],SortedSet<Double>>(classes, classSet);
+        return new SimpleEntry<double[], SortedSet<Double>>(classes, classSet);
     }
 }

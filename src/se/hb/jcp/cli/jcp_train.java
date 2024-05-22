@@ -381,6 +381,17 @@ public class jcp_train
         System.out.println("Training on " + _training.x.rows() + " instances and calibrating on " + _calibration.x.rows() + " instances.");
         InductiveConformalRegressor icr = new InductiveConformalRegressor(RegressionNonconformityFunctionFactory.getInstance().createNonconformityFunction(_ncFunctionType, _regressor));
         icr.fit(_training.x, _training.y, _calibration.x, _calibration.y);
+        if (_validate) {
+            RTools.runTest(icr, _test, null, _significanceLevel, false);
+            long t4 = System.currentTimeMillis();
+            System.out.println("Total Duration " + (double)(t4 - t1)/1000.0 + " sec.");
+        }
+        
+        if (_modelFileName != null) {
+            System.out.println("Saving the model to '" + _modelFileName + "'...");
+            RTools.saveModel(icr, _modelFileName);
+            System.out.println("... Done.");
+        }
          
     }
 
