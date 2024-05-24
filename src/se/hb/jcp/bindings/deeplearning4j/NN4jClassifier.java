@@ -41,6 +41,7 @@ import weka.core.DenseInstance;
 import weka.core.Instances;
 import weka.filters.Filter;
 import weka.filters.supervised.instance.ClassBalancer;
+import weka.filters.supervised.instance.SMOTE;
 
 import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
@@ -137,14 +138,14 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
     private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
         DataSet dataSet = null;
         try {
-            dataSet = createDataSetWithClassBalancer(x, y);
+            dataSet = createDataSetWithSMOTE(x, y);
         } catch (Exception e) {
             e.printStackTrace();
         }
 
         int seed = 123;
         double learningRate = 0.005;
-        int nEpochs = 100;
+        int nEpochs = 10;
 
         int numInputs = x.columns();
         int numOutputs = 2;
@@ -211,7 +212,38 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
 
         return balancedDataSet;
     }
-
+    private DataSet createDataSetWithSMOTE(DoubleMatrix2D x, double[] y) throws Exception {
+        INDArray features = Nd4j.create(x.toArray());
+        INDArray labels = Nd4j.create(y, new long[]{y.length, 1});
+    
+        Instances wekaInstances = convertToWekaInstances(features, labels);
+    
+        
+        SMOTE smote = new SMOTE();
+        smote.setInputFormat(wekaInstances);
+        smote.setPercentage(100.0); 
+    
+        Instances balancedWekaInstances = Filter.useFilter(wekaInstances, smote);
+    
+        int numOutputs = 2;
+        INDArray balancedFeatures = Nd4j.create(balancedWekaInstances.size(), x.columns());
+        INDArray balancedLabels = Nd4j.create(balancedWekaInstances.size(), numOutputs);
+    
+        for (int i = 0; i < balancedWekaInstances.size(); i++) {
+            for (int j = 0; j < x.columns(); j++) {
+                balancedFeatures.putScalar(new int[]{i, j}, balancedWekaInstances.instance(i).value(j));
+            }
+            int classValue = (int) balancedWekaInstances.instance(i).classValue();
+            balancedLabels.putScalar(new int[]{i, classValue}, 1.0);
+        }
+    
+        DataSet balancedDataSet = new DataSet(balancedFeatures, balancedLabels);
+        DataNormalization normalizer = new NormalizerStandardize();
+        normalizer.fit(balancedDataSet);
+        normalizer.transform(balancedDataSet);
+    
+        return balancedDataSet;
+    }
     private Instances convertToWekaInstances(INDArray features, INDArray labels) {
         ArrayList<Attribute> attributes = new ArrayList<>();
 
