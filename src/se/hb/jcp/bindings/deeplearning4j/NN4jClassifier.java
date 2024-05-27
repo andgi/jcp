@@ -145,7 +145,7 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
 
         int seed = 123;
         double learningRate = 0.005;
-        int nEpochs = 10;
+        int nEpochs = 1;
 
         int numInputs = x.columns();
         int numOutputs = 2;
