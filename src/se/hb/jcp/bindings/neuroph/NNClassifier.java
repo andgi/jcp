@@ -21,6 +21,16 @@ import org.neuroph.core.Neuron;
 import org.neuroph.core.Layer;
 import org.neuroph.core.transfer.Tanh;
 
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.supervised.instance.ClassBalancer;
+import weka.filters.supervised.instance.SMOTE;
+import se.hb.jcp.bindings.deeplearning4j.WekaUtils;
+
+
+
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -116,10 +126,13 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         Neuron last = lastLayer.getNeuronAt(lastLayer.getNeuronsCount() - 1);
         last.setTransferFunction(new Tanh());*/
         //DoubleMatrix2D normalizedX = normalizeData(x);
-        DataSet dataSet = createDataSet(x, y);
-        Normalizer norm = new MaxNormalizer(dataSet);
-        norm.normalize(dataSet);
-
+        DataSet dataSet = null;
+        try {
+            dataSet = dataSet = createBalancedDataSet(x, y);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+     
         MomentumBackpropagation learningRule = (MomentumBackpropagation) neuralNetwork.getLearningRule();
         learningRule.addListener(this);
 
@@ -130,7 +143,62 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
         return neuralNetwork;
     }
-    private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
+    private DataSet createBalancedDataSet(DoubleMatrix2D x, double[] y) throws Exception {
+        Instances wekaInstances = convertToWekaInstances(x, y);
+    
+        SMOTE smote = new SMOTE();
+        smote.setInputFormat(wekaInstances);
+        smote.setPercentage(100.0); 
+    
+        Instances balancedWekaInstances = Filter.useFilter(wekaInstances, smote);
+    
+        DataSet balancedDataSet = new DataSet(x.columns(), 1);
+        
+        for (int i = 0; i < balancedWekaInstances.size(); i++) {
+            double[] features = new double[x.columns()];
+            double[] labels = new double[1]; 
+            
+            for (int j = 0; j < x.columns(); j++) {
+                features[j] = balancedWekaInstances.instance(i).value(j);
+            }
+            labels[0] = balancedWekaInstances.instance(i).classValue() == 0.0 ? -1.0 : 1.0;
+            
+            balancedDataSet.add(new DataSetRow(features, labels));
+        }
+
+        Normalizer normalizer = new MaxNormalizer(balancedDataSet);
+        normalizer.normalize(balancedDataSet);
+    
+        return balancedDataSet;
+    }
+    
+    
+    private Instances convertToWekaInstances(DoubleMatrix2D x, double[] y) {
+        ArrayList<Attribute> attributes = new ArrayList<>();
+        for (int i = 0; i < x.columns(); i++) {
+            attributes.add(new Attribute("attr" + i));
+        }
+        ArrayList<String> classValues = new ArrayList<>();
+        classValues.add("0"); // for -1.0
+        classValues.add("1"); // for 1.0
+        attributes.add(new Attribute("class", classValues));
+    
+        Instances instances = new Instances("dataset", attributes, x.rows());
+        instances.setClassIndex(instances.numAttributes() - 1);
+    
+        for (int i = 0; i < x.rows(); i++) {
+            double[] instanceValues = new double[instances.numAttributes()];
+            for (int j = 0; j < x.columns(); j++) {
+                instanceValues[j] = x.get(i, j);
+            }
+            instanceValues[instances.numAttributes() - 1] = (y[i] == -1.0) ? 0.0 : 1.0;
+            instances.add(new DenseInstance(1.0, instanceValues));
+        }
+    
+        return instances;
+    }
+    
+    /*private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
         DataSet dataSet = new DataSet(x.columns(), 1);
         int minorClassCount = 0;
         for (double label : y) {
@@ -162,7 +230,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         }
         
         return dataSet;
-    }
+    }*/
     
     /*private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
         DataSet dataSet = new DataSet(x.columns(), 1); 

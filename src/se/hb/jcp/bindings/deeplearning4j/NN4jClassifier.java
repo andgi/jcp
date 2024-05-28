@@ -88,6 +88,9 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
 
     @Override
     public double predict(DoubleMatrix1D instance, double[] probabilityEstimates) {
+        if (instance.size() != _model.layerInputSize(0)) {
+            throw new IllegalArgumentException("La taille de l'instance (" + instance.size() + ") ne correspond pas à la taille d'entrée du modèle (" + _model.layerInputSize(0) + ")");
+        }
         INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
         INDArray output = _model.output(input);
 
@@ -144,8 +147,8 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
         }
 
         int seed = 123;
-        double learningRate = 0.005;
-        int nEpochs = 1;
+        double learningRate = 0.001;
+        int nEpochs = 10;
 
         int numInputs = x.columns();
         int numOutputs = 2;
@@ -212,23 +215,43 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
 
         return balancedDataSet;
     }
-    private DataSet createDataSetWithSMOTE(DoubleMatrix2D x, double[] y) throws Exception {
+    public DataSet createDataSetWithSMOTE(DoubleMatrix2D x, double[] y) throws Exception {
         INDArray features = Nd4j.create(x.toArray());
         INDArray labels = Nd4j.create(y, new long[]{y.length, 1});
-    
+
         Instances wekaInstances = convertToWekaInstances(features, labels);
-    
-        
+
+        int[] classCounts = new int[2];
+        for (int i = 0; i < y.length; i++) {
+            if (y[i] == -1.0) {
+                classCounts[0]++;
+            } else {
+                classCounts[1]++;
+            }
+        }
+        double minorityClassValue = classCounts[0] < classCounts[1] ? -1.0 : 1.0;
+
         SMOTE smote = new SMOTE();
         smote.setInputFormat(wekaInstances);
-        smote.setPercentage(100.0); 
-    
-        Instances balancedWekaInstances = Filter.useFilter(wekaInstances, smote);
-    
-        int numOutputs = 2;
+        //Adjust percentage automaticaly ? 
+        smote.setPercentage(150.0);  
+
+        Instances minorityInstances = new Instances(wekaInstances, 0);
+        for (int i = 0; i < wekaInstances.size(); i++) {
+            if (wekaInstances.instance(i).classValue() == minorityClassValue) {
+                minorityInstances.add(wekaInstances.instance(i));
+            }
+        }
+        
+        Instances combinedInstances = new Instances(wekaInstances);
+        combinedInstances.addAll(minorityInstances);
+
+        Instances balancedWekaInstances = Filter.useFilter(combinedInstances, smote);
+
+        int numOutputs = 2;  
         INDArray balancedFeatures = Nd4j.create(balancedWekaInstances.size(), x.columns());
         INDArray balancedLabels = Nd4j.create(balancedWekaInstances.size(), numOutputs);
-    
+
         for (int i = 0; i < balancedWekaInstances.size(); i++) {
             for (int j = 0; j < x.columns(); j++) {
                 balancedFeatures.putScalar(new int[]{i, j}, balancedWekaInstances.instance(i).value(j));
@@ -236,29 +259,35 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
             int classValue = (int) balancedWekaInstances.instance(i).classValue();
             balancedLabels.putScalar(new int[]{i, classValue}, 1.0);
         }
-    
+
         DataSet balancedDataSet = new DataSet(balancedFeatures, balancedLabels);
+
         DataNormalization normalizer = new NormalizerStandardize();
         normalizer.fit(balancedDataSet);
         normalizer.transform(balancedDataSet);
-    
+
         return balancedDataSet;
     }
+
     private Instances convertToWekaInstances(INDArray features, INDArray labels) {
         ArrayList<Attribute> attributes = new ArrayList<>();
 
+        // Ajouter les features comme attributs
         for (int i = 0; i < features.columns(); i++) {
             attributes.add(new Attribute("feature" + i));
         }
 
+        // Ajouter les labels de classe
         ArrayList<String> classValues = new ArrayList<>();
         classValues.add("class0");
         classValues.add("class1");
         attributes.add(new Attribute("class", classValues));
 
+        // Créer l'objet Instances
         Instances dataset = new Instances("Dataset", attributes, features.rows());
         dataset.setClassIndex(dataset.numAttributes() - 1);
 
+        // Ajouter les instances au dataset
         for (int i = 0; i < features.rows(); i++) {
             double[] instanceValues = new double[features.columns() + 1];
             for (int j = 0; j < features.columns(); j++) {

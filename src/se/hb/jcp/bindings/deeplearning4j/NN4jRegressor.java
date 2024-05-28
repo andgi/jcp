@@ -118,7 +118,6 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
     }
 
     private MultiLayerNetwork createNetworkFromConfig(JSONObject config) {
-        // Implement this method to initialize the network from a JSON config
         return null;
     }
 
