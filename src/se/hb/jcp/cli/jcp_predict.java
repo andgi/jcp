@@ -36,7 +36,7 @@ public class jcp_predict
     private String  _pValuesOutputFileName;
     private String  _jsonOutputFileName;
     private String  _modelFileName;
-    private double  _significanceLevel = 0.10;
+    private double  _significanceLevel = 0.05;
     private boolean _useCP = true;
     private boolean _debug = false;
     private boolean _isRegression = false;

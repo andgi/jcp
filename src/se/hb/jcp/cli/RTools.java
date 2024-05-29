@@ -17,6 +17,7 @@
 package se.hb.jcp.cli;
 
 import java.io.*;
+import java.util.Arrays;
 import org.json.JSONWriter;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.DoubleMatrix1D;
@@ -53,11 +54,11 @@ public class RTools {
     }
 
     public static void runTest(IConformalRegressor cr,
-                               DataSet testSet,
-                               String jsonOutputFileName,
-                               double confidenceLevel,
-                               boolean debug)
-            throws IOException {
+                           DataSet testSet,
+                           String jsonOutputFileName,
+                           double confidenceLevel,
+                           boolean debug)
+        throws IOException {
         BufferedWriter jsonOutputBW = null;
         JSONWriter jsonOutput = null;
         if (jsonOutputFileName != null) {
@@ -81,23 +82,39 @@ public class RTools {
         int noPredictions = testSet.y.length;
         int correct = 0;
 
+        double sumAbsoluteError = 0.0;
+        double sumSquaredError = 0.0;
+        //Efficiency of a conformal regression (see Report series/DSV - On effectively creating ensembles of classifiers - 3.1.1 page 42)
+        double sumIntervalWidth = 0.0;
+        double[] intervalWidths = new double[noPredictions];
+
         for (int i = 0; i < noPredictions; i++) {
             double lowerBound = predictions[i][0];
             double upperBound = predictions[i][1];
+            double intervalWidth = upperBound - lowerBound;
+            sumIntervalWidth += intervalWidth;
+            intervalWidths[i] = intervalWidth;
+            //System.out.println("Lower bound :" + lowerBound + " Upper bound : " + upperBound);
+            double predictedValue = (lowerBound + upperBound) / 2;
 
             if (jsonOutput != null) {
                 jsonOutput.object();
                 jsonOutput.key("instance").value(i);
                 jsonOutput.key("true_value").value(testSet.y[i]);
-                jsonOutput.key("prediction").value((lowerBound + upperBound) / 2);
+                jsonOutput.key("prediction").value(predictedValue);
                 jsonOutput.key("lower_bound").value(lowerBound);
                 jsonOutput.key("upper_bound").value(upperBound);
                 jsonOutput.endObject();
             }
 
-            if (lowerBound <= testSet.y[i] && testSet.y[i] <= upperBound) {
+            double trueValue = testSet.y[i];
+            if (lowerBound <= trueValue && trueValue <= upperBound) {
                 correct++;
             }
+
+            double error = trueValue - predictedValue;
+            sumAbsoluteError += Math.abs(error);
+            sumSquaredError += error * error;
         }
         long t3 = System.currentTimeMillis();
 
@@ -106,10 +123,31 @@ public class RTools {
             jsonOutputBW.close();
         }
 
-        System.out.println("Test Duration " + (double) (t2 - t1) / 1000.0 + " sec.");
-        System.out.println("Coverage " + ((double) correct / noPredictions));
+        double averageIntervalWidth = sumIntervalWidth / noPredictions;
+        Arrays.sort(intervalWidths);
+        double medianIntervalWidth = calculateMedian(intervalWidths);
+        double mae = sumAbsoluteError / noPredictions;
+        double mse = sumSquaredError / noPredictions;
+        double rmse = Math.sqrt(mse);
+        double coverage = (double) correct / noPredictions;
 
+        System.out.println("Test Duration " + (double) (t2 - t1) / 1000.0 + " sec.");
+        System.out.println("Coverage " + coverage);
+        System.out.println("Mean Absolute Error (MAE): " + mae);
+        System.out.println("Mean Squared Error (MSE): " + mse);
+        System.out.println("Root Mean Squared Error (RMSE): " + rmse);
+        System.out.println("Efficiency : Average Interval Width: " + averageIntervalWidth);
+        System.out.println("Efficiency : Median Interval Width: " + medianIntervalWidth);
         System.out.println("Evaluation Duration " + (double) (t3 - t2) / 1000.0 + " sec.");
+    }
+
+    private static double calculateMedian(double[] arr) {
+        int len = arr.length;
+        if (len % 2 == 0) {
+            return (arr[len / 2 - 1] + arr[len / 2]) / 2.0;
+        } else {
+            return arr[len / 2];
+        }
     }
 
     public static IConformalRegressor loadModel(String filename)

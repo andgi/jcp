@@ -67,6 +67,7 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
     public double predict(DoubleMatrix1D instance) {
         INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
         INDArray output = _model.output(input);
+        System.out.println(output);
         return output.getDouble(0);
     }
 
