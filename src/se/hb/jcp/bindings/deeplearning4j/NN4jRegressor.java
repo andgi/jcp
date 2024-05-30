@@ -38,6 +38,8 @@ import org.nd4j.linalg.learning.config.Nesterovs;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.io.ByteArrayInputStream;
+import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
@@ -96,10 +98,10 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
 
     @Override
     protected void internalFit(DoubleMatrix2D x, double[] y) {
-        _model = createAndTrainNetwork(x, y);
+        _model = createAndTrainNetwork(x, y, 50);
     }
 
-    private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
+    private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y, int hiddenLayerSize) {
         int inputFeatures = x.columns();
         int nEpochs = 50;
         double learningRate = 0.0001;
@@ -110,19 +112,19 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
             .updater(new Nesterovs(learningRate, 0.9))
             .l2(1e-4)
             .list()
-            .layer(new DenseLayer.Builder().nIn(inputFeatures).nOut(50).build())
-            .layer(new DenseLayer.Builder().nIn(50).nOut(50).build())
-            .layer(new DenseLayer.Builder().nIn(50).nOut(50).build())
+            .layer(new DenseLayer.Builder().nIn(inputFeatures).nOut(hiddenLayerSize).build())
+            .layer(new DenseLayer.Builder().nIn(50).nOut(hiddenLayerSize).build())
+            .layer(new DenseLayer.Builder().nIn(50).nOut(hiddenLayerSize).build())
             .layer(new OutputLayer.Builder(LossFunctions.LossFunction.MSE)
                 .activation(Activation.IDENTITY)
-                .nIn(50).nOut(1).build())
+                .nIn(hiddenLayerSize).nOut(1).build())
             .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
 
         DataSet dataSet = createDataSet(x, y);
-        for (int i = 0; i < nEpochs; i ++) {
+        for (int i = 0; i < nEpochs; i++) {
             model.fit(dataSet);
         }
 
@@ -139,6 +141,22 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
         normalizer.fit(dataSet);
         normalizer.transform(dataSet);
         return dataSet;
+    }
+
+    @Override
+    public NN4jRegressor clone() {
+        try {
+            // Serialize and then deserialize to achieve deep cloning
+            ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
+            ObjectOutputStream out = new ObjectOutputStream(byteOut);
+            out.writeObject(this);
+            ByteArrayInputStream byteIn = new ByteArrayInputStream(byteOut.toByteArray());
+            ObjectInputStream in = new ObjectInputStream(byteIn);
+            return (NN4jRegressor) in.readObject();
+        } catch (IOException | ClassNotFoundException e) {
+            e.printStackTrace();
+            return null;
+        }
     }
 
     private MultiLayerNetwork createNetworkFromConfig(JSONObject config) {
