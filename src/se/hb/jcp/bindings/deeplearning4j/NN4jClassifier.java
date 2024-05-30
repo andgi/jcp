@@ -28,27 +28,37 @@ import org.deeplearning4j.optimize.listeners.ScoreIterationListener;
 import org.nd4j.linalg.activations.Activation;
 import org.nd4j.linalg.api.ndarray.INDArray;
 import org.nd4j.linalg.dataset.DataSet;
-import org.nd4j.linalg.dataset.SplitTestAndTrain;
 import org.nd4j.linalg.dataset.api.preprocessor.DataNormalization;
 import org.nd4j.linalg.dataset.api.preprocessor.NormalizerStandardize;
 import org.nd4j.linalg.learning.config.Adam;
-import org.nd4j.linalg.lossfunctions.LossFunctions;
+import org.nd4j.linalg.lossfunctions.LossFunctions.LossFunction;
 import org.nd4j.linalg.factory.Nd4j;
-import org.nd4j.linalg.api.ndarray.INDArray;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 import java.util.ArrayList;
+import java.util.List;
+import java.util.Arrays;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
+import cern.colt.matrix.impl.SparseDoubleMatrix1D;
 
 import org.json.JSONObject;
+
+import org.nd4j.linalg.dataset.ViewIterator;
+import org.nd4j.linalg.dataset.api.iterator.DataSetIterator;
+import org.nd4j.linalg.learning.config.Nesterovs;
+import org.nd4j.evaluation.classification.Evaluation;
+
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.supervised.instance.ClassBalancer;
+import weka.filters.supervised.instance.SMOTE;
 
 import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
@@ -58,11 +68,12 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
     private static final SparseDoubleMatrix1D _storageTemplate = new SparseDoubleMatrix1D(0);
     protected MultiLayerNetwork _model;
     private double _threshold;
+
     public NN4jClassifier() {}
 
     public NN4jClassifier(JSONObject configuration) {
         this();
-        _model = createNetworkFromConfig(configuration);
+        //_model = createNetworkFromConfig(configuration);
     }
 
     public NN4jClassifier(String modelFilePath) {
@@ -94,20 +105,24 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
 
     @Override
     public double predict(DoubleMatrix1D instance, double[] probabilityEstimates) {
+        if (instance.size() != _model.layerInputSize(0)) {
+            throw new IllegalArgumentException("se.hb.jcp.bindings.NN4jClassifier: The size of the instance input (" + instance.size() + ") doesn't match the size of the neural network input (" + _model.layerInputSize(0) + ")");
+        }
         INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
         INDArray output = _model.output(input);
-        double probability = output.getDouble(0);
-        probabilityEstimates[0] = 1 - probability;
-        probabilityEstimates[1] = probability;
-        System.out.println(probability);
-        return (probability >= 0.5) ? 1.0 : -1.0;
+
+        probabilityEstimates[0] = output.getDouble(0);
+        probabilityEstimates[1] = output.getDouble(1);
+
+        System.out.println(Arrays.toString(probabilityEstimates));
+        return output.getDouble(0) >= output.getDouble(1) ? -1.0 : 1.0;
     }
 
     public double findBestThreshold(DataSet validationData) {
         double bestThreshold = 0.0;
         double bestF1Score = 0.0;
 
-        for (double threshold = 0.1; threshold <= 0.9; threshold += 0.1) {
+        for (double threshold = 0.1; threshold <= 0.9; threshold += 0.05) {
             EvaluationBinary eval = new EvaluationBinary();
 
             INDArray output = _model.output(validationData.getFeatures());
@@ -138,121 +153,224 @@ public class NN4jClassifier extends ClassifierBase implements IClassProbabilityC
     @Override
     protected void internalFit(DoubleMatrix2D x, double[] y) {
         _model = createAndTrainNetwork(x, y);
-
     }
 
     private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
-        int inputFeatures = x.columns();
-        //for multiclass we could use softmax
+        DataSet dataSet = null;
+        try {
+            dataSet = createDataSetWithSMOTE(x, y);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+
+        int seed = 123;
+        double learningRate = 0.001;
+        int nEpochs = 10;
+
+        int numInputs = x.columns();
+        int numOutputs = 2;
+        int numHiddenNodes = 50;
+
+        DataSetIterator dataIter = new ViewIterator(dataSet, 100);
+
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
-            .seed(12345)
-            .activation(Activation.RELU)
-            .weightInit(WeightInit.XAVIER)
-            .updater(new Adam(0.001))
-            .l2(1e-4)
-            .list()
-            .layer(new DenseLayer.Builder().nIn(inputFeatures).nOut(50).build())
-            .layer(new DenseLayer.Builder().nIn(50).nOut(50).build())
-            .layer(new DenseLayer.Builder().nIn(50).nOut(50).build())
-            .layer(new OutputLayer.Builder(LossFunctions.LossFunction.XENT)
-                .activation(Activation.SIGMOID)
-                .nIn(50).nOut(1).build())
-            .build();
+                .seed(seed)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Nesterovs(learningRate, 0.9))
+                .list()
+                .layer(new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(numHiddenNodes).nOut(numOutputs).build())
+                .build();
 
         MultiLayerNetwork model = new MultiLayerNetwork(conf);
         model.init();
+        model.setListeners(new ScoreIterationListener(100));
 
-        //DataSet dataSet = createDataSetWithOversampling(x, y);
-        DataSet dataSet = createDataSet(x, y);
-        model.fit(dataSet);
+        model.fit(dataIter, nEpochs);
+
+        System.out.println("Evaluate model....");
+        Evaluation eval = model.evaluate(dataIter);
+
+        System.out.println(eval.stats());
+        System.out.println("\n****************Example finished********************");
         _model = model;
-        System.out.println("THRESHOLD " + findBestThreshold(dataSet));
-        _threshold = findBestThreshold(dataSet);
         return model;
     }
 
-
-
-    private DataSet createDataSetWithOversampling(DoubleMatrix2D x, double[] y) {
-        int rows = x.rows();
-        int cols = x.columns();
-
+    private DataSet createDataSetWithClassBalancer(DoubleMatrix2D x, double[] y) throws Exception {
         INDArray features = Nd4j.create(x.toArray());
-        INDArray labels = Nd4j.create(y, new int[]{rows, 1});
+        INDArray labels = Nd4j.create(y, new long[]{y.length, 1});
 
-        int countClass0 = 0;
-        int countClass1 = 0;
-        for (double label : y) {
-            if (label == -1.0) countClass0++;
-            else countClass1++;
-        }
-        if(countClass0 != 0) {
+        Instances wekaInstances = convertToWekaInstances(features, labels);
 
-            int oversampleFactor = (countClass1 / countClass0) - 1;
+        ClassBalancer classBalancer = new ClassBalancer();
+        classBalancer.setInputFormat(wekaInstances);
 
-            List<INDArray> oversampledFeatures = new ArrayList<>();
-            List<INDArray> oversampledLabels = new ArrayList<>();
+        Instances balancedWekaInstances = Filter.useFilter(wekaInstances, classBalancer);
 
-            for (int i = 0; i < rows; i++) {
-                oversampledFeatures.add(features.getRow(i));
-                oversampledLabels.add(labels.getRow(i));
-                if (y[i] == -1.0) {
-                    for (int j = 0; j < oversampleFactor; j++) {
-                        oversampledFeatures.add(features.getRow(i));
-                        oversampledLabels.add(labels.getRow(i));
-                    }
-                }
+        int numOutputs = 2;
+        INDArray balancedFeatures = Nd4j.create(balancedWekaInstances.size(), x.columns());
+        INDArray balancedLabels = Nd4j.create(balancedWekaInstances.size(), numOutputs);
+
+        for (int i = 0; i < balancedWekaInstances.size(); i++) {
+            for (int j = 0; j < x.columns(); j++) {
+                balancedFeatures.putScalar(new int[]{i, j}, balancedWekaInstances.instance(i).value(j));
             }
-
-            INDArray oversampledFeaturesArray = Nd4j.vstack(oversampledFeatures);
-            INDArray oversampledLabelsArray = Nd4j.vstack(oversampledLabels);
-
-            DataSet oversampledDataSet = new DataSet(oversampledFeaturesArray, oversampledLabelsArray);
-
-            DataNormalization normalizer = new NormalizerStandardize();
-            normalizer.fit(oversampledDataSet);
-            normalizer.transform(oversampledDataSet);
-
-            return oversampledDataSet;
+            int classValue = (int) balancedWekaInstances.instance(i).classValue();
+            balancedLabels.putScalar(new int[]{i, classValue}, 1.0);
         }
-        else {
-            return null;
-        }
-    }
 
-
-    private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
-        int rows = x.rows();
-        int cols = x.columns();
-        INDArray features = Nd4j.create(x.toArray());
-        INDArray labels = Nd4j.create(y, new int[]{rows, 1});
-        DataSet dataSet = new DataSet(features, labels);
+        DataSet balancedDataSet = new DataSet(balancedFeatures, balancedLabels);
         DataNormalization normalizer = new NormalizerStandardize();
-        normalizer.fit(dataSet);
-        normalizer.transform(dataSet);
+        normalizer.fit(balancedDataSet);
+        normalizer.transform(balancedDataSet);
 
-        return dataSet;
+        return balancedDataSet;
+    }
+    public DataSet createDataSetWithSMOTE(DoubleMatrix2D x, double[] y) throws Exception {
+        INDArray features = Nd4j.create(x.toArray());
+        INDArray labels = Nd4j.create(y, new long[]{y.length, 1});
+
+        Instances wekaInstances = convertToWekaInstances(features, labels);
+
+        int[] classCounts = new int[2];
+        for (int i = 0; i < y.length; i++) {
+            if (y[i] == -1.0) {
+                classCounts[0]++;
+            } else {
+                classCounts[1]++;
+            }
+        }
+        double minorityClassValue = classCounts[0] < classCounts[1] ? -1.0 : 1.0;
+
+        SMOTE smote = new SMOTE();
+        smote.setInputFormat(wekaInstances);
+        //Adjust percentage automaticaly ?
+        smote.setPercentage(150.0);
+
+        Instances minorityInstances = new Instances(wekaInstances, 0);
+        for (int i = 0; i < wekaInstances.size(); i++) {
+            if (wekaInstances.instance(i).classValue() == minorityClassValue) {
+                minorityInstances.add(wekaInstances.instance(i));
+            }
+        }
+
+        Instances combinedInstances = new Instances(wekaInstances);
+        combinedInstances.addAll(minorityInstances);
+
+        Instances balancedWekaInstances = Filter.useFilter(combinedInstances, smote);
+
+        int numOutputs = 2;
+        INDArray balancedFeatures = Nd4j.create(balancedWekaInstances.size(), x.columns());
+        INDArray balancedLabels = Nd4j.create(balancedWekaInstances.size(), numOutputs);
+
+        for (int i = 0; i < balancedWekaInstances.size(); i++) {
+            for (int j = 0; j < x.columns(); j++) {
+                balancedFeatures.putScalar(new int[]{i, j}, balancedWekaInstances.instance(i).value(j));
+            }
+            int classValue = (int) balancedWekaInstances.instance(i).classValue();
+            balancedLabels.putScalar(new int[]{i, classValue}, 1.0);
+        }
+
+        DataSet balancedDataSet = new DataSet(balancedFeatures, balancedLabels);
+
+        DataNormalization normalizer = new NormalizerStandardize();
+        normalizer.fit(balancedDataSet);
+        normalizer.transform(balancedDataSet);
+
+        return balancedDataSet;
     }
 
-    private MultiLayerNetwork createNetworkFromConfig(JSONObject config) {
-        // Implement this method to initialize the network from a JSON config
-        return null;
+    private Instances convertToWekaInstances(INDArray features, INDArray labels) {
+        ArrayList<Attribute> attributes = new ArrayList<>();
+
+        for (int i = 0; i < features.columns(); i++) {
+            attributes.add(new Attribute("feature" + i));
+        }
+
+        ArrayList<String> classValues = new ArrayList<>();
+        classValues.add("class0");
+        classValues.add("class1");
+        attributes.add(new Attribute("class", classValues));
+
+        Instances dataset = new Instances("Dataset", attributes, features.rows());
+        dataset.setClassIndex(dataset.numAttributes() - 1);
+
+        for (int i = 0; i < features.rows(); i++) {
+            double[] instanceValues = new double[features.columns() + 1];
+            for (int j = 0; j < features.columns(); j++) {
+                instanceValues[j] = features.getDouble(i, j);
+            }
+            instanceValues[features.columns()] = labels.getDouble(i) == -1.0 ? 0 : 1;
+            dataset.add(new DenseInstance(1.0, instanceValues));
+        }
+
+        return dataset;
     }
 
     private void writeObject(ObjectOutputStream oos) throws IOException {
+
         if (_model != null) {
+
+            oos.writeObject(_threshold);
             String fileName = Long.toHexString(Double.doubleToLongBits(Math.random())) + ".deeplearning4j";
             _model.save(new File(fileName));
             oos.writeObject(fileName);
+
         } else {
             oos.writeObject(null);
         }
     }
 
     private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+
+        double thresholdText = (double)ois.readObject();
+        _threshold = (double) thresholdText; 
+
         String fileName = (String) ois.readObject();
         if (fileName != null) {
             _model = MultiLayerNetwork.load(new File(fileName), true);
         }
+
+    }
+
+
+    public double[] getClassProbabilities(DoubleMatrix1D instance) {
+        INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
+        INDArray output = _model.output(input);
+        return output.toDoubleVector();
+    }
+
+    private MultiLayerNetwork createNetworkFromConfig(JSONObject configuration) {
+
+        int seed = configuration.getInt("seed");
+        double learningRate = configuration.getDouble("learningRate");
+        int numInputs = configuration.getInt("numInputs");
+        int numOutputs = configuration.getInt("numOutputs");
+        int numHiddenNodes = configuration.getInt("numHiddenNodes");
+
+        MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
+                .seed(seed)
+                .weightInit(WeightInit.XAVIER)
+                .updater(new Nesterovs(learningRate, 0.9))
+                .list()
+                .layer(new DenseLayer.Builder().nIn(numInputs).nOut(numHiddenNodes)
+                        .activation(Activation.RELU)
+                        .build())
+                .layer(new OutputLayer.Builder(LossFunction.NEGATIVELOGLIKELIHOOD)
+                        .weightInit(WeightInit.XAVIER)
+                        .activation(Activation.SOFTMAX)
+                        .nIn(numHiddenNodes).nOut(numOutputs).build())
+                .build();
+
+        MultiLayerNetwork model = new MultiLayerNetwork(conf);
+        model.init();
+        model.setListeners(new ScoreIterationListener(100));
+        return model;
     }
 }
