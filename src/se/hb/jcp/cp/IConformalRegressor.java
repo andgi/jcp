@@ -1,5 +1,4 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014  Henrik Linusson
 // Copyright (C) 2024  Tom le Cam
 //
 // This library is free software: you can redistribute it and/or modify
@@ -15,20 +14,16 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-package se.hb.jcp.nc;
+package se.hb.jcp.cp;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
-import cern.colt.matrix.impl.AbstractMatrix2D;
 
-public interface IRegressionNonconformityFunction {
-    public DoubleMatrix2D predict(AbstractMatrix2D x, double significance);
-    void fit(DoubleMatrix2D x, double[] y);
+public interface IConformalRegressor {
+    void fit(DoubleMatrix2D xtr, double[] ytr, DoubleMatrix2D xcal, double[] ycal);
+    double[] predictIntervals(DoubleMatrix1D x, double confidence);
+    double[][] predictIntervals(DoubleMatrix2D x, double confidence);
     boolean isTrained();
-    double calculateNonConformityScore(DoubleMatrix1D instance, double label);
-    double predict(DoubleMatrix1D instance);
     int getAttributeCount();
     DoubleMatrix1D nativeStorageTemplate();
 }
-
-
