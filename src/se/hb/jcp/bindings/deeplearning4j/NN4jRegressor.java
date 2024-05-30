@@ -14,7 +14,6 @@
 // You should have received a copy of the GNU Lesser General Public License
 // along with this program.  If not, see <http://www.gnu.org/licenses/>.
 //
-// The public interface is based on cern.colt.matrix.DoubleMatrix2D.
 package se.hb.jcp.bindings.deeplearning4j;
 
 import org.deeplearning4j.nn.conf.MultiLayerConfiguration;
