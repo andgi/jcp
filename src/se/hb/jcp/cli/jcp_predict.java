@@ -1,5 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2014 - 2016  Anders Gidenstam
+// Copyright (C) 2024  Tom le Cam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -21,11 +22,13 @@ import java.io.*;
 import se.hb.jcp.cp.*;
 
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IRegressor;
 
 /**
  * Command line prediction tool for JCP.
  *
  * @author anders.gidenstam(at)hb.se
+ * @author tom.le-cam(at)ecole.ensicaen.fr
  */
 
 public class jcp_predict
@@ -38,6 +41,7 @@ public class jcp_predict
     private double  _significanceLevel = 0.10;
     private boolean _useCP = true;
     private boolean _debug = false;
+    private boolean _isRegression = false;
 
     public jcp_predict()
     {
@@ -50,14 +54,25 @@ public class jcp_predict
         processArguments(args);
 
         if (_useCP) {
-            CCTools.runTest(_modelFileName, _testSetFileName,
-                            _jsonOutputFileName,
-                            _pValuesOutputFileName, _labelsOutputFileName,
-                            _significanceLevel,
-                            _debug);
+            if (_isRegression) {
+                RTools.runTest(_modelFileName, _testSetFileName,
+                               _jsonOutputFileName, _significanceLevel,
+                               _debug);
+            } else {
+                CCTools.runTest(_modelFileName, _testSetFileName,
+                                _jsonOutputFileName,
+                                _pValuesOutputFileName, _labelsOutputFileName,
+                                _significanceLevel,
+                                _debug);
+            }
         } else {
-            runPlainTest(_modelFileName, _testSetFileName,
-                         _labelsOutputFileName);
+            if (_isRegression) {
+                runPlainRegressionTest(_modelFileName, _testSetFileName,
+                                       _labelsOutputFileName);
+            } else {
+                runPlainClassifierTest(_modelFileName, _testSetFileName,
+                                       _labelsOutputFileName);
+            }
         }
     }
 
@@ -144,6 +159,8 @@ public class jcp_predict
                     _useCP = false;
                 } else if (args[i].equals("-debug")) {
                     _debug = true;
+                } else if (args[i].equals("-r")) {
+                    _isRegression = true;
                 } else if (args[i].startsWith("-")) {
                     System.err.println
                         ("Error: Unknown option '" + args[i] + "'.");
@@ -200,15 +217,17 @@ public class jcp_predict
         System.out.println
             ("  -sp <file>        Save the predicted p-values in <file>.");
         System.out.println
+            ("  -r                Use regression instead of classification.");
+        System.out.println
             ("  -nocp             Use a classifier without " +
              "conformal prediction. Must be given for -nocp models.");
         System.out.println
             ("  -debug            Enable extra debug output for predictions.");
     }
 
-    private static void runPlainTest(String modelFileName,
-                                     String dataSetFileName,
-                                     String labelsOutputFileName)
+    private static void runPlainClassifierTest(String modelFileName,
+                                               String dataSetFileName,
+                                               String labelsOutputFileName)
         throws IOException
     {
         System.out.println("Loading the model '" + modelFileName +
@@ -281,6 +300,67 @@ public class jcp_predict
                                   e.getStackTrace());
         }
         return c;
+    }
+
+    private static void runPlainRegressionTest(String modelFileName,
+                                               String dataSetFileName,
+                                               String labelsOutputFileName)
+        throws IOException
+    {
+        System.out.println("Loading the model '" + modelFileName + "'.");
+        long t1 = System.currentTimeMillis();
+        IRegressor regressor = loadPlainModelRegression(modelFileName);
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double) (t2 - t1) / 1000.0 + " sec.");
+
+        System.out.println("Loading the data set '" + dataSetFileName + "'.");
+        DataSet testSet = DataSetTools.loadDataSet(dataSetFileName,
+                                                   regressor.nativeStorageTemplate());
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double) (t3 - t2) / 1000.0 + " sec.");
+
+        BufferedWriter labelsOutput = null;
+        if (labelsOutputFileName != null) {
+            labelsOutput =
+                new BufferedWriter(new OutputStreamWriter
+                                           (new FileOutputStream(labelsOutputFileName),
+                                            "utf-8"));
+        }
+
+        System.out.println("Predicting on " + testSet.x.rows() + " instances.");
+
+        for (int i = 0; i < testSet.x.rows(); i++) {
+            double prediction = regressor.predict(testSet.x.viewRow(i));
+            if (labelsOutput != null) {
+                labelsOutput.write("" + prediction);
+                labelsOutput.newLine();
+            } else {
+                System.out.println("Prediction for instance " + i + ": " + prediction);
+            }
+        }
+
+        if (labelsOutput != null) {
+            labelsOutput.close();
+        }
+
+        long t4 = System.currentTimeMillis();
+        System.out.println("Duration " + (double) (t4 - t3) / 1000.0 + " sec.");
+        System.out.println("Total Duration " + (double) (t4 - t1) / 1000.0 + " sec.");
+    }
+
+    private static IRegressor loadPlainModelRegression(String filename)
+      throws IOException
+    {
+        IRegressor regressor = null;
+
+        try (ObjectInputStream ois =
+                 new ObjectInputStream(new FileInputStream(filename))) {
+            regressor = (IRegressor) ois.readObject();
+        } catch (ClassNotFoundException e) {
+            throw new IOException("Failed to load IRegressor model from '" + filename + "'.", e);
+        }
+
+        return regressor;
     }
 
     public static void main(String[] args)

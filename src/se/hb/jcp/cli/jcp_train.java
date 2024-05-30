@@ -1,5 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2014 - 2016, 2018 - 2019  Anders Gidenstam
+// Copyright (C) 2024  Tom le Cam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -32,16 +33,23 @@ import se.hb.jcp.nc.*;
 import se.hb.jcp.ml.ClassifierFactory;
 import se.hb.jcp.ml.IClassifier;
 
+import se.hb.jcp.ml.RegressorFactory;
+import se.hb.jcp.ml.IRegressor;
+
 /**
  * Command line training tool for JCP.
  *
  * @author anders.gidenstam(at)hb.se
+ * @author tom.le-cam(at)ecole.ensicaen.fr
  */
 
 public class jcp_train
 {
+    private boolean _isClassification = true;
+    private boolean _isRegression = false;
     private int     _ncFunctionType = 0;
     private IClassifier _classifier;
+    private IRegressor _regressor;
     private String  _dataSetFileName;
     private String  _calibrationSetFileName;
     private String  _modelFileName;
@@ -70,26 +78,31 @@ public class jcp_train
         throws IOException
     {
         processArguments(args);
-        if (_useCP && _useTCC) {
-            // Supports train and save and/or test.
-            trainTCC(_dataSetFileName);
-        } else if (_useCP) {
-            // Supports train, calibrate and save and/or test.
-            if (_calibrationSetFileName != null) {
-                trainICC(_dataSetFileName, _calibrationSetFileName);
-            } else {
-                trainICC(_dataSetFileName);
-            }
+        if (_isRegression) {
+            trainRegressor(_dataSetFileName);
         } else {
-            // Supports train and save and/or test.
-            trainPlainClassifier(_dataSetFileName);
+            if (_useCP && _useTCC) {
+                // Supports train and save and/or test.
+                trainTCC(_dataSetFileName);
+            } else if (_useCP) {
+                // Supports train, calibrate and save and/or test.
+                if (_calibrationSetFileName != null) {
+                    trainICC(_dataSetFileName, _calibrationSetFileName);
+                } else {
+                    trainICC(_dataSetFileName);
+                }
+            } else {
+                // Supports train and save and/or test.
+                trainPlainClassifier(_dataSetFileName);
+            }
         }
     }
 
     private void processArguments(String[] args)
     {
         int classifierType = 0;
-        JSONObject classifierConfig = new JSONObject();
+        int regressorType = 0;
+        JSONObject config = new JSONObject();
 
         // Load and create training and calibration sets.
         if (args.length < 1) {
@@ -126,6 +139,8 @@ public class jcp_train
                         }
                     }
                 } else if (args[i].equals("-c")) {
+                    _isClassification = true;
+                    _isRegression = false;
                     if (++i < args.length) {
                         boolean ok = false;
                         try {
@@ -149,11 +164,32 @@ public class jcp_train
                             System.exit(-1);
                         }
                     }
+                } else if (args[i].equals("-r")) {
+                    _isClassification = false;
+                    _isRegression = true;
+                    if (++i < args.length) {
+                        boolean ok = false;
+                        try {
+                            int r = Integer.parseInt(args[i]);
+                            if (0 <= r &&
+                                r < RegressorFactory.getInstance().getRegressorTypes().length) {
+                                regressorType = r;
+                                ok = true;
+                            }
+                        } catch (Exception e) {
+                        }
+                        if (!ok) {
+                            System.err.println("Error: Illegal regressor number '" + args[i] + "' given to -r.");
+                            System.err.println();
+                            printUsage();
+                            System.exit(-1);
+                        }
+                    }
                 } else if (args[i].equals("-p")) {
                     boolean ok = false;
                     if (++i < args.length) {
                         try {
-                            classifierConfig = loadClassifierConfig(args[i]);
+                            config = loadConfig(args[i]);
                             ok = true;
                         } catch (Exception e) {
                             // Handled below as ok is false.
@@ -292,9 +328,15 @@ public class jcp_train
             printUsage();
             System.exit(-1);
         }
-        _classifier =
-            ClassifierFactory.getInstance().createClassifier(classifierType,
-                                                             classifierConfig);
+        if (_isRegression) {
+            _regressor =
+                RegressorFactory.getInstance().createRegressor(regressorType,
+                                                               config);
+        } else {
+            _classifier =
+                ClassifierFactory.getInstance().createClassifier(classifierType,
+                                                                 config);
+        }
     }
 
     private void printUsage()
@@ -306,10 +348,10 @@ public class jcp_train
         System.out.println("  The supplied data set will be partitioned" +
                            " randomly as needed for the selected");
         System.out.println("  configuration.");
-        System.out.println("  Alternatively, for all ICC variants, separate" +
-                           " training and calibration data");
-        System.out.println("  sets can be supplied and will then be used" +
-                           " as is.");
+        System.out.println("  Alternatively, for all ICC and ICR variants," +
+                           " separate training and ");
+        System.out.println("  calibration data sets can be supplied and will" +
+                           " then be used as is.");
         System.out.println("Options:");
         System.out.println
             ("  -h                Print this message and exit.");
@@ -317,7 +359,7 @@ public class jcp_train
             ("  -nc <ncfunc #>    Select the nonconformity function to use.");
         System.out.println
             ("                    The following nonconformity functions are" +
-             " supported:");
+             " supported for classification:");
         {
             String[] NCFs =
                 ClassificationNonconformityFunctionFactory.getInstance().
@@ -341,6 +383,18 @@ public class jcp_train
             for (int i = 0; i < classifiers.length; i++) {
                 System.out.println("                      " + i + ". " +
                                    classifiers[i]);
+            }
+        }
+        System.out.println
+            ("  -r <regressor #> Select the regressor to use.");
+        System.out.println
+            ("                    The following regressors are supported:");
+        {
+            String[] regressors =
+                RegressorFactory.getInstance().getRegressorTypes();
+            for (int i = 0; i < regressors.length; i++) {
+                System.out.println("                      " + i + ". " +
+                                   regressors[i]);
             }
         }
         System.out.println
@@ -632,6 +686,45 @@ public class jcp_train
         }
     }
 
+    private void trainRegressor(String dataSetFileName)
+        throws IOException
+    {
+        long t1 = System.currentTimeMillis();
+        _full = DataSetTools.loadDataSet(dataSetFileName);
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
+        if (_validate) {
+            splitDataset((1 - _validationFraction)*(1 - _calibrationFraction), (1 - _validationFraction)*_calibrationFraction);
+        } else {
+            splitDataset((1 - _calibrationFraction), _calibrationFraction);
+        }
+        DataSet mpcCalibration = null;
+        if (_useMPC) {
+            DataSet newCalibration = new DataSet();
+            DataSet dummy = new DataSet();
+            mpcCalibration = new DataSet();
+            _calibration.random3Partition(newCalibration, mpcCalibration, dummy, 0.5, 0.5);
+            _calibration = newCalibration;
+        }
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+
+        System.out.println("Training on " + _training.x.rows() + " instances and calibrating on " + _calibration.x.rows() + " instances.");
+        InductiveConformalRegressor icr = new InductiveConformalRegressor(RegressionNonconformityFunctionFactory.getInstance().createNonconformityFunction(_ncFunctionType, _regressor));
+        icr.fit(_training.x, _training.y, _calibration.x, _calibration.y);
+        if (_validate) {
+            RTools.runTest(icr, _test, null, _significanceLevel, false);
+            long t4 = System.currentTimeMillis();
+            System.out.println("Total Duration " + (double)(t4 - t1)/1000.0 + " sec.");
+        }
+
+        if (_modelFileName != null) {
+            System.out.println("Saving the model to '" + _modelFileName + "'...");
+            RTools.saveModel(icr, _modelFileName);
+            System.out.println("... Done.");
+        }
+    }
+
     private void splitDataset(double trainingFraction,
                               double calibrationFraction)
     {
@@ -649,7 +742,7 @@ public class jcp_train
                            "and test set, " + _test.x.rows() + " instances.");
     }
 
-    private JSONObject loadClassifierConfig(String filename)
+    private JSONObject loadConfig(String filename)
         throws IOException
     {
         try (FileInputStream fis = new FileInputStream(filename)) {
