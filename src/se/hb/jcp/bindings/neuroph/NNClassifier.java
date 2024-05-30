@@ -38,6 +38,16 @@ import org.neuroph.core.Neuron;
 import org.neuroph.core.Layer;
 import org.neuroph.core.transfer.Tanh;
 
+import weka.core.Attribute;
+import weka.core.DenseInstance;
+import weka.core.Instances;
+import weka.filters.Filter;
+import weka.filters.supervised.instance.ClassBalancer;
+import weka.filters.supervised.instance.SMOTE;
+import se.hb.jcp.bindings.deeplearning4j.WekaUtils;
+
+
+
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -48,11 +58,15 @@ import se.hb.jcp.ml.ClassifierBase;
 import se.hb.jcp.ml.IClassProbabilityClassifier;
 import se.hb.jcp.ml.IClassifier;
 
+import org.neuroph.util.data.norm.MaxNormalizer;
+import org.neuroph.util.data.norm.Normalizer;
+
+
 import java.io.File;
 import java.util.List;
 import java.util.ArrayList;
 
-public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier, LearningEventListener, java.io.Serializable {
+public class NNClassifier extends ClassifierBase implements IClassProbabilityClassifier, LearningEventListener, java.io.Serializable{
     private static final SparseDoubleMatrix1D _storageTemplate =
         new SparseDoubleMatrix1D(0);
     protected NeuralNetwork _network;
@@ -79,13 +93,11 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         _network = network;
     }
 
-    
     public IClassifier fitNew(DoubleMatrix2D x, double[] y) {
         NeuralNetwork newNetwork = createAndTrainNetwork(x, y);
         return new NNClassifier(newNetwork);
     }
 
-    
     public double predict(DoubleMatrix1D instance) {
 
         _network.setInput(instance.toArray());
@@ -94,17 +106,16 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
     }
 
     public double predict(DoubleMatrix1D instance, double[] probabilityEstimates) {
-      
         _network.setInput(instance.toArray());
-        
+
         _network.calculate();
-    
+
         double[] output = _network.getOutput();
-       
+
         double probability = output[0];
         probabilityEstimates[0] = 1 - probability;
         probabilityEstimates[1] = probability;
-        System.out.println(probability);
+        System.out.println(Arrays.toString(output));
         return (probability >= 0.5) ? 1.0 : -1.0;
     }
 
@@ -120,28 +131,121 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
     private NeuralNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
 
-        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(x.columns(), 25, 1);
+        NeuralNetwork neuralNetwork = new MultiLayerPerceptron(x.columns(), 10, 1);
         /*TransferFunction softmax = new SoftMax(neuralNetwork.getLayerAt(neuralNetwork.getLayersCount() - 1));
         Neuron last = (Neuron) neuralNetwork.getOutputNeurons().get(0);
         last.setTransferFunction(softmax);*/
         /*Layer lastLayer = neuralNetwork.getLayerAt(neuralNetwork.getLayersCount() - 1);
-        
+
         Neuron last = lastLayer.getNeuronAt(lastLayer.getNeuronsCount() - 1);
         last.setTransferFunction(new Tanh());*/
-        DataSet dataSet = createDataSet(x, y);
-        
+        //DoubleMatrix2D normalizedX = normalizeData(x);
+        DataSet dataSet = null;
+        try {
+            dataSet = dataSet = createBalancedDataSet(x, y);
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
 
         MomentumBackpropagation learningRule = (MomentumBackpropagation) neuralNetwork.getLearningRule();
         learningRule.addListener(this);
 
-        learningRule.setLearningRate(0.5);
-        learningRule.setMaxError(0.01);
+        learningRule.setLearningRate(0.2);
+        learningRule.setMaxError(0.05);
         learningRule.setMaxIterations(200);
         neuralNetwork.learn(dataSet);
 
         return neuralNetwork;
     }
-    private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
+    private DataSet createBalancedDataSet(DoubleMatrix2D x, double[] y) throws Exception {
+        Instances wekaInstances = convertToWekaInstances(x, y);
+
+        SMOTE smote = new SMOTE();
+        smote.setInputFormat(wekaInstances);
+        smote.setPercentage(100.0);
+
+        Instances balancedWekaInstances = Filter.useFilter(wekaInstances, smote);
+
+        DataSet balancedDataSet = new DataSet(x.columns(), 1);
+
+        for (int i = 0; i < balancedWekaInstances.size(); i++) {
+            double[] features = new double[x.columns()];
+            double[] labels = new double[1];
+
+            for (int j = 0; j < x.columns(); j++) {
+                features[j] = balancedWekaInstances.instance(i).value(j);
+            }
+            labels[0] = balancedWekaInstances.instance(i).classValue() == 0.0 ? -1.0 : 1.0;
+
+            balancedDataSet.add(new DataSetRow(features, labels));
+        }
+
+        Normalizer normalizer = new MaxNormalizer(balancedDataSet);
+        normalizer.normalize(balancedDataSet);
+
+        return balancedDataSet;
+    }
+
+
+    private Instances convertToWekaInstances(DoubleMatrix2D x, double[] y) {
+        ArrayList<Attribute> attributes = new ArrayList<>();
+        for (int i = 0; i < x.columns(); i++) {
+            attributes.add(new Attribute("attr" + i));
+        }
+        ArrayList<String> classValues = new ArrayList<>();
+        classValues.add("0"); // for -1.0
+        classValues.add("1"); // for 1.0
+        attributes.add(new Attribute("class", classValues));
+
+        Instances instances = new Instances("dataset", attributes, x.rows());
+        instances.setClassIndex(instances.numAttributes() - 1);
+
+        for (int i = 0; i < x.rows(); i++) {
+            double[] instanceValues = new double[instances.numAttributes()];
+            for (int j = 0; j < x.columns(); j++) {
+                instanceValues[j] = x.get(i, j);
+            }
+            instanceValues[instances.numAttributes() - 1] = (y[i] == -1.0) ? 0.0 : 1.0;
+            instances.add(new DenseInstance(1.0, instanceValues));
+        }
+
+        return instances;
+    }
+
+    /*private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
+        DataSet dataSet = new DataSet(x.columns(), 1);
+        int minorClassCount = 0;
+        for (double label : y) {
+            if (label == -1.0) {
+                minorClassCount++;
+            }
+        }
+
+        int[] minorClassIndices = new int[minorClassCount];
+        int index = 0;
+        for (int i = 0; i < y.length; i++) {
+            if (y[i] == -1.0) {
+                minorClassIndices[index++] = i;
+            }
+        }
+
+        for (int i = 0; i < x.rows(); i++) {
+            double[] features = x.viewRow(i).toArray();
+            double[] label = {y[i]};
+            dataSet.add(new DataSetRow(features, label));
+        }
+
+        while (minorClassCount < y.length / 4) {
+            int randomIndex = minorClassIndices[(int) (Math.random() * minorClassIndices.length)];
+            double[] features = x.viewRow(randomIndex).toArray();
+            double[] label = {y[randomIndex]};
+            dataSet.add(new DataSetRow(features, label));
+            minorClassCount++;
+        }
+        return dataSet;
+    }*/
+
+    /*private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
         DataSet dataSet = new DataSet(x.columns(), 1); 
         for (int i = 0; i < x.rows(); i++) {
             double[] features = x.viewRow(i).toArray();
@@ -149,6 +253,25 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
             dataSet.add(features, label);
         }
         return dataSet;
+    }*/
+
+    private DoubleMatrix2D normalizeData(DoubleMatrix2D data) {
+        for (int i = 0; i < data.columns(); i++) {
+            double mean = 0;
+            double std = 0;
+            for (int j = 0; j < data.rows(); j++) {
+                mean += data.get(j, i);
+            }
+            mean /= data.rows();
+            for (int j = 0; j < data.rows(); j++) {
+                std += Math.pow(data.get(j, i) - mean, 2);
+            }
+            std = Math.sqrt(std / data.rows());
+            for (int j = 0; j < data.rows(); j++) {
+                data.set(j, i, (data.get(j, i) - mean) / std);
+            }
+        }
+        return data;
     }
 
     private NeuralNetwork createNetworkFromConfig(JSONObject config) {
@@ -177,11 +300,6 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
 
         }*/
 
-    
-       
-        
-        
-
         //NeuralNetwork neuralNetwork = new MultiLayerPerceptron(neuronsInLayers, TransferFunctionType.TANH);
         //train ? 
 
@@ -194,6 +312,7 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         NeuralNetwork neuralNetwork = new MultiLayerPerceptron(layerParam, TransferFunctionType.TANH);
         return neuralNetwork;
     }
+
     public void handleLearningEvent(LearningEvent event) {
         BackPropagation bp = (BackPropagation) event.getSource();
         System.out.println(bp.getCurrentIteration() + ". iteration | Total network error: " + bp.getTotalNetworkError());
@@ -205,9 +324,11 @@ public class NNClassifier extends ClassifierBase implements IClassProbabilityCla
         // Save the model if it has been trained
         if (_network != null) {
             // Save the neural network to a file
-            String modelFileName = "neural_network.model";
-            _network.save(modelFileName);
 
+            String modelFileName =
+            Long.toHexString(Double.doubleToLongBits(Math.random())) +
+                ".neuroph";
+            _network.save(modelFileName);
             // Write the model file name to the stream
             oos.writeObject(modelFileName);
         } else {
