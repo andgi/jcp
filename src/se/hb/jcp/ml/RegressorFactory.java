@@ -25,6 +25,7 @@ public class RegressorFactory {
     private static final String[] _regressorNames =
     {
         "se.hb.jcp.bindings.jliblinear.LinearRegressor",
+        "se.hb.jcp.bindings.jlibsvm.SVMRegressor",
         "se.hb.jcp.bindings.deeplearning4j.NN4jRegressor"
     };  
     private RegressorFactory()
@@ -48,7 +49,9 @@ public class RegressorFactory {
 
         case 0:
             return new se.hb.jcp.bindings.jliblinear.LinearRegressor(config);
-        case 1:
+        case 1: 
+            return new se.hb.jcp.bindings.jlibsvm.SVMRegressor(config);
+        case 2:
             return new se.hb.jcp.bindings.deeplearning4j.NN4jRegressor(config);
         default:
             throw new UnsupportedOperationException("Unknown classifier type.");
