@@ -17,6 +17,7 @@ import org.nd4j.linalg.lossfunctions.LossFunctions;
 import org.nd4j.linalg.factory.Nd4j;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+import org.nd4j.linalg.learning.config.Nesterovs;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -67,7 +68,7 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
     public double predict(DoubleMatrix1D instance) {
         INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
         INDArray output = _model.output(input);
-        System.out.println(output);
+        System.out.println("Prediction " + output);
         return output.getDouble(0);
     }
 
@@ -83,11 +84,13 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
 
     private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y) {
         int inputFeatures = x.columns();
+        int nEpochs = 50;
+        double learningRate = 0.0001;
         MultiLayerConfiguration conf = new NeuralNetConfiguration.Builder()
             .seed(12345)
             .activation(Activation.RELU)
             .weightInit(WeightInit.XAVIER)
-            .updater(new Adam(0.001))
+            .updater(new Nesterovs(learningRate, 0.9))
             .l2(1e-4)
             .list()
             .layer(new DenseLayer.Builder().nIn(inputFeatures).nOut(50).build())
@@ -102,7 +105,10 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
         model.init();
 
         DataSet dataSet = createDataSet(x, y);
-        model.fit(dataSet);
+        for (int i = 0; i < nEpochs; i ++) {
+            model.fit(dataSet);
+        }
+        
         return model;
     }
 

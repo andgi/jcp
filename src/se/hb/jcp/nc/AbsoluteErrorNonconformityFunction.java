@@ -27,6 +27,8 @@ public class AbsoluteErrorNonconformityFunction implements IRegressionNonconform
     @Override
     public double calculateNonConformityScore(DoubleMatrix1D instance, double label) {
         double prediction = _regressor.predict(instance);
+        System.out.println("LABEL " + label);
+        System.out.println("Prediction " + prediction);
         return Math.abs(label - prediction);
     }
 

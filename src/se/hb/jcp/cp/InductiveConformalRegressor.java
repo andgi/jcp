@@ -64,12 +64,15 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
             CalculateNCScoresAction all = new CalculateNCScoresAction(xcal, ycal, _calibrationScores, 0, n);
             all.start();
         }
-
+        for(int i = 0; i < _calibrationScores.length; i ++) {
+            System.out.println("CALI" + _calibrationScores[i]);
+        }
         Arrays.sort(_calibrationScores);
     }
 
     public double[] predictIntervals(DoubleMatrix1D x, double confidence) {
-        double ncScore = _nc.calculateNonConformityScore(x, _nc.predict(x));
+        //double ncScore = _nc.calculateNonConformityScore(x, _nc.predict(x));
+        //always the same epsilon... 
         int idx = (int) Math.ceil((1 - confidence) * (_calibrationScores.length + 1));
         double epsilon = _calibrationScores[Math.min(idx, _calibrationScores.length - 1)];
         double prediction = _nc.predict(x);
