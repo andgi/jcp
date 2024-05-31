@@ -17,6 +17,8 @@
 // The public interface is based on cern.colt.matrix.DoubleMatrix1D.
 package se.hb.jcp.bindings.libsvm;
 
+import java.lang.ref.Cleaner;
+
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.list.DoubleArrayList;
@@ -47,6 +49,12 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
      */
     protected SparseDoubleMatrix2D parent;
 
+    /*
+     * Replace Finalize (deprecated) to free the datas 
+     */
+    private static final Cleaner cleaner = Cleaner.create();
+    private final Cleaner.Cleanable cleanable;
+
     /**
      * Constructs a matrix with a copy of the given values.
      * The values are copied. So subsequent changes in <tt>values</tt>
@@ -62,6 +70,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
         }
         setUp(values.length);
         Cptr = native_vector_create_from(indices, values);
+        cleanable = cleaner.register(this, new State(Cptr, this));
     }
 
     /**
@@ -80,6 +89,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     {
         setUp(columns);
         Cptr = native_vector_create_from(indices, values);
+        cleanable = cleaner.register(this, new State(Cptr, this));
     }
 
     /**
@@ -93,6 +103,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
     {
         setUp(columns);
         Cptr = native_vector_create(columns);
+        cleanable = cleaner.register(this, new State(Cptr, this));
     }
 
     /**
@@ -115,6 +126,7 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
         isNoView = false;
         this.parent = parent;
         this.Cptr = Cptr;
+        cleanable = cleaner.register(this, new State(Cptr, this));
     }
 
     /**
@@ -234,13 +246,24 @@ public class SparseDoubleMatrix1D extends cern.colt.matrix.DoubleMatrix1D
         // FIXME: If needed.
         throw new UnsupportedOperationException("Not implemented");
     }
+    /*
+     * Class to free native memory 
+     */
+    private static class State implements Runnable {
+        private final long Cptr;
+        private final SparseDoubleMatrix1D instance;
 
-    protected void finalize() throws Throwable
-    {
-        if (Cptr != 0 && isNoView) {
-            native_vector_free(Cptr);
+        State(long Cptr, SparseDoubleMatrix1D instance) {
+            this.Cptr = Cptr;
+            this.instance = instance;
         }
-        Cptr = 0;
+
+        @Override
+        public void run() {
+            if (Cptr != 0 && instance.isNoView) {
+                native_vector_free(Cptr);
+            }
+        }
     }
 
     private void writeObject(ObjectOutputStream oos)
