@@ -18,6 +18,7 @@ package se.hb.jcp.bindings.libsvm;
 
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
+import java.lang.ref.Cleaner;
 
 public class svm_model
     implements java.io.Serializable
@@ -25,19 +26,31 @@ public class svm_model
     // C-side pointer to a svm_model.
     long Cptr;
 
+    private static final Cleaner cleaner = Cleaner.create();
+    private Cleaner.Cleanable cleanable;
+
     svm_model(long Cptr)
     {
         this.Cptr = Cptr;
+                cleanable = cleaner.register(this, new State(Cptr, this));
     }
 
-    protected void finalize()
-        throws Throwable
-    {
-        if (Cptr != 0) {
-            // This decreases the RCs of the SV instances and
-            // frees the C-side svm_model struct.
-            native_free_svm_model(Cptr);
-            Cptr = 0;
+    private static class State implements Runnable {
+        private final long Cptr;
+        private final svm_model instance;
+
+        State(long Cptr, svm_model instance) {
+            this.Cptr = Cptr;
+            this.instance = instance;
+        }
+
+        @Override
+        public void run() {
+            if (Cptr != 0) {
+                // This decreases the RCs of the SV instances and
+                // frees the C-side svm_model struct.
+                native_free_svm_model(Cptr);
+            }
         }
     }
 
@@ -56,14 +69,15 @@ public class svm_model
         oos.writeObject(fileName);
     }
 
-    private void readObject(ObjectInputStream ois)
-        throws ClassNotFoundException, java.io.IOException
-    {
+    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, java.io.IOException {
         // Load libsvm model file name from the Java input stream.
-        String fileName = (String)ois.readObject();
+        String fileName = (String) ois.readObject();
 
         // Load the C-side libsvm model from the designated file.
         this.Cptr = svm.svm_load_model(fileName).Cptr;
+
+        // Register the new instance with the cleaner
+        cleanable = cleaner.register(this, new State(Cptr, this));
     }
 
     private static native void native_free_svm_model(long model_ptr);
