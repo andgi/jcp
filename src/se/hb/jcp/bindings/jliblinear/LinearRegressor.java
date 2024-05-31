@@ -3,6 +3,8 @@ package se.hb.jcp.bindings.jliblinear;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -125,8 +127,8 @@ public class LinearRegressor
                 Long.toHexString(Double.doubleToLongBits(Math.random())) +
                 ".jliblinear";
 
-            File file = new File(fileName);
-            Linear.saveModel(file, _model);
+            Path path = Paths.get(fileName);
+            Linear.saveModel(path, _model);
             oos.writeObject(fileName);
         } else {
             oos.writeObject(null);
@@ -142,8 +144,8 @@ public class LinearRegressor
         }
         String fileName = (String)ois.readObject();
         if (fileName != null) {
-            File file = new File(fileName);
-            _model = Linear.loadModel(file);
+            Path path = Paths.get(fileName);
+            _model = Linear.loadModel(path);
         }
     }
 

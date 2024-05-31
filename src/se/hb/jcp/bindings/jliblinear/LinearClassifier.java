@@ -19,6 +19,8 @@ package se.hb.jcp.bindings.jliblinear;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.io.File;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
@@ -251,9 +253,9 @@ public class LinearClassifier
                 Long.toHexString(Double.doubleToLongBits(Math.random())) +
                 ".jliblinear";
 
-            File file = new File(fileName);
+            Path path = Paths.get(fileName);
             // Save the liblinear model to a separate file.
-            Linear.saveModel(file, _model);
+            Linear.saveModel(path, _model);
             // Save the model file name.
             oos.writeObject(fileName);
         } else {
@@ -277,9 +279,9 @@ public class LinearClassifier
         String fileName = (String)ois.readObject();
         if (fileName != null) {
             // Load the liblinear model from the designated file.
-            File file = new File(fileName);
+            Path path = Paths.get(fileName);
             // Load the model from a separate file.
-            _model = Linear.loadModel(file);
+            _model = Linear.loadModel(path);
         }
     }
 
