@@ -1,4 +1,5 @@
 // JCP - Java Conformal Prediction framework
+// Copyright (C) 2014  Henrik Linusson
 // Copyright (C) 2024  Tom le Cam
 //
 // This library is free software: you can redistribute it and/or modify
