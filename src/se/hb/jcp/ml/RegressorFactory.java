@@ -49,12 +49,12 @@ public class RegressorFactory {
         switch (type) {
         case 0:
             return new se.hb.jcp.bindings.jlibsvm.SVMRegressor(config);
-        case 1: 
+        case 1:
             return new se.hb.jcp.bindings.jliblinear.LinearRegressor(config);
         case 2:
             return new se.hb.jcp.bindings.deeplearning4j.NN4jRegressor(config);
         default:
-            throw new UnsupportedOperationException("Unknown classifier type.");
+            throw new UnsupportedOperationException("Unknown regressor type.");
         }
     }
 

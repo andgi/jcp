@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2015 - 2016, 2019  Anders Gidenstam
+// Copyright (C) 2015 - 2016, 2019, 2024  Anders Gidenstam
 // Copyright (C) 2024  Tom le Cam
 //
 // This library is free software: you can redistribute it and/or modify
@@ -27,6 +27,7 @@ import cern.colt.matrix.DoubleMatrix1D;
 import se.hb.jcp.cp.*;
 import se.hb.jcp.io.*;
 import se.hb.jcp.ml.IClassifier;
+import se.hb.jcp.ml.IRegressor;
 
 /**
  * Higher-level tools for DataSets.
@@ -83,7 +84,7 @@ public class DataSetTools
 
     public static DataSet loadDataSet(String filename,
                                       IConformalRegressor cr)
-            throws IOException
+        throws IOException
     {
         DataSet dataSet = loadDataSet(filename, cr.nativeStorageTemplate());
 
@@ -98,6 +99,22 @@ public class DataSetTools
          return dataSet;
     }
 
+    public static DataSet loadDataSet(String filename,
+                                      IRegressor r)
+        throws IOException
+    {
+        DataSet dataSet = loadDataSet(filename, r.nativeStorageTemplate());
+
+        if (r.isTrained() && dataSet.x.columns() != r.getAttributeCount()) {
+            System.err.println
+                ("Warning: " +
+                 "The number of attributes in the data set, " +
+                 dataSet.x.columns() + ", " +
+                 "does not match the number of attributes in the model, " +
+                 r.getAttributeCount() + ".");
+         }
+         return dataSet;
+    }
 
     public static DataSet loadDataSet(String filename,
                                       DoubleMatrix1D template)

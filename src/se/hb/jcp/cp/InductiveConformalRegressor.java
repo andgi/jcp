@@ -32,23 +32,28 @@ import java.util.Arrays;
 
 import se.hb.jcp.nc.IRegressionNonconformityFunction;
 
-public class InductiveConformalRegressor implements IConformalRegressor, java.io.Serializable {
-    
+public class InductiveConformalRegressor
+    implements IConformalRegressor, java.io.Serializable
+{
     private static final boolean PARALLEL = true;
 
     private IRegressionNonconformityFunction _nc;
     private double[] _calibrationScores;
 
-    public InductiveConformalRegressor(IRegressionNonconformityFunction nc) {
+    public InductiveConformalRegressor(IRegressionNonconformityFunction nc)
+    {
         _nc = nc;
     }
 
-    public void fit(DoubleMatrix2D xtr, double[] ytr, DoubleMatrix2D xcal, double[] ycal) {
+    public void fit(DoubleMatrix2D xtr, double[] ytr,
+                    DoubleMatrix2D xcal, double[] ycal)
+    {
         _nc.fit(xtr, ytr);
         calibrate(xcal, ycal);
     }
 
-    public void calibrate(DoubleMatrix2D xcal, double[] ycal) {
+    public void calibrate(DoubleMatrix2D xcal, double[] ycal)
+    {
         if (getNonconformityFunction() == null || !getNonconformityFunction().isTrained()) {
             throw new UnsupportedOperationException(
                 "The non-conformity function must be trained before calibration."
@@ -72,7 +77,8 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
         Arrays.sort(_calibrationScores);
     }
 
-    public double[] predictIntervals(DoubleMatrix1D x, double confidence) {
+    public double[] predictIntervals(DoubleMatrix1D x, double confidence)
+    {
         //double ncScore = _nc.calculateNonConformityScore(x, _nc.predict(x));
         //always the same epsilon... 
         int idx = (int) Math.ceil((1 - confidence) * (_calibrationScores.length + 1));
@@ -81,7 +87,8 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
         return new double[] { prediction - epsilon, prediction + epsilon };
     }
 
-    public double[][] predictIntervals(DoubleMatrix2D x, double confidence) {
+    public double[][] predictIntervals(DoubleMatrix2D x, double confidence)
+    {
         int n = x.rows();
         double[][] intervals = new double[n][2];
         if (!PARALLEL) {
@@ -96,12 +103,14 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
     }
 
     @Override
-    public boolean isTrained() {
+    public boolean isTrained()
+    {
         return _calibrationScores != null;
     }
 
     @Override
-    public int getAttributeCount() {
+    public int getAttributeCount()
+    {
         if (getNonconformityFunction() != null) {
             return getNonconformityFunction().getAttributeCount();
         } else {
@@ -110,7 +119,8 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
     }
 
     @Override
-    public DoubleMatrix1D nativeStorageTemplate() {
+    public DoubleMatrix1D nativeStorageTemplate()
+    {
         if (getNonconformityFunction() != null) {
             return getNonconformityFunction().nativeStorageTemplate();
         } else {
@@ -118,15 +128,19 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
         }
     }
 
-    public IRegressionNonconformityFunction getNonconformityFunction() {
+    public IRegressionNonconformityFunction getNonconformityFunction()
+    {
         return _nc;
     }
-    class PredictIntervalsAction extends ParallelizedAction {
+
+    class PredictIntervalsAction extends ParallelizedAction
+    {
         DoubleMatrix2D _x;
         double[][] _intervals;
         double _confidence;
 
-        public PredictIntervalsAction(DoubleMatrix2D x, double[][] intervals, double confidence, int first, int last) {
+        public PredictIntervalsAction(DoubleMatrix2D x, double[][] intervals, double confidence, int first, int last)
+        {
             super(first, last);
             _x = x;
             _intervals = intervals;
@@ -134,22 +148,28 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
         }
 
         @Override
-        protected void compute(int i) {
+        protected void compute(int i)
+        {
             _intervals[i] = predictIntervals(_x.viewRow(i), _confidence);
         }
 
         @Override
-        protected ParallelizedAction createSubtask(int first, int last) {
+        protected ParallelizedAction createSubtask(int first, int last)
+        {
             return new PredictIntervalsAction(_x, _intervals, _confidence, first, last);
         }
     }
 
-    class CalculateNCScoresAction extends ParallelizedAction {
+    class CalculateNCScoresAction extends ParallelizedAction
+    {
         DoubleMatrix2D _x;
         double[] _y;
         double[] _nonConformityScores;
 
-        public CalculateNCScoresAction(DoubleMatrix2D x, double[] y, double[] nonConformityScores, int first, int last) {
+        public CalculateNCScoresAction(DoubleMatrix2D x, double[] y,
+                                       double[] nonConformityScores,
+                                       int first, int last)
+        {
             super(first, last);
             _x = x;
             _y = y;
@@ -157,13 +177,15 @@ public class InductiveConformalRegressor implements IConformalRegressor, java.io
         }
 
         @Override
-        protected void compute(int i) {
+        protected void compute(int i)
+        {
             DoubleMatrix1D instance = _x.viewRow(i);
             _nonConformityScores[i] = _nc.calculateNonConformityScore(instance, _y[i]);
         }
 
         @Override
-        protected ParallelizedAction createSubtask(int first, int last) {
+        protected ParallelizedAction createSubtask(int first, int last)
+        {
             return new CalculateNCScoresAction(_x, _y, _nonConformityScores, first, last);
         }
     }

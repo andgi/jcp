@@ -55,10 +55,10 @@ public class RTools {
     }
 
     public static void runTest(IConformalRegressor cr,
-                           DataSet testSet,
-                           String jsonOutputFileName,
-                           double confidenceLevel,
-                           boolean debug)
+                               DataSet testSet,
+                               String jsonOutputFileName,
+                               double confidenceLevel,
+                               boolean debug)
         throws IOException
     {
         BufferedWriter jsonOutputBW = null;

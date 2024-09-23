@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2014 - 2016, 2018 - 2019  Anders Gidenstam
+// Copyright (C) 2014 - 2016, 2018 - 2019, 2024  Anders Gidenstam
 // Copyright (C) 2024  Tom le Cam
 //
 // This library is free software: you can redistribute it and/or modify
@@ -79,7 +79,12 @@ public class jcp_train
     {
         processArguments(args);
         if (_isRegression) {
-            trainRegressor(_dataSetFileName);
+            // Assume CP is always chosen.
+            if (_calibrationSetFileName != null) {
+                trainICR(_dataSetFileName, _calibrationSetFileName);
+            } else {
+                trainICR(_dataSetFileName);
+            }
         } else {
             if (_useCP && _useTCC) {
                 // Supports train and save and/or test.
@@ -470,8 +475,8 @@ public class jcp_train
         trainICC(classes, mpcCalibration, t1, t3);
     }
 
-  private void trainICC(String trainingSetFileName,
-                        String calibrationSetFileName)
+    private void trainICC(String trainingSetFileName,
+                          String calibrationSetFileName)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
@@ -499,10 +504,10 @@ public class jcp_train
         trainICC(classes, mpcCalibration, t1, t3);
     }
 
-  private void trainICC(double[] classes,
-                        DataSet  mpcCalibration,
-                        long     t1,
-                        long     t3)
+    private void trainICC(double[] classes,
+                          DataSet  mpcCalibration,
+                          long     t1,
+                          long     t3)
         throws IOException
     {
         if (!_useMPC) {
@@ -561,7 +566,7 @@ public class jcp_train
         }
     }
 
-  private void trainTCC(String dataSetFileName)
+    private void trainTCC(String dataSetFileName)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
@@ -686,7 +691,7 @@ public class jcp_train
         }
     }
 
-    private void trainRegressor(String dataSetFileName)
+    private void trainICR(String dataSetFileName)
         throws IOException
     {
         long t1 = System.currentTimeMillis();
@@ -720,6 +725,68 @@ public class jcp_train
 
         if (_modelFileName != null) {
             System.out.println("Saving the model to '" + _modelFileName + "'...");
+            RTools.saveModel(icr, _modelFileName);
+            System.out.println("... Done.");
+        }
+    }
+
+    private void trainICR(String trainingSetFileName,
+                          String calibrationSetFileName)
+        throws IOException
+    {
+        long t1 = System.currentTimeMillis();
+        _training = DataSetTools.loadDataSet(trainingSetFileName, _regressor);
+        long t2 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t2 - t1)/1000.0 + " sec.");
+
+        _calibration = DataSetTools.loadDataSet(calibrationSetFileName,
+                                                _regressor);
+        long t3 = System.currentTimeMillis();
+        System.out.println("Duration " + (double)(t3 - t2)/1000.0 + " sec.");
+
+        trainICR(t1, t3);
+    }
+
+    private void trainICR(long     t1,
+                          long     t3)
+        throws IOException
+    {
+        System.out.println("Training on " + _training.x.rows() +
+                           " instances and calibrating on " +
+                           _calibration.x.rows() +
+                           " instances.");
+
+        IConformalRegressor icr =
+            new InductiveConformalRegressor
+                    (RegressionNonconformityFunctionFactory.getInstance().
+                         createNonconformityFunction(_ncFunctionType,
+                                                     _regressor));
+
+        System.out.println("_training.x " + _training.x.getClass().getName() +
+                           "(" + _training.x.rows() + "x" +
+                           _training.x.columns() + "; " +
+                           _training.x.cardinality() + " nonzeros)");
+        System.out.println("_calibration.x " +
+                           _calibration.x.getClass().getName() +
+                           "(" + _calibration.x.rows() + "x" +
+                           _calibration.x.columns() + "; " +
+                           _calibration.x.cardinality() + " nonzeros)");
+        ((InductiveConformalRegressor)icr).fit(_training.x, _training.y,
+                                               _calibration.x, _calibration.y);
+        long t4 = System.currentTimeMillis();
+        System.out.println("Training complete.");
+        System.out.println("Duration " + (double)(t4 - t3)/1000.0 + " sec.");
+
+        if (_validate) {
+            RTools.runTest(icr, _test, null, _significanceLevel, false);
+            long t5 = System.currentTimeMillis();
+            System.out.println("Total Duration " + (double)(t5 - t1)/1000.0 +
+                               " sec.");
+        }
+
+        if (_modelFileName != null) {
+            System.out.println("Saving the model to '" +
+                               _modelFileName + "'...");
             RTools.saveModel(icr, _modelFileName);
             System.out.println("... Done.");
         }
