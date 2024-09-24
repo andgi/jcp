@@ -14,3 +14,11 @@ echo;
 echo "Training jlibsvm ICR." $BASE/jcp_train.sh -r 0 -m $MODELNAME.icr.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
 $TIME $BASE/jcp_train.sh -r 0 -m $MODELNAME.icr.jlibsvmmodel $TRAINING_ARGS $TRAINING_SET
 
+echo;
+echo "Training jliblinear ICR." $BASE/jcp_train.sh -r 1 -m $MODELNAME.icr.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -r 1 -m $MODELNAME.icr.jliblinearmodel $TRAINING_ARGS $TRAINING_SET
+
+echo;
+echo "Training DeepLearning4j ICR." $BASE/jcp_train.sh -r 0 -m $MODELNAME.icr.deeplearning4j $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -r 2 -m $MODELNAME.icr.deeplearning4j $TRAINING_ARGS $TRAINING_SET
+
