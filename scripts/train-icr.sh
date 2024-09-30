@@ -20,5 +20,5 @@ $TIME $BASE/jcp_train.sh -r 1 -m $MODELNAME.icr.jliblinearmodel $TRAINING_ARGS $
 
 echo;
 echo "Training DeepLearning4j ICR." $BASE/jcp_train.sh -r 0 -m $MODELNAME.icr.deeplearning4j $TRAINING_ARGS $TRAINING_SET
-$TIME $BASE/jcp_train.sh -r 2 -m $MODELNAME.icr.deeplearning4j $TRAINING_ARGS $TRAINING_SET
+$TIME $BASE/jcp_train.sh -r 2 -m $MODELNAME.icr.deeplearning4jmodel $TRAINING_ARGS $TRAINING_SET
 

@@ -20,8 +20,10 @@ package se.hb.jcp.cp;
 import cern.colt.matrix.DoubleMatrix1D;
 import cern.colt.matrix.DoubleMatrix2D;
 
-public interface IConformalRegressor {
+public interface IConformalRegressor
+{
     void fit(DoubleMatrix2D xtr, double[] ytr, DoubleMatrix2D xcal, double[] ycal);
+    double predict(DoubleMatrix1D x, double confidence, double[] bounds);
     double[] predictIntervals(DoubleMatrix1D x, double confidence);
     double[][] predictIntervals(DoubleMatrix2D x, double confidence);
     boolean isTrained();

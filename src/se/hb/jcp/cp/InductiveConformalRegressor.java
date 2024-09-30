@@ -1,6 +1,7 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2014  Henrik Linusson
 // Copyright (C) 2024  Tom le Cam
+// Copyright (C) 2024  Anders Gidenstam
 // Partly based on InductiveConformalClassifier.java.
 //
 // This library is free software: you can redistribute it and/or modify
@@ -75,6 +76,18 @@ public class InductiveConformalRegressor
             System.out.println("CALI" + _calibrationScores[i]);
         }
         Arrays.sort(_calibrationScores);
+    }
+
+    public double predict(DoubleMatrix1D x, double confidence,
+                          /*out*/ double[] bounds)
+    {
+        // Always the same epsilon...
+        int idx = (int) Math.ceil((1 - confidence) * (_calibrationScores.length + 1));
+        double epsilon = _calibrationScores[Math.min(idx, _calibrationScores.length - 1)];
+        double prediction = _nc.predict(x);
+        bounds[0] = prediction - epsilon;
+        bounds[1] = prediction + epsilon;
+        return prediction;
     }
 
     public double[] predictIntervals(DoubleMatrix1D x, double confidence)

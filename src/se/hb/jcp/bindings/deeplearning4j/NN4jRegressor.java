@@ -52,18 +52,23 @@ import org.json.JSONObject;
 import se.hb.jcp.ml.RegressorBase;
 import se.hb.jcp.ml.IRegressor;
 
-public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.Serializable {
+public class NN4jRegressor
+    extends RegressorBase
+    implements IRegressor, java.io.Serializable
+{
     private static final SparseDoubleMatrix1D _storageTemplate = new SparseDoubleMatrix1D(0);
     protected MultiLayerNetwork _model;
 
     public NN4jRegressor() {}
 
-    public NN4jRegressor(JSONObject configuration) {
+    public NN4jRegressor(JSONObject configuration)
+    {
         this();
         _model = createNetworkFromConfig(configuration);
     }
 
-    public NN4jRegressor(String modelFilePath) {
+    public NN4jRegressor(String modelFilePath)
+    {
         this();
         try {
             _model = MultiLayerNetwork.load(new File(modelFilePath), true);
@@ -72,18 +77,22 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
         }
     }
 
-    public NN4jRegressor(MultiLayerNetwork model) {
+    public NN4jRegressor(MultiLayerNetwork model)
+    {
         _model = model;
     }
 
     @Override
-    public IRegressor fitNew(DoubleMatrix2D x, double[] y) {
-        internalFit(x, y);
-        return new NN4jRegressor(_model);
+    public IRegressor fitNew(DoubleMatrix2D x, double[] y)
+    {
+        NN4jRegressor newRegressor = this.clone();
+        newRegressor.internalFit(x, y);
+        return newRegressor;
     }
 
     @Override
-    public double predict(DoubleMatrix1D instance) {
+    public double predict(DoubleMatrix1D instance)
+    {
         INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
         INDArray output = _model.output(input);
         System.out.println("Prediction " + output);
@@ -91,16 +100,21 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
     }
 
     @Override
-    public DoubleMatrix1D nativeStorageTemplate() {
+    public DoubleMatrix1D nativeStorageTemplate()
+    {
         return _storageTemplate;
     }
 
     @Override
-    protected void internalFit(DoubleMatrix2D x, double[] y) {
+    protected void internalFit(DoubleMatrix2D x, double[] y)
+    {
         _model = createAndTrainNetwork(x, y, 50);
     }
 
-    private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x, double[] y, int hiddenLayerSize) {
+    private MultiLayerNetwork createAndTrainNetwork(DoubleMatrix2D x,
+                                                    double[] y,
+                                                    int hiddenLayerSize)
+    {
         int inputFeatures = x.columns();
         int nEpochs = 50;
         double learningRate = 0.0001;
@@ -130,7 +144,8 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
         return model;
     }
 
-    private DataSet createDataSet(DoubleMatrix2D x, double[] y) {
+    private DataSet createDataSet(DoubleMatrix2D x, double[] y)
+    {
         int rows = x.rows();
         int cols = x.columns();
         INDArray features = Nd4j.create(x.toArray());
@@ -143,7 +158,8 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
     }
 
     @Override
-    public NN4jRegressor clone() {
+    public NN4jRegressor clone()
+    {
         try {
             // Serialize and then deserialize to achieve deep cloning
             ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
@@ -158,11 +174,14 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
         }
     }
 
-    private MultiLayerNetwork createNetworkFromConfig(JSONObject config) {
+    private MultiLayerNetwork createNetworkFromConfig(JSONObject config)
+    {
         return null;
     }
 
-    private void writeObject(ObjectOutputStream oos) throws IOException {
+    private void writeObject(ObjectOutputStream oos)
+        throws IOException
+    {
         if (_model != null) {
             String fileName = Long.toHexString(Double.doubleToLongBits(Math.random())) + ".deeplearning4j";
             _model.save(new File(fileName));
@@ -172,7 +191,9 @@ public class NN4jRegressor extends RegressorBase implements IRegressor, java.io.
         }
     }
 
-    private void readObject(ObjectInputStream ois) throws ClassNotFoundException, IOException {
+    private void readObject(ObjectInputStream ois)
+        throws ClassNotFoundException, IOException
+    {
         String fileName = (String) ois.readObject();
         if (fileName != null) {
             _model = MultiLayerNetwork.load(new File(fileName), true);

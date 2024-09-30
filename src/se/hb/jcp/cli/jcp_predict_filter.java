@@ -1,5 +1,5 @@
 // JCP - Java Conformal Prediction framework
-// Copyright (C) 2016, 2018  Anders Gidenstam
+// Copyright (C) 2016, 2018, 2024  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -32,6 +32,8 @@ import org.json.JSONWriter;
 
 import se.hb.jcp.cp.ConformalClassification;
 import se.hb.jcp.cp.IConformalClassifier;
+import se.hb.jcp.cp.InductiveConformalRegressor;
+import se.hb.jcp.cp.IConformalRegressor;
 import se.hb.jcp.cp.measures.AggregatedPriorMeasures;
 import se.hb.jcp.util.FIFOParallelExecutor;
 
@@ -61,7 +63,11 @@ public class jcp_predict_filter
     {
         processArguments(args);
 
-        doClassification();
+        if (isRegression()) {
+            doRegression();
+        } else {
+            doClassification();
+        }
 
         if (_executor != null) {
             _executor.shutdown();
@@ -204,6 +210,61 @@ public class jcp_predict_filter
         }
     }
 
+    private boolean isRegression()
+    {
+        try {
+            RTools.loadModel(_modelFileName);
+            return true;
+        } catch (Exception e) {
+        }
+        return false;
+    }
+
+    private void doRegression()
+        throws IOException
+    {
+        IConformalRegressor cr = RTools.loadModel(_modelFileName);
+        JSONTokener instanceReader = new JSONTokener(System.in);
+        OutputStreamWriter osw     = new OutputStreamWriter(System.out);
+        JSONWriter  resultWriter   = new JSONWriter(osw);
+        //AggregatedPriorMeasures measures = new AggregatedPriorMeasures();
+
+        resultWriter.array();
+        try {
+            if (true/*!PARALLEL*/) {
+                DoubleMatrix1D instance = allocateInstance(cr);
+                while (!instanceReader.end()) {
+                    if (IOTools.readInstanceFromJSON(instanceReader,
+                                                     instance)) {
+                        // Do the prediction.
+                        double[] bounds = {0.0, 0.0};
+                        double   point_prediction;
+                        point_prediction =
+                            cr.predict(instance, 0.10, bounds);
+                        // Write the result. Not p-values here!
+                        writePrediction(point_prediction, bounds,
+                                        resultWriter, _pValuesOutputFile);
+                        osw.flush();
+                        //measures.add(prediction);
+                    }
+                }
+            }
+        } finally {
+            resultWriter.endArray();
+            osw.flush();
+            if (_pValuesOutputFile != null) {
+                _pValuesOutputFile.close();
+            }
+        }/*
+        System.err.println("Prior efficiency measures over " +
+                           measures.getMeasure(0).getNumberOfObservations() +
+                           " instances:");
+        for (int i = 0; i < measures.size(); i++) {
+            System.err.println("  " + measures.getMeasure(i).toString());
+        }*/
+
+    }
+
     private DoubleMatrix1D allocateInstance(IConformalClassifier cc)
     {
         DoubleMatrix1D instance =
@@ -211,10 +272,17 @@ public class jcp_predict_filter
         return instance;
     }
 
+    private DoubleMatrix1D allocateInstance(IConformalRegressor cr)
+    {
+        DoubleMatrix1D instance =
+            cr.nativeStorageTemplate().like(cr.getAttributeCount());
+        return instance;
+    }
+
     private static void writePrediction(ConformalClassification prediction,
                                         JSONWriter              jsonWriter,
                                         BufferedWriter          pValuesWriter)
-            throws IOException
+        throws IOException
     {
         IOTools.writeAsJSON(prediction, jsonWriter);
         if (pValuesWriter != null) {
@@ -224,6 +292,22 @@ public class jcp_predict_filter
             }
             pValuesWriter.newLine();
         }
+    }
+
+    private static void writePrediction(double          point_prediction,
+                                        double[]        bounds,
+                                        JSONWriter      jsonWriter,
+                                        BufferedWriter  pValuesWriter)
+        throws IOException
+    {
+        jsonWriter.object();
+        jsonWriter.key("lower-bound");
+        jsonWriter.value(bounds[0]);
+        jsonWriter.key("point-prediction");
+        jsonWriter.value(point_prediction);
+        jsonWriter.key("upper-bound");
+        jsonWriter.value(bounds[1]);
+        jsonWriter.endObject();
     }
 
     private static class PredictionCallable
