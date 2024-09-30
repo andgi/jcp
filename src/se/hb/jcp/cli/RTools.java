@@ -1,5 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2024  Tom le Cam
+// Copyright (C) 2024  Anders Gidenstam
 //
 // This library is free software: you can redistribute it and/or modify
 // it under the terms of the GNU Lesser General Public License as published
@@ -102,10 +103,10 @@ public class RTools {
             if (jsonOutput != null) {
                 jsonOutput.object();
                 jsonOutput.key("instance").value(i);
-                jsonOutput.key("true_value").value(testSet.y[i]);
+                jsonOutput.key("true-value").value(testSet.y[i]);
                 jsonOutput.key("prediction").value(predictedValue);
-                jsonOutput.key("lower_bound").value(lowerBound);
-                jsonOutput.key("upper_bound").value(upperBound);
+                jsonOutput.key("lower-bound").value(lowerBound);
+                jsonOutput.key("upper-bound").value(upperBound);
                 jsonOutput.endObject();
             }
 
@@ -119,9 +120,13 @@ public class RTools {
             }
             if (lowerBound <= trueValue && trueValue <= upperBound) {
                 correct++;
-            } else {
-                System.out.println("Lower bound :" + lowerBound + " Upper bound : " + upperBound + " Predicted value " + predictedValue + " True value : " + testSet.y[i]);
-
+            }
+            if (debug) {
+                System.out.println("  Test instance: " + i +
+                                   "  Lower bound: " + lowerBound +
+				   "  Upper bound: " + upperBound +
+				   "  Predicted value: " + predictedValue +
+				   "  True value: " + testSet.y[i]);
             }
 
             double error = trueValue - predictedValue;
@@ -146,13 +151,13 @@ public class RTools {
         double perfectRatio = (double) nearlyPerfectPred / noPredictions;
 
         System.out.println("Test Duration " + (double) (t2 - t1) / 1000.0 + " sec.");
-        System.out.println("Coverage " + coverage);
-        System.out.println("Perfect prediction ratio " + perfectRatio);
+        System.out.println("Coverage / Accuracy: " + coverage);
+        System.out.println("Perfect prediction ratio: " + perfectRatio);
         System.out.println("Mean Absolute Error (MAE): " + mae);
         System.out.println("Mean Squared Error (MSE): " + mse);
         System.out.println("Root Mean Squared Error (RMSE): " + rmse);
-        System.out.println("Efficiency : Average Interval Width: " + averageIntervalWidth);
-        System.out.println("Efficiency : Median Interval Width: " + medianIntervalWidth);
+        System.out.println("Efficiency  Average Interval Width: " + averageIntervalWidth);
+        System.out.println("Efficiency  Median Interval Width: " + medianIntervalWidth);
         System.out.println("Evaluation Duration " + (double) (t3 - t2) / 1000.0 + " sec.");
     }
 
