@@ -124,9 +124,9 @@ public class RTools {
             if (debug) {
                 System.out.println("  Test instance: " + i +
                                    "  Lower bound: " + lowerBound +
-				   "  Upper bound: " + upperBound +
-				   "  Predicted value: " + predictedValue +
-				   "  True value: " + testSet.y[i]);
+                                   "  Upper bound: " + upperBound +
+                                   "  Predicted value: " + predictedValue +
+                                   "  True value: " + testSet.y[i]);
             }
 
             double error = trueValue - predictedValue;
