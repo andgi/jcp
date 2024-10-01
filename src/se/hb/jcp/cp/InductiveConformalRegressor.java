@@ -56,9 +56,8 @@ public class InductiveConformalRegressor
     public void calibrate(DoubleMatrix2D xcal, double[] ycal)
     {
         if (getNonconformityFunction() == null || !getNonconformityFunction().isTrained()) {
-            throw new UnsupportedOperationException(
-                "The non-conformity function must be trained before calibration."
-            );
+            throw new UnsupportedOperationException
+                ("The non-conformity function must be trained before calibration.");
         }
         int n = xcal.rows();
         _calibrationScores = new double[n];
@@ -72,10 +71,12 @@ public class InductiveConformalRegressor
             CalculateNCScoresAction all = new CalculateNCScoresAction(xcal, ycal, _calibrationScores, 0, n);
             all.start();
         }
-        for(int i = 0; i < _calibrationScores.length; i ++) {
-            System.out.println("CALI" + _calibrationScores[i]);
-        }
         Arrays.sort(_calibrationScores);
+        if (false) {
+            for (int i = 0; i < _calibrationScores.length; i ++) {
+                System.out.println("  CALI " + _calibrationScores[i]);
+            }
+        }
     }
 
     public double predict(DoubleMatrix1D x, double confidence,

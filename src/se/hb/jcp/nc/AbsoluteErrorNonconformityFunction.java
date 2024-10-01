@@ -1,5 +1,6 @@
 // JCP - Java Conformal Prediction framework
 // Copyright (C) 2024  Tom le Cam
+// Copyright (C) 2024  Anders Gidenstam
 // Based on ClassificationNonconformityFunctionFactory.java.
 //
 // This library is free software: you can redistribute it and/or modify
@@ -22,50 +23,59 @@ import cern.colt.matrix.DoubleMatrix2D;
 import cern.colt.matrix.impl.AbstractMatrix2D;
 import se.hb.jcp.ml.IRegressor;
 
-public class AbsoluteErrorNonconformityFunction implements IRegressionNonconformityFunction,  java.io.Serializable{
+public class AbsoluteErrorNonconformityFunction
+    implements IRegressionNonconformityFunction,  java.io.Serializable
+{
     private IRegressor _regressor;
     private boolean _isTrained = false;
 
-    public AbsoluteErrorNonconformityFunction(IRegressor regressor) {
+    public AbsoluteErrorNonconformityFunction(IRegressor regressor)
+    {
         _regressor = regressor;
     }
 
     @Override
-    public void fit(DoubleMatrix2D x, double[] y) {
+    public void fit(DoubleMatrix2D x, double[] y)
+    {
         _regressor.fit(x, y);
         _isTrained = true;
     }
 
     @Override
-    public boolean isTrained() {
+    public boolean isTrained()
+    {
         return _isTrained;
     }
 
     @Override
-    public double calculateNonConformityScore(DoubleMatrix1D instance, double label) {
+    public double calculateNonConformityScore(DoubleMatrix1D instance, double label)
+    {
         double prediction = _regressor.predict(instance);
-        System.out.println("LABEL " + label);
-        System.out.println("Prediction " + prediction);
+        //System.out.println("  LABEL " + label + " Prediction " + prediction);
         return Math.abs(label - prediction);
     }
 
     @Override
-    public double predict(DoubleMatrix1D instance) {
+    public double predict(DoubleMatrix1D instance)
+    {
         return _regressor.predict(instance);
     }
 
     @Override
-    public int getAttributeCount() {
+    public int getAttributeCount()
+    {
         return _regressor.getAttributeCount();
     }
 
     @Override
-    public DoubleMatrix1D nativeStorageTemplate() {
+    public DoubleMatrix1D nativeStorageTemplate()
+    {
         return _regressor.nativeStorageTemplate();
     }
 
     @Override
-    public DoubleMatrix2D predict(AbstractMatrix2D x, double significance) {
+    public DoubleMatrix2D predict(AbstractMatrix2D x, double significance)
+    {
         System.out.println("To implement");
         return null;
     }

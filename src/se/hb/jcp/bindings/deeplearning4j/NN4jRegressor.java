@@ -95,7 +95,7 @@ public class NN4jRegressor
     {
         INDArray input = Nd4j.create(instance.toArray()).reshape(1, instance.size());
         INDArray output = _model.output(input);
-        System.out.println("Prediction " + output);
+        //System.out.println("  Prediction " + output);
         return output.getDouble(0);
     }
 
@@ -161,7 +161,7 @@ public class NN4jRegressor
     public NN4jRegressor clone()
     {
         try {
-            // Serialize and then deserialize to achieve deep cloning
+            // Serialize and then deserialize to achieve deep cloning.
             ByteArrayOutputStream byteOut = new ByteArrayOutputStream();
             ObjectOutputStream out = new ObjectOutputStream(byteOut);
             out.writeObject(this);
